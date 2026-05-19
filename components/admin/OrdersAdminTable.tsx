@@ -1,0 +1,198 @@
+"use client";
+
+import { useState } from "react";
+
+const ORDER_STATUSES = ["pending", "paid", "shipped", "completed", "refunded"] as const;
+type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+const STATUS_COLORS: Record<OrderStatus, string> = {
+  pending: "#F59E0B",
+  paid: "#10B981",
+  shipped: "#3B82F6",
+  completed: "#10B981",
+  refunded: "#EF4444",
+};
+
+interface OrderItem {
+  id: string;
+  quantity: number;
+  price_usd: number;
+  products: { slug: string; product_translations: { name: string; language: string }[] } | null;
+}
+
+interface Order {
+  id: string;
+  customer_email: string;
+  total_usd: number;
+  status: string;
+  created_at: string;
+  order_items: OrderItem[];
+}
+
+interface Props {
+  orders: Order[];
+}
+
+export default function OrdersAdminTable({ orders: initialOrders }: Props) {
+  const [orders, setOrders] = useState(initialOrders);
+  const [filter, setFilter] = useState<string>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
+
+  async function updateStatus(orderId: string, status: OrderStatus) {
+    setLoadingId(orderId);
+    const res = await fetch(`/api/admin/orders/${orderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) {
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+    }
+    setLoadingId(null);
+  }
+
+  const inputStyle = {
+    background: "#0D0D1A",
+    border: "1px solid #2D2D4E",
+    borderRadius: "8px",
+    color: "#F0E6FF",
+    padding: "6px 10px",
+    fontSize: "13px",
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Filter */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm" style={{ color: "#9CA3AF" }}>
+          Filter:
+        </span>
+        {["all", ...ORDER_STATUSES].map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilter(s)}
+            className="px-3 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80"
+            style={{
+              background: filter === s ? "#7C3AED" : "#1A1A2E",
+              color: filter === s ? "#fff" : "#9CA3AF",
+              border: "1px solid",
+              borderColor: filter === s ? "#7C3AED" : "#2D2D4E",
+            }}
+          >
+            {s === "all" ? `All (${orders.length})` : s}
+          </button>
+        ))}
+      </div>
+
+      <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
+                {["Order ID", "Customer", "Total", "Status", "Date", "Actions"].map((h) => (
+                  <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
+                    No orders found.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((order) => (
+                  <>
+                    <tr
+                      key={order.id}
+                      className="border-b cursor-pointer hover:opacity-80 transition-opacity"
+                      style={{ borderColor: "#2D2D4E", opacity: loadingId === order.id ? 0.5 : 1 }}
+                      onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
+                    >
+                      <td className="px-6 py-4 font-mono text-xs" style={{ color: "#9CA3AF" }}>
+                        {order.id.slice(0, 8)}…
+                      </td>
+                      <td className="px-6 py-4" style={{ color: "#F0E6FF" }}>
+                        {order.customer_email}
+                      </td>
+                      <td className="px-6 py-4 font-medium" style={{ color: "#A855F7" }}>
+                        ${order.total_usd.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className="px-2 py-1 rounded-full text-xs font-medium"
+                          style={{
+                            background: `${STATUS_COLORS[order.status as OrderStatus] ?? "#9CA3AF"}22`,
+                            color: STATUS_COLORS[order.status as OrderStatus] ?? "#9CA3AF",
+                          }}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                        <select
+                          value={order.status}
+                          disabled={loadingId === order.id}
+                          onChange={(e) => updateStatus(order.id, e.target.value as OrderStatus)}
+                          style={{ ...inputStyle, cursor: "pointer" }}
+                        >
+                          {ORDER_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+
+                    {/* Expanded detail row */}
+                    {expandedId === order.id && (
+                      <tr key={`${order.id}-detail`} style={{ background: "#13131F" }}>
+                        <td colSpan={6} className="px-6 py-4">
+                          <p className="text-xs font-medium mb-2" style={{ color: "#9CA3AF" }}>
+                            Items:
+                          </p>
+                          <div className="space-y-1">
+                            {order.order_items.map((item) => {
+                              const name =
+                                item.products?.product_translations?.find(
+                                  (t) => t.language === "en"
+                                )?.name ?? item.products?.slug ?? "Unknown";
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="flex justify-between text-sm"
+                                  style={{ color: "#F0E6FF" }}
+                                >
+                                  <span>
+                                    {name} × {item.quantity}
+                                  </span>
+                                  <span style={{ color: "#A855F7" }}>
+                                    ${(item.price_usd * item.quantity).toFixed(2)}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

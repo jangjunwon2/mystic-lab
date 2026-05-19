@@ -1,0 +1,142 @@
+{
+  "nav": {
+    "home": "Startseite",
+    "products": "Produkte",
+    "customOrder": "Individueller Auftrag",
+    "cart": "Warenkorb",
+    "account": "Mein Konto",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "admin": "Admin"
+  },
+  "home": {
+    "hero": {
+      "tagline": "Für Diejenigen, Die Es Wagen zu Glauben",
+      "headline": "Meistere die Kunst des Unmöglichen",
+      "subheadline": "Premium-Zauberzubehör und maßgeschneiderte elektronische Geräte für professionelle Zauberkünstler weltweit.",
+      "cta": "Kollektion Entdecken",
+      "ctaSecondary": "Individueller Auftrag"
+    },
+    "featured": {
+      "title": "Ausgewählte Illusionen",
+      "subtitle": "Handverlesen von professionellen Zauberkünstlern"
+    },
+    "customSection": {
+      "title": "Individuelle Elektronische Geräte",
+      "description": "Haben Sie eine einzigartige Vision? Unser Ingenieurteam entwickelt maßgeschneiderte elektronische Zauberapparate für Ihre Auftritte.",
+      "cta": "Individuelle Anfertigung Anfragen"
+    },
+    "unlock": {
+      "title": "Besitzen Sie bereits ein Mystic Lab Gerät?",
+      "description": "Geben Sie den Geheimcode Ihres Geräts ein, um auf das Lösungs-Tutorial zuzugreifen.",
+      "cta": "Tutorial Freischalten"
+    }
+  },
+  "products": {
+    "title": "Alle Produkte",
+    "filter": {
+      "all": "Alle",
+      "cardMagic": "Kartenmagie",
+      "coinMagic": "Münzmagie",
+      "stageMagic": "Bühnenmagie",
+      "mentalism": "Mentalismus",
+      "electronic": "Elektronisch",
+      "accessories": "Zubehör"
+    },
+    "sort": {
+      "featured": "Empfohlen",
+      "newest": "Neueste",
+      "priceAsc": "Preis: Aufsteigend",
+      "priceDesc": "Preis: Absteigend"
+    },
+    "addToCart": "In den Warenkorb",
+    "buyNow": "Jetzt Kaufen",
+    "outOfStock": "Ausverkauft",
+    "price": "${price} USD",
+    "demo": "Demo Ansehen",
+    "tutorial": {
+      "memberAccess": "Lösungs-Tutorial Ansehen",
+      "guestPrompt": "Gerätecode eingeben zum Freischalten",
+      "noAccess": "Kaufen Sie diesen Artikel für Zugang zum Tutorial",
+      "locked": "Tutorial Gesperrt"
+    },
+    "reviews": {
+      "title": "Bewertungen",
+      "noReviews": "Noch keine Bewertungen. Seien Sie der Erste!"
+    }
+  },
+  "customOrder": {
+    "title": "Individuelles Elektronisches Gerät",
+    "subtitle": "Teilen Sie uns Ihre Vision mit. Wir machen das Unmögliche möglich.",
+    "form": {
+      "name": "Ihr Name",
+      "email": "E-Mail-Adresse",
+      "description": "Beschreiben Sie Ihre Idee",
+      "descriptionPlaceholder": "Beschreiben Sie den Effekt, vorhandene Konzepte oder ein Problem, das Sie lösen möchten...",
+      "budget": "Budgetrahmen",
+      "budgetOptions": {
+        "under500": "Unter 500 $",
+        "500to1000": "500 $ – 1.000 $",
+        "1000to3000": "1.000 $ – 3.000 $",
+        "over3000": "3.000 $+"
+      },
+      "deadline": "Gewünschter Fertigstellungstermin",
+      "images": "Referenzbilder (optional)",
+      "submit": "Anfrage Senden",
+      "success": "Anfrage gesendet! Wir melden uns innerhalb von 48 Stunden.",
+      "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+    }
+  },
+  "checkout": {
+    "title": "Kasse",
+    "orderSummary": "Bestellübersicht",
+    "subtotal": "Zwischensumme",
+    "shipping": "Versand",
+    "tax": "Steuern",
+    "total": "Gesamt",
+    "payWithCard": "Mit Karte Bezahlen",
+    "payWithPaypal": "Mit PayPal Bezahlen",
+    "processing": "Verarbeitung...",
+    "success": "Bestellung Bestätigt!",
+    "successMessage": "Vielen Dank für Ihren Einkauf. Prüfen Sie Ihre E-Mail für die Bestellbestätigung und Tutorial-Zugangsinformationen."
+  },
+  "account": {
+    "title": "Mein Konto",
+    "orders": "Meine Bestellungen",
+    "tutorials": "Meine Tutorials",
+    "noOrders": "Noch keine Bestellungen.",
+    "watchTutorial": "Tutorial Ansehen"
+  },
+  "unlock": {
+    "title": "Tutorial Freischalten",
+    "description": "Geben Sie den Geheimcode ein, der sich in Ihrem Mystic Lab Gerät befindet, um auf das Lösungs-Tutorial zuzugreifen.",
+    "codePlaceholder": "Gerätecode eingeben",
+    "submit": "Freischalten",
+    "success": "Tutorial freigeschaltet! Viel Spaß.",
+    "error": "Ungültiger Code. Bitte erneut prüfen.",
+    "alreadyUnlocked": "Bereits freigeschaltet!"
+  },
+  "footer": {
+    "tagline": "Die Kunst des Unmöglichen, technisch realisiert.",
+    "links": {
+      "products": "Produkte",
+      "customOrder": "Individueller Auftrag",
+      "about": "Über Uns",
+      "contact": "Kontakt",
+      "privacy": "Datenschutzerklärung",
+      "terms": "Nutzungsbedingungen"
+    },
+    "copyright": "© {year} Mystic Lab. Alle Rechte vorbehalten."
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Ein Fehler ist aufgetreten",
+    "retry": "Erneut Versuchen",
+    "back": "Zurück",
+    "close": "Schließen",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "currency": "USD"
+  }
+}

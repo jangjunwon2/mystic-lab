@@ -1,0 +1,142 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "products": "Produits",
+    "customOrder": "Commande Personnalisée",
+    "cart": "Panier",
+    "account": "Mon Compte",
+    "signIn": "Se Connecter",
+    "signOut": "Se Déconnecter",
+    "admin": "Admin"
+  },
+  "home": {
+    "hero": {
+      "tagline": "Pour Ceux Qui Osent Croire",
+      "headline": "Maîtrisez l'Art de l'Impossible",
+      "subheadline": "Accessoires de magie premium et appareils électroniques personnalisés pour les magiciens professionnels du monde entier.",
+      "cta": "Explorer la Collection",
+      "ctaSecondary": "Commande Personnalisée"
+    },
+    "featured": {
+      "title": "Illusions en Vedette",
+      "subtitle": "Sélectionnées par des magiciens professionnels"
+    },
+    "customSection": {
+      "title": "Appareils Électroniques Personnalisés",
+      "description": "Vous avez une vision unique ? Notre équipe d'ingénierie crée des appareils de magie électroniques sur mesure pour votre spectacle.",
+      "cta": "Demander une Création Personnalisée"
+    },
+    "unlock": {
+      "title": "Vous possédez déjà un appareil Mystic Lab ?",
+      "description": "Entrez le code secret de votre appareil pour accéder au tutoriel de solution.",
+      "cta": "Déverrouiller le Tutoriel"
+    }
+  },
+  "products": {
+    "title": "Tous les Produits",
+    "filter": {
+      "all": "Tous",
+      "cardMagic": "Magie avec Cartes",
+      "coinMagic": "Magie avec Pièces",
+      "stageMagic": "Magie de Scène",
+      "mentalism": "Mentalisme",
+      "electronic": "Électronique",
+      "accessories": "Accessoires"
+    },
+    "sort": {
+      "featured": "En Vedette",
+      "newest": "Plus Récents",
+      "priceAsc": "Prix : Croissant",
+      "priceDesc": "Prix : Décroissant"
+    },
+    "addToCart": "Ajouter au Panier",
+    "buyNow": "Acheter Maintenant",
+    "outOfStock": "Rupture de Stock",
+    "price": "${price} USD",
+    "demo": "Voir la Démo",
+    "tutorial": {
+      "memberAccess": "Voir le Tutoriel de Solution",
+      "guestPrompt": "Entrez le code de l'appareil pour déverrouiller",
+      "noAccess": "Achetez cet article pour accéder au tutoriel",
+      "locked": "Tutoriel Verrouillé"
+    },
+    "reviews": {
+      "title": "Avis",
+      "noReviews": "Aucun avis pour l'instant. Soyez le premier !"
+    }
+  },
+  "customOrder": {
+    "title": "Appareil Électronique Personnalisé",
+    "subtitle": "Partagez votre vision. Nous réaliserons l'impossible.",
+    "form": {
+      "name": "Votre Nom",
+      "email": "Adresse E-mail",
+      "description": "Décrivez votre idée",
+      "descriptionPlaceholder": "Décrivez l'effet, les concepts existants que vous avez ou un problème à résoudre...",
+      "budget": "Fourchette de Budget",
+      "budgetOptions": {
+        "under500": "Moins de 500 $",
+        "500to1000": "500 $ – 1 000 $",
+        "1000to3000": "1 000 $ – 3 000 $",
+        "over3000": "3 000 $+"
+      },
+      "deadline": "Date de Livraison Souhaitée",
+      "images": "Images de Référence (facultatif)",
+      "submit": "Envoyer la Demande",
+      "success": "Demande envoyée ! Nous vous répondrons dans les 48 heures.",
+      "error": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  },
+  "checkout": {
+    "title": "Paiement",
+    "orderSummary": "Récapitulatif de la Commande",
+    "subtotal": "Sous-total",
+    "shipping": "Livraison",
+    "tax": "Taxes",
+    "total": "Total",
+    "payWithCard": "Payer par Carte",
+    "payWithPaypal": "Payer avec PayPal",
+    "processing": "Traitement en cours...",
+    "success": "Commande Confirmée !",
+    "successMessage": "Merci pour votre achat. Consultez votre e-mail pour la confirmation de commande et les instructions d'accès au tutoriel."
+  },
+  "account": {
+    "title": "Mon Compte",
+    "orders": "Mes Commandes",
+    "tutorials": "Mes Tutoriels",
+    "noOrders": "Aucune commande pour l'instant.",
+    "watchTutorial": "Voir le Tutoriel"
+  },
+  "unlock": {
+    "title": "Déverrouiller le Tutoriel",
+    "description": "Entrez le code secret trouvé à l'intérieur de votre appareil Mystic Lab pour accéder au tutoriel de solution.",
+    "codePlaceholder": "Entrez votre code d'appareil",
+    "submit": "Déverrouiller",
+    "success": "Tutoriel déverrouillé ! Profitez-en.",
+    "error": "Code invalide. Veuillez vérifier à nouveau.",
+    "alreadyUnlocked": "Déjà déverrouillé !"
+  },
+  "footer": {
+    "tagline": "L'art de l'impossible, ingénieusement conçu.",
+    "links": {
+      "products": "Produits",
+      "customOrder": "Commande Personnalisée",
+      "about": "À Propos",
+      "contact": "Contact",
+      "privacy": "Politique de Confidentialité",
+      "terms": "Conditions d'Utilisation"
+    },
+    "copyright": "© {year} Mystic Lab. Tous droits réservés."
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "retry": "Réessayer",
+    "back": "Retour",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "currency": "USD"
+  }
+}

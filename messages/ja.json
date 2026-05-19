@@ -1,0 +1,142 @@
+{
+  "nav": {
+    "home": "ホーム",
+    "products": "商品",
+    "customOrder": "カスタム注文",
+    "cart": "カート",
+    "account": "マイページ",
+    "signIn": "ログイン",
+    "signOut": "ログアウト",
+    "admin": "管理"
+  },
+  "home": {
+    "hero": {
+      "tagline": "信じる勇気を持つ者へ",
+      "headline": "不可能の芸術を極めよ",
+      "subheadline": "世界中のプロマジシャンのために作られたプレミアムマジックプロップとカスタム電子デバイス。",
+      "cta": "コレクションを見る",
+      "ctaSecondary": "カスタム注文"
+    },
+    "featured": {
+      "title": "注目のイリュージョン",
+      "subtitle": "プロマジシャンが厳選"
+    },
+    "customSection": {
+      "title": "カスタム電子デバイス",
+      "description": "独自のビジョンがありますか？私たちのエンジニアチームが、あなたのパフォーマンスに合わせたオーダーメイド電子マジックデバイスを製作します。",
+      "cta": "カスタム製作を依頼する"
+    },
+    "unlock": {
+      "title": "Mystic Labデバイスをお持ちですか？",
+      "description": "デバイスのシークレットコードを入力して、解法チュートリアルにアクセスしてください。",
+      "cta": "チュートリアルを解除"
+    }
+  },
+  "products": {
+    "title": "全商品",
+    "filter": {
+      "all": "すべて",
+      "cardMagic": "カードマジック",
+      "coinMagic": "コインマジック",
+      "stageMagic": "ステージマジック",
+      "mentalism": "メンタリズム",
+      "electronic": "電子デバイス",
+      "accessories": "アクセサリー"
+    },
+    "sort": {
+      "featured": "おすすめ",
+      "newest": "新着順",
+      "priceAsc": "価格：安い順",
+      "priceDesc": "価格：高い順"
+    },
+    "addToCart": "カートに追加",
+    "buyNow": "今すぐ購入",
+    "outOfStock": "在庫切れ",
+    "price": "${price} USD",
+    "demo": "デモを見る",
+    "tutorial": {
+      "memberAccess": "解法チュートリアルを見る",
+      "guestPrompt": "デバイスコードを入力してチュートリアルを解除",
+      "noAccess": "チュートリアルにアクセスするには購入してください",
+      "locked": "チュートリアルはロック中"
+    },
+    "reviews": {
+      "title": "レビュー",
+      "noReviews": "まだレビューはありません。最初のレビューを書いてみましょう！"
+    }
+  },
+  "customOrder": {
+    "title": "カスタム電子デバイス",
+    "subtitle": "あなたのビジョンをお聞かせください。不可能を実現します。",
+    "form": {
+      "name": "お名前",
+      "email": "メールアドレス",
+      "description": "アイデアを説明してください",
+      "descriptionPlaceholder": "エフェクト、既存のコンセプト、または解決したい課題を説明してください...",
+      "budget": "予算範囲",
+      "budgetOptions": {
+        "under500": "$500未満",
+        "500to1000": "$500〜$1,000",
+        "1000to3000": "$1,000〜$3,000",
+        "over3000": "$3,000以上"
+      },
+      "deadline": "希望完成日",
+      "images": "参考画像（任意）",
+      "submit": "お問い合わせを送信",
+      "success": "お問い合わせを送信しました！48時間以内にご連絡いたします。",
+      "error": "エラーが発生しました。もう一度お試しください。"
+    }
+  },
+  "checkout": {
+    "title": "チェックアウト",
+    "orderSummary": "注文内容",
+    "subtotal": "小計",
+    "shipping": "送料",
+    "tax": "税金",
+    "total": "合計",
+    "payWithCard": "カードで支払う",
+    "payWithPaypal": "PayPalで支払う",
+    "processing": "処理中...",
+    "success": "ご注文確定！",
+    "successMessage": "ご購入ありがとうございます。注文確認書とチュートリアルアクセス方法をメールでお送りします。"
+  },
+  "account": {
+    "title": "マイアカウント",
+    "orders": "注文履歴",
+    "tutorials": "マイチュートリアル",
+    "noOrders": "まだ注文はありません。",
+    "watchTutorial": "チュートリアルを見る"
+  },
+  "unlock": {
+    "title": "チュートリアルを解除",
+    "description": "Mystic Labデバイス内に記載されているシークレットコードを入力して、解法チュートリアルにアクセスしてください。",
+    "codePlaceholder": "デバイスコードを入力",
+    "submit": "解除する",
+    "success": "チュートリアルが解除されました！お楽しみください。",
+    "error": "無効なコードです。もう一度ご確認ください。",
+    "alreadyUnlocked": "すでに解除済みです！"
+  },
+  "footer": {
+    "tagline": "不可能の芸術、エンジニアリングで実現。",
+    "links": {
+      "products": "商品",
+      "customOrder": "カスタム注文",
+      "about": "会社概要",
+      "contact": "お問い合わせ",
+      "privacy": "プライバシーポリシー",
+      "terms": "利用規約"
+    },
+    "copyright": "© {year} Mystic Lab. All rights reserved."
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "retry": "再試行",
+    "back": "戻る",
+    "close": "閉じる",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "currency": "USD"
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "nav": {
+    "home": "홈",
+    "products": "상품",
+    "customOrder": "커스텀 주문",
+    "cart": "장바구니",
+    "account": "마이페이지",
+    "signIn": "로그인",
+    "signOut": "로그아웃",
+    "admin": "관리자"
+  },
+  "home": {
+    "hero": {
+      "tagline": "믿는 자만이 볼 수 있는 것",
+      "headline": "불가능의 예술을 완성하라",
+      "subheadline": "전세계 프로 마술사를 위한 프리미엄 마술 도구와 커스텀 전자 장치.",
+      "cta": "컬렉션 보기",
+      "ctaSecondary": "커스텀 주문"
+    },
+    "featured": {
+      "title": "추천 상품",
+      "subtitle": "프로 마술사들이 직접 선별한 제품"
+    },
+    "customSection": {
+      "title": "커스텀 전자 장치",
+      "description": "독특한 아이디어가 있으신가요? 당신의 공연에 맞는 맞춤형 전자 마술 장치를 제작해 드립니다.",
+      "cta": "커스텀 제작 문의"
+    },
+    "unlock": {
+      "title": "미스틱랩 장치를 보유하고 계신가요?",
+      "description": "장치 내부의 비밀 코드를 입력하여 해법 영상을 시청하세요.",
+      "cta": "해법 영상 잠금 해제"
+    }
+  },
+  "products": {
+    "title": "전체 상품",
+    "filter": {
+      "all": "전체",
+      "cardMagic": "카드 마술",
+      "coinMagic": "코인 마술",
+      "stageMagic": "무대 마술",
+      "mentalism": "멘탈리즘",
+      "electronic": "전자 장치",
+      "accessories": "소모품/악세서리"
+    },
+    "sort": {
+      "featured": "추천순",
+      "newest": "최신순",
+      "priceAsc": "가격 낮은 순",
+      "priceDesc": "가격 높은 순"
+    },
+    "addToCart": "장바구니 담기",
+    "buyNow": "바로 구매",
+    "outOfStock": "품절",
+    "price": "${price} USD",
+    "demo": "시연 영상 보기",
+    "tutorial": {
+      "memberAccess": "해법 영상 보기",
+      "guestPrompt": "장치 코드를 입력하여 해법 영상 잠금 해제",
+      "noAccess": "구매 후 해법 영상을 시청할 수 있습니다",
+      "locked": "해법 영상 잠금"
+    },
+    "reviews": {
+      "title": "후기",
+      "noReviews": "아직 후기가 없습니다. 첫 후기를 남겨주세요!"
+    }
+  },
+  "customOrder": {
+    "title": "커스텀 전자 장치",
+    "subtitle": "당신의 비전을 알려주세요. 불가능을 만들어 드리겠습니다.",
+    "form": {
+      "name": "이름",
+      "email": "이메일",
+      "description": "아이디어 설명",
+      "descriptionPlaceholder": "원하는 마술 효과, 아이디어, 또는 해결하고 싶은 문제를 설명해주세요...",
+      "budget": "예산 범위",
+      "budgetOptions": {
+        "under500": "$500 미만",
+        "500to1000": "$500 – $1,000",
+        "1000to3000": "$1,000 – $3,000",
+        "over3000": "$3,000 이상"
+      },
+      "deadline": "희망 완성일",
+      "images": "참고 이미지 (선택)",
+      "submit": "문의 보내기",
+      "success": "문의가 접수되었습니다! 48시간 내에 연락드리겠습니다.",
+      "error": "오류가 발생했습니다. 다시 시도해주세요."
+    }
+  },
+  "checkout": {
+    "title": "결제",
+    "orderSummary": "주문 요약",
+    "subtotal": "소계",
+    "shipping": "배송비",
+    "tax": "세금",
+    "total": "합계",
+    "payWithCard": "카드로 결제",
+    "payWithPaypal": "PayPal로 결제",
+    "processing": "처리 중...",
+    "success": "주문이 완료되었습니다!",
+    "successMessage": "구매해 주셔서 감사합니다. 이메일로 주문 확인서와 해법 영상 이용 안내를 보내드립니다."
+  },
+  "account": {
+    "title": "마이페이지",
+    "orders": "주문 내역",
+    "tutorials": "해법 영상",
+    "noOrders": "아직 주문 내역이 없습니다.",
+    "watchTutorial": "해법 영상 보기"
+  },
+  "unlock": {
+    "title": "해법 영상 잠금 해제",
+    "description": "장치 내부에 있는 비밀 코드를 입력하여 해법 영상을 시청하세요.",
+    "codePlaceholder": "장치 코드 입력",
+    "submit": "잠금 해제",
+    "success": "잠금이 해제되었습니다! 즐겁게 시청하세요.",
+    "error": "유효하지 않은 코드입니다. 다시 확인해주세요.",
+    "alreadyUnlocked": "이미 잠금 해제됨!"
+  },
+  "footer": {
+    "tagline": "불가능의 예술, 미스틱랩이 만듭니다.",
+    "links": {
+      "products": "상품",
+      "customOrder": "커스텀 주문",
+      "about": "소개",
+      "contact": "문의",
+      "privacy": "개인정보처리방침",
+      "terms": "이용약관"
+    },
+    "copyright": "© {year} Mystic Lab. All rights reserved."
+  },
+  "common": {
+    "loading": "로딩 중...",
+    "error": "오류가 발생했습니다",
+    "retry": "다시 시도",
+    "back": "뒤로",
+    "close": "닫기",
+    "save": "저장",
+    "cancel": "취소",
+    "confirm": "확인",
+    "currency": "USD"
+  }
+}

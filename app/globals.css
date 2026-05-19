@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Mystic Lab Color System */
+  --color-primary: #7C3AED;
+  --color-primary-dark: #5B21B6;
+  --color-primary-light: #A855F7;
+  --color-accent: #A855F7;
+  --color-gold: #F59E0B;
+  --color-gold-light: #FCD34D;
+  --color-bg-dark: #0D0D1A;
+  --color-bg-card: #1A1A2E;
+  --color-bg-section: #13131F;
+  --color-border: #2D2D4E;
+  --color-text: #F0E6FF;
+  --color-text-muted: #9CA3AF;
+  --color-success: #10B981;
+  --color-error: #EF4444;
+
+  --font-display: var(--font-cinzel);
+  --font-sans: var(--font-inter);
+}
+
+:root {
+  --background: #0D0D1A;
+  --foreground: #F0E6FF;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glow effects */
+.glow-purple {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.4), 0 0 40px rgba(124, 58, 237, 0.2);
+}
+
+.glow-gold {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.2);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #A855F7, #F59E0B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card glow border */
+.card-glow {
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: #1A1A2E;
+  transition: all 0.3s ease;
+}
+
+.card-glow:hover {
+  border-color: rgba(124, 58, 237, 0.7);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.4);
+  transform: translateY(-4px);
+}
+
+/* Gold gradient button */
+.btn-gold {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #0D0D1A;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.btn-gold:hover {
+  background: linear-gradient(135deg, #FCD34D, #F59E0B);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Purple gradient button */
+.btn-purple {
+  background: linear-gradient(135deg, #7C3AED, #A855F7);
+  color: white;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.btn-purple:hover {
+  background: linear-gradient(135deg, #5B21B6, #7C3AED);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1A1A2E;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #7C3AED;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A855F7;
+}

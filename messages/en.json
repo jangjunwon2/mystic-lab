@@ -1,0 +1,142 @@
+{
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "customOrder": "Custom Order",
+    "cart": "Cart",
+    "account": "Account",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "admin": "Admin"
+  },
+  "home": {
+    "hero": {
+      "tagline": "For Those Who Dare to Believe",
+      "headline": "Master the Art of the Impossible",
+      "subheadline": "Premium magic props and custom electronic devices crafted for professional magicians worldwide.",
+      "cta": "Explore Collection",
+      "ctaSecondary": "Custom Order"
+    },
+    "featured": {
+      "title": "Featured Illusions",
+      "subtitle": "Hand-selected by professional magicians"
+    },
+    "customSection": {
+      "title": "Custom Electronic Devices",
+      "description": "Have a unique vision? Our engineering team builds bespoke electronic magic devices tailored to your performance.",
+      "cta": "Request a Custom Build"
+    },
+    "unlock": {
+      "title": "Already own a Mystic Lab device?",
+      "description": "Enter your device's secret code to access the solution tutorial.",
+      "cta": "Unlock Tutorial"
+    }
+  },
+  "products": {
+    "title": "All Products",
+    "filter": {
+      "all": "All",
+      "cardMagic": "Card Magic",
+      "coinMagic": "Coin Magic",
+      "stageMagic": "Stage Magic",
+      "mentalism": "Mentalism",
+      "electronic": "Electronic",
+      "accessories": "Accessories"
+    },
+    "sort": {
+      "featured": "Featured",
+      "newest": "Newest",
+      "priceAsc": "Price: Low to High",
+      "priceDesc": "Price: High to Low"
+    },
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "outOfStock": "Out of Stock",
+    "price": "${price} USD",
+    "demo": "Watch Demo",
+    "tutorial": {
+      "memberAccess": "Watch Solution Tutorial",
+      "guestPrompt": "Enter device code to unlock tutorial",
+      "noAccess": "Purchase this item to access the tutorial",
+      "locked": "Tutorial Locked"
+    },
+    "reviews": {
+      "title": "Reviews",
+      "noReviews": "No reviews yet. Be the first!"
+    }
+  },
+  "customOrder": {
+    "title": "Custom Electronic Device",
+    "subtitle": "Tell us your vision. We'll build the impossible.",
+    "form": {
+      "name": "Your Name",
+      "email": "Email Address",
+      "description": "Describe your idea",
+      "descriptionPlaceholder": "Describe the effect, any existing concepts you have, or a problem you want to solve...",
+      "budget": "Budget Range",
+      "budgetOptions": {
+        "under500": "Under $500",
+        "500to1000": "$500 – $1,000",
+        "1000to3000": "$1,000 – $3,000",
+        "over3000": "$3,000+"
+      },
+      "deadline": "Desired Completion Date",
+      "images": "Reference Images (optional)",
+      "submit": "Send Inquiry",
+      "success": "Inquiry sent! We'll get back to you within 48 hours.",
+      "error": "Something went wrong. Please try again."
+    }
+  },
+  "checkout": {
+    "title": "Checkout",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "tax": "Tax",
+    "total": "Total",
+    "payWithCard": "Pay with Card",
+    "payWithPaypal": "Pay with PayPal",
+    "processing": "Processing...",
+    "success": "Order Confirmed!",
+    "successMessage": "Thank you for your purchase. Check your email for your order confirmation and tutorial access instructions."
+  },
+  "account": {
+    "title": "My Account",
+    "orders": "My Orders",
+    "tutorials": "My Tutorials",
+    "noOrders": "No orders yet.",
+    "watchTutorial": "Watch Tutorial"
+  },
+  "unlock": {
+    "title": "Unlock Tutorial",
+    "description": "Enter the secret code found inside your Mystic Lab device to access the solution tutorial.",
+    "codePlaceholder": "Enter your device code",
+    "submit": "Unlock",
+    "success": "Tutorial unlocked! Enjoy.",
+    "error": "Invalid code. Please check again.",
+    "alreadyUnlocked": "Already unlocked!"
+  },
+  "footer": {
+    "tagline": "The art of impossible, engineered.",
+    "links": {
+      "products": "Products",
+      "customOrder": "Custom Order",
+      "about": "About",
+      "contact": "Contact",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service"
+    },
+    "copyright": "© {year} Mystic Lab. All rights reserved."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Try Again",
+    "back": "Back",
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "currency": "USD"
+  }
+}

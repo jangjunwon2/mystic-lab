@@ -1,0 +1,142 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "products": "Productos",
+    "customOrder": "Pedido Personalizado",
+    "cart": "Carrito",
+    "account": "Mi Cuenta",
+    "signIn": "Iniciar Sesión",
+    "signOut": "Cerrar Sesión",
+    "admin": "Admin"
+  },
+  "home": {
+    "hero": {
+      "tagline": "Para Quienes Se Atreven a Creer",
+      "headline": "Domina el Arte de lo Imposible",
+      "subheadline": "Accesorios de magia premium y dispositivos electrónicos personalizados para magos profesionales de todo el mundo.",
+      "cta": "Explorar Colección",
+      "ctaSecondary": "Pedido Personalizado"
+    },
+    "featured": {
+      "title": "Ilusiones Destacadas",
+      "subtitle": "Seleccionadas a mano por magos profesionales"
+    },
+    "customSection": {
+      "title": "Dispositivos Electrónicos Personalizados",
+      "description": "¿Tienes una visión única? Nuestro equipo de ingeniería crea dispositivos de magia electrónicos a medida para tu actuación.",
+      "cta": "Solicitar una Creación Personalizada"
+    },
+    "unlock": {
+      "title": "¿Ya tienes un dispositivo Mystic Lab?",
+      "description": "Introduce el código secreto de tu dispositivo para acceder al tutorial de solución.",
+      "cta": "Desbloquear Tutorial"
+    }
+  },
+  "products": {
+    "title": "Todos los Productos",
+    "filter": {
+      "all": "Todos",
+      "cardMagic": "Magia con Cartas",
+      "coinMagic": "Magia con Monedas",
+      "stageMagic": "Magia de Escenario",
+      "mentalism": "Mentalismo",
+      "electronic": "Electrónico",
+      "accessories": "Accesorios"
+    },
+    "sort": {
+      "featured": "Destacados",
+      "newest": "Más Recientes",
+      "priceAsc": "Precio: Menor a Mayor",
+      "priceDesc": "Precio: Mayor a Menor"
+    },
+    "addToCart": "Añadir al Carrito",
+    "buyNow": "Comprar Ahora",
+    "outOfStock": "Agotado",
+    "price": "${price} USD",
+    "demo": "Ver Demo",
+    "tutorial": {
+      "memberAccess": "Ver Tutorial de Solución",
+      "guestPrompt": "Introduce el código del dispositivo para desbloquear",
+      "noAccess": "Compra este artículo para acceder al tutorial",
+      "locked": "Tutorial Bloqueado"
+    },
+    "reviews": {
+      "title": "Reseñas",
+      "noReviews": "Aún no hay reseñas. ¡Sé el primero!"
+    }
+  },
+  "customOrder": {
+    "title": "Dispositivo Electrónico Personalizado",
+    "subtitle": "Cuéntanos tu visión. Haremos lo imposible realidad.",
+    "form": {
+      "name": "Tu Nombre",
+      "email": "Correo Electrónico",
+      "description": "Describe tu idea",
+      "descriptionPlaceholder": "Describe el efecto, cualquier concepto existente que tengas o un problema que quieras resolver...",
+      "budget": "Rango de Presupuesto",
+      "budgetOptions": {
+        "under500": "Menos de $500",
+        "500to1000": "$500 – $1,000",
+        "1000to3000": "$1,000 – $3,000",
+        "over3000": "$3,000+"
+      },
+      "deadline": "Fecha de Finalización Deseada",
+      "images": "Imágenes de Referencia (opcional)",
+      "submit": "Enviar Consulta",
+      "success": "¡Consulta enviada! Te responderemos en 48 horas.",
+      "error": "Algo salió mal. Por favor, inténtalo de nuevo."
+    }
+  },
+  "checkout": {
+    "title": "Finalizar Compra",
+    "orderSummary": "Resumen del Pedido",
+    "subtotal": "Subtotal",
+    "shipping": "Envío",
+    "tax": "Impuestos",
+    "total": "Total",
+    "payWithCard": "Pagar con Tarjeta",
+    "payWithPaypal": "Pagar con PayPal",
+    "processing": "Procesando...",
+    "success": "¡Pedido Confirmado!",
+    "successMessage": "Gracias por tu compra. Revisa tu correo para la confirmación del pedido e instrucciones de acceso al tutorial."
+  },
+  "account": {
+    "title": "Mi Cuenta",
+    "orders": "Mis Pedidos",
+    "tutorials": "Mis Tutoriales",
+    "noOrders": "Aún no tienes pedidos.",
+    "watchTutorial": "Ver Tutorial"
+  },
+  "unlock": {
+    "title": "Desbloquear Tutorial",
+    "description": "Introduce el código secreto que encontrarás dentro de tu dispositivo Mystic Lab para acceder al tutorial de solución.",
+    "codePlaceholder": "Introduce tu código de dispositivo",
+    "submit": "Desbloquear",
+    "success": "¡Tutorial desbloqueado! Disfrútalo.",
+    "error": "Código inválido. Por favor, compruébalo de nuevo.",
+    "alreadyUnlocked": "¡Ya desbloqueado!"
+  },
+  "footer": {
+    "tagline": "El arte de lo imposible, diseñado.",
+    "links": {
+      "products": "Productos",
+      "customOrder": "Pedido Personalizado",
+      "about": "Acerca de",
+      "contact": "Contacto",
+      "privacy": "Política de Privacidad",
+      "terms": "Términos de Servicio"
+    },
+    "copyright": "© {year} Mystic Lab. Todos los derechos reservados."
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "retry": "Intentar de Nuevo",
+    "back": "Volver",
+    "close": "Cerrar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "currency": "USD"
+  }
+}
