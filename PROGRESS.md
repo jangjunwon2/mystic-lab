@@ -2,7 +2,7 @@
 
 > 이 파일은 대화 초기화 후 문맥 복원을 위한 문서입니다.
 > 새 대화 시작 시 이 파일을 먼저 읽고 작업을 이어가세요.
-> 마지막 업데이트: 2025-05-19
+> 마지막 업데이트: 2026-05-20
 
 ---
 
@@ -64,7 +64,7 @@
 | `NEXT_PUBLIC_GA_ID` | ⬜ 미설정 (코드 준비 완료) |
 | `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | ⚠️ 형식 오류 — `.env.local` 파일에서 수정 필요 (아래 주의사항 참조) |
 | `PAYPAL_SECRET` | ✅ 설정 완료 (현재 미사용) |
-| `NEXT_PUBLIC_SITE_URL` | ✅ `http://localhost:3000` (배포 시 실제 도메인으로 변경) |
+| `NEXT_PUBLIC_SITE_URL` | ⚠️ Vercel에서 `https://mystic-lab.vercel.app`으로 변경 필요 (현재 `http://localhost:3000`) |
 
 ---
 
@@ -276,16 +276,29 @@ International (해외):
    - ⬜ `.env.local`에 `NEXT_PUBLIC_GA_ID`, `NEXT_PUBLIC_META_PIXEL_ID` 입력 필요
 
 9. ~~**Vercel 배포 + Cloudflare DNS 연결**~~ ✅ **완료** (2026-05-20)
-   - ✅ GitHub: `jangjunwon2/mystic-lab` (`master` 브랜치)
-   - ✅ Vercel 배포: `mystic-lab.vercel.app`
-   - ✅ 환경변수 14개 등록 완료
+   - ✅ GitHub: `jangjunwon2/mystic-lab` (`master` 및 `main` 브랜치 동일 코드)
+   - ✅ Vercel 배포: `https://mystic-lab.vercel.app` 정상 작동
+   - ✅ 환경변수 등록 완료 (Production & Preview)
    - ✅ Lemon Squeezy 웹훅 등록: `/api/payment/lemon-webhook`
-   - ⬜ Supabase OAuth 콜백 URL 업데이트 (배포 URL로)
-   - ⬜ `NEXT_PUBLIC_SITE_URL` Vercel에서 실제 URL로 변경 후 Redeploy
+   - ✅ Framework Preset: "Next.js"로 설정 (초기 "Other"로 되어 있어 404 발생했었음)
+   - ✅ Supabase Site URL: `https://mystic-lab.vercel.app` 설정 완료
+   - ✅ Supabase Redirect URL: `https://mystic-lab.vercel.app/api/auth/callback` 등록
+   - ⬜ `NEXT_PUBLIC_SITE_URL` Vercel 환경변수를 `https://mystic-lab.vercel.app`으로 변경 후 Redeploy
    - ⬜ 커스텀 도메인 연결 (선택)
 
+10. **Supabase 인증 설정** ⚠️ **진행 중** (2026-05-20)
+    - ⚠️ **이메일 인증**: Supabase SMTP를 Resend로 설정했으나 발송 실패 중
+      - 설정값: Host `smtp.resend.com`, Port `587`, User `resend`, Sender `onboarding@resend.dev`
+      - Password: Resend API 키 (`re_TAWZoEGC_...`)
+      - 실패 원인 미파악 → 다음 세션에서 디버깅 필요
+      - **대안**: Supabase Dashboard → Authentication → Users에서 수동으로 계정 Confirm 가능
+    - ⚠️ **Google OAuth**: Supabase Providers → Google Enable + Client ID/Secret 입력 필요
+      - Google Cloud Console OAuth Client ID/Secret 발급 완료
+      - Authorized Redirect URI: `https://ntrdztgrdiujkwcgpejv.supabase.co/auth/v1/callback` 등록
+      - Supabase에서 Enable 토글 ON 및 Client ID/Secret 입력 후 Save 필요
+
 ### 🔵 미래 기능
-10. **PortOne 연동** (PG사 가입비 면제 목적)
+11. **PortOne 연동** (PG사 가입비 면제 목적)
     - `lib/payments/lemon.ts` 또는 `lib/payments/toss.ts`를 PortOne 어댑터로 교체
     - `lib/payments/save-order.ts`는 변경 없음
 
@@ -307,9 +320,42 @@ International (해외):
 
 3. **Stripe 코드 존재**: `app/api/checkout/route.ts`, `app/api/stripe-webhook/route.ts` 파일이 남아있음 (미사용). 정리하거나 유지 가능.
 
-4. **번역 파일 불완전**: `messages/` 폴더에 `en.json`, `ko.json`만 존재. 나머지 5개 언어 페이지 접근 시 fallback 처리 필요.
+4. ~~**번역 파일 불완전**~~: 7개 언어 모두 완료됨 (en, ko, ja, zh-CN, es, fr, de).
 
 5. **샘플 데이터**: 상품 상세 페이지는 Supabase 연결 실패 시 하드코딩 샘플 데이터로 폴백. DB에 실제 데이터가 있으면 자동으로 DB 데이터 사용.
+
+---
+
+## 배포 관련 중요 정보
+
+### GitHub 레포 구조
+- **레포**: `jangjunwon2/mystic-lab`
+- **production 브랜치**: `master` (Vercel이 추적)
+- **main 브랜치**: master와 동일 코드 (둘 다 최신)
+- **주의**: 원본 경로(`Desktop/클로드/mystic-lab`)에 한글이 있어 직접 push 불가
+- **배포 전용 복사본**: `C:\Users\jun92\Desktop\ml-deploy\` — 여기서 git push 해야 함
+
+### 코드 수정 후 배포 방법
+```powershell
+# 1. 원본에서 ml-deploy로 변경된 파일 복사
+Copy-Item -Path "C:\Users\jun92\Desktop\클로드\mystic-lab\변경된파일" -Destination "C:\Users\jun92\Desktop\ml-deploy\변경된파일"
+
+# 2. ml-deploy에서 커밋 & 푸시
+cd C:\Users\jun92\Desktop\ml-deploy
+git add .
+git commit -m "fix: 변경 내용"
+git push origin main
+git push origin main:master
+```
+
+### Vercel 트러블슈팅 이력
+- **404 원인 1**: GitHub 레포에 한글 경로(`Desktop/클로드/mystic-lab`)가 Root Directory로 설정됨 → ASCII 경로의 `ml-deploy`로 해결
+- **404 원인 2**: Vercel Framework Preset이 "Other"로 설정됨 → "Next.js"로 변경해 해결
+- **next.config.ts**: `createNextIntlPlugin('./i18n/request.ts')` 명시적 경로 추가됨
+
+### 라이브 URL
+- **프로덕션**: `https://mystic-lab.vercel.app`
+- **Supabase**: `https://ntrdztgrdiujkwcgpejv.supabase.co`
 
 ---
 
