@@ -6,11 +6,16 @@ export const metadata = { title: "Admin — Mystic Lab" };
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: "📊" },
+  { href: "/admin/analytics", label: "Analytics", icon: "📈" },
+  { href: "/admin/users", label: "Users", icon: "👥" },
   { href: "/admin/products", label: "Products", icon: "🪄" },
   { href: "/admin/orders", label: "Orders", icon: "📦" },
+  { href: "/admin/reviews", label: "Reviews", icon: "⭐" },
   { href: "/admin/custom-orders", label: "Custom Orders", icon: "✉️" },
+  { href: "/admin/discounts", label: "Discounts", icon: "🏷️" },
   { href: "/admin/videos", label: "Videos", icon: "🎬" },
   { href: "/admin/unlock-codes", label: "Unlock Codes", icon: "🔑" },
+  { href: "/admin/announcements", label: "Announcements", icon: "📢" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

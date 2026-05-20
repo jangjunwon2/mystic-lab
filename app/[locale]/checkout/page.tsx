@@ -14,6 +14,9 @@ import {
   AlertCircle,
   CreditCard,
   CheckCircle2,
+  Tag,
+  Check,
+  X,
 } from "lucide-react";
 import { usdToKrw } from "@/lib/payments/toss";
 import type { CartItem } from "@/lib/payments/types";
@@ -36,6 +39,14 @@ declare global {
 
 type Track = "international" | "korea";
 
+interface AppliedDiscount {
+  id: string;
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  discountAmount: number;
+}
+
 interface Props {
   params: Promise<{ locale: string }>;
 }
@@ -50,6 +61,11 @@ export default function CheckoutPage({ params }: Props) {
   const [lsError, setLsError] = useState("");
   const [lsSuccess, setLsSuccess] = useState(false);
   const lsScriptReady = useRef(false);
+  const appliedDiscountRef = useRef<AppliedDiscount | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
@@ -67,17 +83,56 @@ export default function CheckoutPage({ params }: Props) {
     const handler = (e: MessageEvent) => {
       if (e.data?.event === "Checkout.Success") {
         setLsSuccess(true);
-        // Clear cart
         localStorage.removeItem("ml_cart");
         window.dispatchEvent(new Event("storage"));
+        if (appliedDiscountRef.current?.id) {
+          fetch("/api/discounts/use", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ codeId: appliedDiscountRef.current.id }),
+          }).catch(() => {});
+        }
       }
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
   }, []);
 
-  const totalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
+  const subtotalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
+  const totalUsd = Math.max(0, subtotalUsd - (appliedDiscount?.discountAmount ?? 0));
   const totalKrw = usdToKrw(totalUsd);
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const res = await fetch("/api/discounts/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode, totalUsd: subtotalUsd }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCouponError(data.error ?? "Invalid code");
+      } else {
+        setAppliedDiscount(data);
+        appliedDiscountRef.current = data;
+        setCouponCode("");
+      }
+    } catch {
+      setCouponError("네트워크 오류가 발생했습니다.");
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
+  function removeCoupon() {
+    setAppliedDiscount(null);
+    appliedDiscountRef.current = null;
+    setCouponCode("");
+    setCouponError("");
+  }
 
   const validateEmail = () => {
     if (!email.trim()) { setLsError("이메일을 입력해주세요."); return false; }
@@ -94,7 +149,13 @@ export default function CheckoutPage({ params }: Props) {
       const res = await fetch("/api/payment/lemon-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, customerEmail: email, locale }),
+        body: JSON.stringify({
+          items,
+          customerEmail: email,
+          locale,
+          discountAmount: appliedDiscount?.discountAmount ?? 0,
+          discountCodeId: appliedDiscount?.id ?? null,
+        }),
       });
       const data = await res.json();
 
@@ -218,6 +279,52 @@ export default function CheckoutPage({ params }: Props) {
                 </label>
               </div>
 
+              {/* Coupon Code */}
+              <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
+                <span className="text-xs text-[#9CA3AF] uppercase tracking-wider mb-2 block">
+                  할인 코드 (선택)
+                </span>
+                {appliedDiscount ? (
+                  <div className="flex items-center justify-between bg-[#10B98122] border border-[#10B98144] rounded-lg px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-[#10B981]" />
+                      <span className="text-sm font-mono font-bold text-[#10B981]">
+                        {appliedDiscount.code}
+                      </span>
+                      <span className="text-xs text-[#9CA3AF]">
+                        (−${appliedDiscount.discountAmount.toFixed(2)})
+                      </span>
+                    </div>
+                    <button onClick={removeCoupon}>
+                      <X className="w-4 h-4 text-[#9CA3AF] hover:text-[#EF4444] transition-colors" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                      onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
+                      placeholder="MAGIC20"
+                      className="flex-1 bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] transition-colors placeholder:text-[#4B5563] font-mono"
+                    />
+                    <button
+                      onClick={applyCoupon}
+                      disabled={couponLoading || !couponCode.trim()}
+                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+                      style={{ background: "#1A1A2E", color: "#A855F7", border: "1px solid #2D2D4E" }}
+                    >
+                      {couponLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Tag className="w-3.5 h-3.5" />}
+                      Apply
+                    </button>
+                  </div>
+                )}
+                {couponError && (
+                  <p className="text-xs text-[#EF4444] mt-1.5">{couponError}</p>
+                )}
+              </div>
+
               {/* Payment Section */}
               <AnimatePresence mode="wait">
                 {track === "international" ? (
@@ -318,8 +425,14 @@ export default function CheckoutPage({ params }: Props) {
                 <div className="border-t border-[#2D2D4E] pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-[#9CA3AF]">소계 (USD)</span>
-                    <span className="text-[#F0E6FF]">${totalUsd.toLocaleString()}</span>
+                    <span className="text-[#F0E6FF]">${subtotalUsd.toLocaleString()}</span>
                   </div>
+                  {appliedDiscount && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#10B981]">할인 ({appliedDiscount.code})</span>
+                      <span className="text-[#10B981]">−${appliedDiscount.discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   {track === "korea" && (
                     <div className="flex justify-between text-sm">
                       <span className="text-[#9CA3AF]">소계 (KRW)</span>

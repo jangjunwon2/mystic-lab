@@ -19,7 +19,8 @@ interface LemonCheckoutResponse {
  */
 export async function createLemonCheckout(
   payload: OrderPayload,
-  amountCents: number // total in USD cents
+  amountCents: number,
+  discountCodeId?: string
 ): Promise<string> {
   const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
   const storeId = process.env.LEMON_SQUEEZY_STORE_ID;
@@ -61,6 +62,7 @@ export async function createLemonCheckout(
                   price: i.price_usd,
                 }))
               ),
+              ...(discountCodeId ? { discount_code_id: discountCodeId } : {}),
             },
           },
           product_options: {

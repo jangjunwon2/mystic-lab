@@ -286,21 +286,226 @@ International (해외):
    - ⬜ `NEXT_PUBLIC_SITE_URL` Vercel 환경변수를 `https://mystic-lab.vercel.app`으로 변경 후 Redeploy
    - ⬜ 커스텀 도메인 연결 (선택)
 
-10. **Supabase 인증 설정** ⚠️ **진행 중** (2026-05-20)
-    - ⚠️ **이메일 인증**: Supabase SMTP를 Resend로 설정했으나 발송 실패 중
-      - 설정값: Host `smtp.resend.com`, Port `587`, User `resend`, Sender `onboarding@resend.dev`
-      - Password: Resend API 키 (`re_TAWZoEGC_...`)
-      - 실패 원인 미파악 → 다음 세션에서 디버깅 필요
-      - **대안**: Supabase Dashboard → Authentication → Users에서 수동으로 계정 Confirm 가능
-    - ⚠️ **Google OAuth**: Supabase Providers → Google Enable + Client ID/Secret 입력 필요
-      - Google Cloud Console OAuth Client ID/Secret 발급 완료
-      - Authorized Redirect URI: `https://ntrdztgrdiujkwcgpejv.supabase.co/auth/v1/callback` 등록
-      - Supabase에서 Enable 토글 ON 및 Client ID/Secret 입력 후 Save 필요
+10. **Supabase 인증 설정** ✅ **이메일 인증 완료** (2026-05-20)
+    - ✅ **이메일 인증**: Supabase 자체 이메일(기본 SMTP)로 변경 → 인증 성공
+      - Resend SMTP 설정은 제거, Supabase 기본 메일러 사용 중
+    - ✅ **Google OAuth**: Supabase Providers에서 Client ID/Secret 입력 완료
+    - ✅ **회원 이름 "Member" 고정 표시 버그 수정** (2026-05-20)
+      - `app/[locale]/account/page.tsx`: `profiles.display_name` null 시 `user_metadata.full_name` → `email` 순서로 fallback + DB 백필
+    - ✅ **솔루션 영상 섹션 로그인 버튼 노출 버그 수정** (2026-05-20)
+      - `app/[locale]/products/[slug]/page.tsx`: auth 체크를 상품 DB 조회와 분리 → DB 오류 시에도 로그인 상태 정확히 반영
+      - `components/video/SolutionVideoSection.tsx`: 로그인+미구매(Case 3) UI에 "Enter Device Code" 버튼 추가
 
 ### 🔵 미래 기능
 11. **PortOne 연동** (PG사 가입비 면제 목적)
     - `lib/payments/lemon.ts` 또는 `lib/payments/toss.ts`를 PortOne 어댑터로 교체
     - `lib/payments/save-order.ts`는 변경 없음
+
+---
+
+## 관리자 대시보드 — 기능 상세 명세
+
+> 1인 운영자 기준, 글로벌 프리미엄 마술 쇼핑몰에 필요한 관리 기능 전체 목록.
+> Vanishing Inc, Theory11, Gumroad 등 유사 플랫폼 벤치마킹 및 디지털 상품 플랫폼 best practice 반영.
+> 우선순위: 🔴 필수(즉시) → 🟡 중요(다음 단계) → 🟢 선택(장기)
+
+---
+
+### A. 회원 관리 (User Management)
+
+#### 🔴 필수
+- **회원 목록**: 가입일, 이메일, 이름, 역할(user/admin), 마지막 로그인, 총 구매액 표시
+- **회원 검색/필터**: 이메일, 이름, 역할, 가입일 범위로 검색
+- **회원 상세 페이지**:
+  - 기본 정보 (이메일, 이름, 가입일, 로그인 방법)
+  - 구매 내역 전체 (주문 ID, 상품, 금액, 날짜)
+  - 보유 영상 접근 권한 목록
+- **회원 강퇴/정지**: `profiles.status` 필드 추가 → `active | suspended | banned`
+  - suspended: 로그인 가능, 구매/영상 접근 차단
+  - banned: 로그인 자체 차단 (Supabase Auth에서 disable)
+  - 정지 사유 메모 저장
+- **강퇴 해제**: 상태 복원
+
+#### 🟡 중요
+- **영상 접근 권한 수동 부여/회수**:
+  - 관리자가 특정 회원에게 특정 상품의 해법 영상 접근 권한을 직접 부여
+  - DB 테이블: `manual_video_grants (id, user_id, product_id, granted_by, note, expires_at)`
+  - 용도: 환불 후 영상만 유지 허용, 리뷰어/마술사 협업, CS 보상
+  - 만료일 설정 가능 (무기한 or 특정 날짜)
+- **회원 이메일 발송**: 개별 회원에게 관리자 메모 또는 공지 이메일 (Resend 연동)
+- **회원 CSV 내보내기**: 이메일 마케팅 도구 연동용
+
+#### 🟢 선택
+- **회원 메모**: 관리자 전용 내부 메모 (회원에게 비공개)
+- **로그인 이력**: 마지막 5회 로그인 IP/시간 (보안 모니터링)
+
+---
+
+### B. 영상 관리 (Video Management)
+
+#### 🔴 필수
+- **영상 목록**: 상품 연결 여부, Cloudflare Stream ID, 업로드 날짜
+- **영상 업로드**: Cloudflare Stream Direct Upload → Stream ID 자동 저장
+- **상품-영상 연결/해제**: `solution_videos` 테이블 관리
+- **잠금 해제 코드 관리**:
+  - 코드 발급 (상품 선택 → 자동 생성, 평문 1회 노출)
+  - 코드 목록 (해시만 표시, 사용 여부, 사용 날짜)
+  - 코드 무효화 (used_at을 강제로 설정하거나 별도 `is_revoked` 필드)
+
+#### 🟡 중요
+- **영상 시청 통계** (장기 — Cloudflare Analytics 연동):
+  - 상품별 총 시청 수
+  - 회원별 시청 여부
+  - 평균 시청 완료율
+
+---
+
+### C. 상품 관리 (Product Management)
+
+#### 🔴 필수 (현재 구현됨 ✅)
+- 상품 CRUD, 활성/비활성 토글, 재고 관리
+
+#### 🟡 중요
+- **노출 순서 편집**: 홈 추천 상품, 목록 페이지 정렬 순서를 드래그앤드롭으로 변경
+  - DB: `products.display_order INTEGER` 필드 추가
+- **할인/쿠폰 코드**:
+  - 테이블: `discount_codes (id, code, type: percent|fixed, value, max_uses, used_count, expires_at, is_active)`
+  - 결제 시 코드 입력 → 서버에서 검증 → 금액 차감
+  - 관리자 대시보드에서 생성/비활성화
+- **번들 상품**: 여러 상품을 묶어 할인 판매 (장기)
+- **상품 이미지 업로드**: Supabase Storage or Cloudflare R2에 직접 업로드 UI
+
+#### 🟢 선택
+- **재고 부족 알림**: 재고 N개 이하 시 관리자 이메일 알림
+
+---
+
+### D. 주문 관리 (Order Management)
+
+#### 🔴 필수 (현재 구현됨 ✅)
+- 주문 목록, 상태 변경, 아이템 상세
+
+#### 🟡 중요
+- **환불 처리**:
+  - Lemon Squeezy: 대시보드에서 직접 처리 (API 연동 or 수동)
+  - Toss: 환불 API 호출 → `orders.status = 'refunded'`
+  - 환불 후 영상 접근 자동 차단 (또는 수동 유지 옵션)
+- **주문 수동 생성**: 오프라인/직접 판매 시 관리자가 수동으로 주문 생성
+  - 특정 회원 + 상품 선택 → 주문 레코드 삽입 → 영상 접근 자동 부여
+- **주문 CSV 내보내기**: 세금 신고, 회계 처리용
+
+#### 🟢 선택
+- **배송 정보 입력**: 실물 상품인 경우 운송장 번호 입력 → 회원 이메일 자동 발송
+
+---
+
+### E. 리뷰 관리 (Review Management)
+
+#### 🔴 필수
+- **리뷰 목록**: 상품명, 작성자, 별점, 내용, 작성일, 승인 여부
+- **승인/비승인**: 기본 비승인 상태로 저장, 관리자 승인 후 노출 (`is_approved`)
+- **리뷰 삭제**: 스팸, 악성, 관련 없는 리뷰 즉시 삭제
+- **필터**: 미승인 리뷰만 보기, 별점별 필터
+
+#### 🟡 중요
+- **리뷰 신고 시스템**: 회원이 부적절 리뷰 신고 → 관리자 검토 큐에 올라옴
+  - DB: `review_reports (id, review_id, reported_by, reason, created_at)`
+- **구매 확인 표시**: 구매 이력 있는 회원의 리뷰에 "Verified Purchase" 뱃지 자동 부여
+
+---
+
+### F. 분석/통계 (Analytics & Reporting)
+
+#### 🔴 필수
+- **매출 대시보드**:
+  - 오늘 / 이번 주 / 이번 달 / 전체 매출 (USD)
+  - 기간 비교 (전월 대비 증감률)
+  - 일별 매출 그래프 (Recharts)
+- **상품별 판매 순위**: 판매 수량, 매출액 기준 정렬
+- **주문 건수 추이**
+
+#### 🟡 중요
+- **전환율 (Conversion Rate)**:
+  - 상품 페이지 뷰 → 장바구니 추가 → 구매 완료 퍼널
+  - 구현 방법: `page_events` 테이블에 뷰/장바구니 이벤트 기록, 또는 Vercel Analytics + GA4 데이터 활용
+- **국가별 매출 분포**: 주문의 `customer_email` 도메인 또는 Stripe/Lemon 지역 데이터 활용
+- **회원 유형별 분석**: 신규 vs 재구매 비율
+- **인기 검색어 / 카테고리 클릭 분포** (장기)
+
+#### 🟢 선택
+- **LTV (고객 생애 가치)**: 회원별 총 구매액 순위
+- **이탈 분석**: 장바구니 추가 후 미결제 회원 수 추적
+
+---
+
+### G. 커스텀 의뢰 관리 (Custom Order Management)
+
+#### 🔴 필수 (현재 구현됨 ✅)
+- 의뢰 목록, 상태 변경 (검토중/견적발송/진행중/완료), 어드민 노트
+
+#### 🟡 중요
+- **의뢰별 이메일 회신**: 대시보드에서 바로 고객에게 답변 이메일 발송 (Resend)
+- **파일 첨부 보기**: 의뢰 시 업로드한 참고 이미지 미리보기
+
+---
+
+### H. 마케팅 / 공지 (Marketing & Announcements)
+
+#### 🟡 중요
+- **사이트 공지 배너**: 홈 상단에 표시할 공지 텍스트 관리 (할인, 이벤트 등)
+  - DB: `announcements (id, message, is_active, starts_at, ends_at)`
+- **이메일 뉴스레터**: 전체 회원 또는 구매자에게 일괄 이메일 발송 (Resend)
+  - 세그먼트: 전체 회원 / 특정 상품 구매자 / 최근 미접속 회원
+
+#### 🟢 선택
+- **제휴/레퍼럴 코드**: 마술사 유튜버 등과 협업 시 추적 코드 발급
+
+---
+
+### I. DB 추가 필드 요약 (구현 시 필요)
+
+| 테이블 | 추가 필드 | 용도 |
+|--------|----------|------|
+| `profiles` | `status TEXT DEFAULT 'active'` | 강퇴/정지 상태 |
+| `profiles` | `suspension_reason TEXT` | 정지 사유 |
+| `products` | `display_order INTEGER` | 노출 순서 |
+| `reviews` | `is_reported BOOLEAN` | 신고 여부 |
+| (신규) `manual_video_grants` | `user_id, product_id, granted_by, note, expires_at` | 수동 영상 권한 |
+| (신규) `discount_codes` | `code, type, value, max_uses, used_count, expires_at` | 할인 코드 |
+| (신규) `review_reports` | `review_id, reported_by, reason` | 리뷰 신고 |
+| (신규) `announcements` | `message, is_active, starts_at, ends_at` | 사이트 공지 |
+
+---
+
+### J. 구현 우선순위 로드맵
+
+```
+Phase 1 (완료 ✅ 2026-05-20): 
+  - ✅ 회원 강퇴/정지/복원 (/admin/users)
+  - ✅ 영상 접근 수동 부여/회수 (/admin/users/[id])
+  - ✅ 리뷰 승인/삭제 (/admin/reviews)
+  - ✅ 수동 주문 생성 (/admin/orders/new)
+
+  DB 마이그레이션: supabase/migrations/002_phase1_admin.sql
+  → Supabase SQL Editor에서 실행 필요
+
+Phase 2 (완료 ✅ 2026-05-20):
+  - ✅ 매출 상세 통계 (/admin/analytics) — SVG 30일 바차트, KPI, 상품 랭킹, 상태별 분포
+  - ✅ 할인/쿠폰 코드 (/admin/discounts) — 퍼센트/금액 할인, 만료일, 최대사용횟수
+  - ✅ 체크아웃 쿠폰 입력 UI + 할인 자동 적용 (LS/Toss 모두)
+  - ✅ 환불 처리 (/api/admin/orders/[id]/refund) — Toss는 취소 API 호출, LS는 DB 업데이트 + 참조 ID 표시
+  - ✅ 주문 목록 환불 버튼 추가 (OrdersAdminTable)
+  - ✅ 공지 배너 (/admin/announcements) — 사이트 상단 노출, dismiss 가능, 날짜 범위 설정
+
+  DB 마이그레이션: supabase/migrations/003_phase2_admin.sql
+  → Supabase SQL Editor에서 실행 필요 (discount_codes, announcements 테이블 + increment function)
+
+Phase 3 (장기):
+  - 이메일 뉴스레터
+  - 제휴 레퍼럴 코드
+  - 영상 시청 통계 (Cloudflare Analytics)
+  - 재고 부족 알림
+```
 
 ---
 

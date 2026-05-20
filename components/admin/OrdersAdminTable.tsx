@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RotateCcw } from "lucide-react";
 
 const ORDER_STATUSES = ["pending", "paid", "shipped", "completed", "refunded"] as const;
 type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -38,6 +39,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
   const [filter, setFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [refundMsg, setRefundMsg] = useState<string | null>(null);
 
   const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
 
@@ -54,6 +56,26 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
     setLoadingId(null);
   }
 
+  async function processRefund(orderId: string) {
+    const reason = window.prompt("환불 사유를 입력하세요:", "고객 요청");
+    if (reason === null) return;
+    setLoadingId(orderId);
+    setRefundMsg(null);
+    const res = await fetch(`/api/admin/orders/${orderId}/refund`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: "refunded" } : o));
+      setRefundMsg(data.message ?? "환불 처리 완료");
+    } else {
+      setRefundMsg(`❌ ${data.error ?? "환불 실패"}`);
+    }
+    setLoadingId(null);
+  }
+
   const inputStyle = {
     background: "#0D0D1A",
     border: "1px solid #2D2D4E",
@@ -65,6 +87,19 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
 
   return (
     <div className="space-y-4">
+      {refundMsg && (
+        <div
+          className="rounded-lg px-4 py-3 text-sm"
+          style={{
+            background: refundMsg.startsWith("❌") ? "#EF444422" : "#10B98122",
+            color: refundMsg.startsWith("❌") ? "#EF4444" : "#10B981",
+            border: "1px solid",
+            borderColor: refundMsg.startsWith("❌") ? "#EF444444" : "#10B98144",
+          }}
+        >
+          {refundMsg}
+        </div>
+      )}
       {/* Filter */}
       <div className="flex items-center gap-2">
         <span className="text-sm" style={{ color: "#9CA3AF" }}>
@@ -139,18 +174,31 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                         {new Date(order.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                        <select
-                          value={order.status}
-                          disabled={loadingId === order.id}
-                          onChange={(e) => updateStatus(order.id, e.target.value as OrderStatus)}
-                          style={{ ...inputStyle, cursor: "pointer" }}
-                        >
-                          {ORDER_STATUSES.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={order.status}
+                            disabled={loadingId === order.id}
+                            onChange={(e) => updateStatus(order.id, e.target.value as OrderStatus)}
+                            style={{ ...inputStyle, cursor: "pointer" }}
+                          >
+                            {ORDER_STATUSES.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                          {order.status !== "refunded" && (
+                            <button
+                              onClick={() => processRefund(order.id)}
+                              disabled={loadingId === order.id}
+                              title="Process Refund"
+                              className="p-1.5 rounded-lg transition-opacity hover:opacity-80 disabled:opacity-40"
+                              style={{ background: "#EF444422", color: "#EF4444" }}
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
 
