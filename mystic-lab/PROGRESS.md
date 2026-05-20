@@ -2,7 +2,7 @@
 
 > 이 파일은 대화 초기화 후 문맥 복원을 위한 문서입니다.
 > 새 대화 시작 시 이 파일을 먼저 읽고 작업을 이어가세요.
-> 마지막 업데이트: 2026-05-20 (Phase 3 완료)
+> 마지막 업데이트: 2026-05-20 (Phase 3 완료 + 추가 기능)
 
 ---
 
@@ -506,8 +506,17 @@ Phase 3 (완료 ✅ 2026-05-20):
   - ✅ 제휴 레퍼럴 코드 (/admin/referrals) — 코드 CRUD, 할인율 설정, 사용 횟수 추적
   - ⬜ 영상 시청 통계 (Cloudflare Analytics) — 스킵 (Stream 키 Mock 상태)
 
-  DB 마이그레이션: supabase/migrations/004_phase3_admin.sql
-  → Supabase SQL Editor에서 실행 필요 (referral_codes 테이블 + increment function)
+  DB 마이그레이션: supabase/migrations/004_phase3_admin.sql ✅ 실행 완료
+
+Phase 4 (완료 ✅ 2026-05-20):
+  - ✅ 주문 CSV 내보내기 (OrdersAdminTable 우측 상단 버튼)
+  - ✅ 커스텀 의뢰 이메일 회신 (/api/admin/custom-orders/[id]/reply) — 대시보드에서 직접 답장
+  - ✅ 회원 개별 이메일 발송 (/admin/users/[id] → Send Email 섹션)
+  - ✅ 회원 CSV 내보내기 (UsersAdminTable 우측 상단 버튼)
+  - ✅ 상품 노출 순서 편집 (ProductsAdminTable ▲▼ 버튼, display_order 필드)
+
+  DB 마이그레이션: supabase/migrations/005_display_order.sql
+  → Supabase SQL Editor에서 실행 필요 (products.display_order 컬럼 추가)
 ```
 
 ---
