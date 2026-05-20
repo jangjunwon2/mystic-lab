@@ -51,6 +51,12 @@ export default function ProductDetail({
 }: Props) {
   const t = useTranslations("products");
   const [addedToCart, setAddedToCart] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewHover, setReviewHover] = useState(0);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   const avgRating = reviews.length
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
@@ -272,6 +278,81 @@ export default function ProductDetail({
 
         {/* ── Reviews ── */}
         <Section title={`${t("reviews.title")} (${reviews.length})`}>
+          {/* Review submission form for purchasers */}
+          {hasPurchased && !reviewSubmitted && (
+            <div
+              className="rounded-xl border p-5 mb-6"
+              style={{ background: "#13131F", borderColor: "rgba(124,58,237,0.3)" }}
+            >
+              <p className="text-sm font-medium mb-3" style={{ color: "#F0E6FF" }}>
+                Share your experience
+              </p>
+              <div className="flex gap-1 mb-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <button
+                    key={i}
+                    onClick={() => setReviewRating(i)}
+                    onMouseEnter={() => setReviewHover(i)}
+                    onMouseLeave={() => setReviewHover(0)}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className="w-6 h-6"
+                      style={{
+                        color: i <= (reviewHover || reviewRating) ? "#F59E0B" : "#374151",
+                        fill: i <= (reviewHover || reviewRating) ? "#F59E0B" : "none",
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+              <textarea
+                rows={3}
+                placeholder="Write your review (optional)..."
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-sm resize-none"
+                style={{ background: "#1A1A2E", border: "1px solid #2D2D4E", color: "#F0E6FF" }}
+              />
+              {reviewError && (
+                <p className="text-xs mt-1" style={{ color: "#EF4444" }}>{reviewError}</p>
+              )}
+              <button
+                onClick={async () => {
+                  if (!reviewRating) { setReviewError("Please select a rating."); return; }
+                  setSubmittingReview(true);
+                  setReviewError("");
+                  const res = await fetch("/api/reviews", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ product_id: product.id, rating: reviewRating, comment: reviewComment }),
+                  });
+                  setSubmittingReview(false);
+                  if (res.ok) {
+                    setReviewSubmitted(true);
+                  } else {
+                    const d = await res.json();
+                    setReviewError(d.error ?? "Failed to submit.");
+                  }
+                }}
+                disabled={submittingReview || !reviewRating}
+                className="mt-3 px-5 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+                style={{ background: "linear-gradient(135deg, #7C3AED, #A855F7)", color: "#fff" }}
+              >
+                {submittingReview ? "Submitting…" : "Submit Review"}
+              </button>
+            </div>
+          )}
+          {reviewSubmitted && (
+            <div
+              className="rounded-xl border p-4 mb-6 flex items-center gap-2 text-sm"
+              style={{ background: "rgba(16,185,129,0.08)", borderColor: "rgba(16,185,129,0.3)", color: "#10B981" }}
+            >
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              Thank you! Your review has been submitted and will appear after approval.
+            </div>
+          )}
+
           {reviews.length === 0 ? (
             <div className="text-center py-10 text-[#9CA3AF] text-sm">
               {t("reviews.noReviews")}

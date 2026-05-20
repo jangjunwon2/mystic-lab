@@ -27,6 +27,8 @@ interface Order {
   total_usd: number;
   status: string;
   created_at: string;
+  tracking_number: string | null;
+  tracking_carrier: string | null;
   order_items: OrderItem[];
 }
 
@@ -69,6 +71,8 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [refundMsg, setRefundMsg] = useState<string | null>(null);
+  const [trackingInputs, setTrackingInputs] = useState<Record<string, { number: string; carrier: string }>>({});
+  const [trackingMsg, setTrackingMsg] = useState<string | null>(null);
 
   const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
 
@@ -105,6 +109,29 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
     setLoadingId(null);
   }
 
+  async function saveTracking(orderId: string) {
+    const t = trackingInputs[orderId];
+    if (!t?.number?.trim()) return;
+    setLoadingId(orderId);
+    setTrackingMsg(null);
+    const res = await fetch(`/api/admin/orders/${orderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tracking_number: t.number.trim(), tracking_carrier: t.carrier.trim() || null }),
+    });
+    if (res.ok) {
+      setOrders((prev) => prev.map((o) =>
+        o.id === orderId
+          ? { ...o, tracking_number: t.number.trim(), tracking_carrier: t.carrier.trim() || null, status: "shipped" }
+          : o
+      ));
+      setTrackingMsg("✅ Tracking saved and shipping email sent.");
+    } else {
+      setTrackingMsg("❌ Failed to save tracking.");
+    }
+    setLoadingId(null);
+  }
+
   const inputStyle = {
     background: "#0D0D1A",
     border: "1px solid #2D2D4E",
@@ -116,6 +143,19 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
 
   return (
     <div className="space-y-4">
+      {trackingMsg && (
+        <div
+          className="rounded-lg px-4 py-3 text-sm"
+          style={{
+            background: trackingMsg.startsWith("❌") ? "#EF444422" : "#10B98122",
+            color: trackingMsg.startsWith("❌") ? "#EF4444" : "#10B981",
+            border: "1px solid",
+            borderColor: trackingMsg.startsWith("❌") ? "#EF444444" : "#10B98144",
+          }}
+        >
+          {trackingMsg}
+        </div>
+      )}
       {refundMsg && (
         <div
           className="rounded-lg px-4 py-3 text-sm"
@@ -243,31 +283,63 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                     {/* Expanded detail row */}
                     {expandedId === order.id && (
                       <tr key={`${order.id}-detail`} style={{ background: "#13131F" }}>
-                        <td colSpan={6} className="px-6 py-4">
-                          <p className="text-xs font-medium mb-2" style={{ color: "#9CA3AF" }}>
-                            Items:
-                          </p>
-                          <div className="space-y-1">
-                            {order.order_items.map((item) => {
-                              const name =
-                                item.products?.product_translations?.find(
-                                  (t) => t.language === "en"
-                                )?.name ?? item.products?.slug ?? "Unknown";
-                              return (
-                                <div
-                                  key={item.id}
-                                  className="flex justify-between text-sm"
-                                  style={{ color: "#F0E6FF" }}
+                        <td colSpan={6} className="px-6 py-4 space-y-4">
+                          <div>
+                            <p className="text-xs font-medium mb-2" style={{ color: "#9CA3AF" }}>Items:</p>
+                            <div className="space-y-1">
+                              {order.order_items.map((item) => {
+                                const name =
+                                  item.products?.product_translations?.find(
+                                    (t) => t.language === "en"
+                                  )?.name ?? item.products?.slug ?? "Unknown";
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className="flex justify-between text-sm"
+                                    style={{ color: "#F0E6FF" }}
+                                  >
+                                    <span>{name} × {item.quantity}</span>
+                                    <span style={{ color: "#A855F7" }}>
+                                      ${(item.price_usd * item.quantity).toFixed(2)}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Tracking */}
+                          <div>
+                            <p className="text-xs font-medium mb-2" style={{ color: "#9CA3AF" }}>Shipping Tracking:</p>
+                            {order.tracking_number ? (
+                              <p className="text-sm font-mono" style={{ color: "#F59E0B" }}>
+                                {order.tracking_number}
+                                {order.tracking_carrier && <span style={{ color: "#9CA3AF" }}> · {order.tracking_carrier}</span>}
+                              </p>
+                            ) : (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <input
+                                  placeholder="Tracking number"
+                                  value={trackingInputs[order.id]?.number ?? ""}
+                                  onChange={(e) => setTrackingInputs((p) => ({ ...p, [order.id]: { ...p[order.id], number: e.target.value, carrier: p[order.id]?.carrier ?? "" } }))}
+                                  style={{ ...inputStyle, width: "180px" }}
+                                />
+                                <input
+                                  placeholder="Carrier (optional)"
+                                  value={trackingInputs[order.id]?.carrier ?? ""}
+                                  onChange={(e) => setTrackingInputs((p) => ({ ...p, [order.id]: { ...p[order.id], carrier: e.target.value, number: p[order.id]?.number ?? "" } }))}
+                                  style={{ ...inputStyle, width: "140px" }}
+                                />
+                                <button
+                                  onClick={() => saveTracking(order.id)}
+                                  disabled={!trackingInputs[order.id]?.number?.trim() || loadingId === order.id}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                                  style={{ background: "#3B82F622", color: "#3B82F6" }}
                                 >
-                                  <span>
-                                    {name} × {item.quantity}
-                                  </span>
-                                  <span style={{ color: "#A855F7" }}>
-                                    ${(item.price_usd * item.quantity).toFixed(2)}
-                                  </span>
-                                </div>
-                              );
-                            })}
+                                  Save & Notify
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>

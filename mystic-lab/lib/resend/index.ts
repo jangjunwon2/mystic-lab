@@ -240,6 +240,69 @@ export async function sendNewsletter({
   return { sent, failed };
 }
 
+export async function sendShippingNotification({
+  to,
+  orderId,
+  trackingNumber,
+  carrier,
+}: {
+  to: string;
+  orderId: string;
+  trackingNumber: string;
+  carrier?: string | null;
+}): Promise<void> {
+  if (!isConfigured()) return;
+
+  const carrierLine = carrier ? `<p style="color:#9CA3AF;font-size:13px;margin:4px 0 0;">Carrier: ${carrier}</p>` : "";
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0D0D1A;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0D0D1A;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#1A1A2E;border-radius:16px;border:1px solid #2D2D4E;overflow:hidden;">
+        <tr>
+          <td style="background:linear-gradient(135deg,#7C3AED,#A855F7);padding:24px 32px;">
+            <div style="font-size:18px;font-weight:700;color:#fff;letter-spacing:2px;">✦ MYSTIC LAB</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:4px;letter-spacing:1px;">YOUR ORDER HAS SHIPPED</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="color:#F0E6FF;font-size:16px;margin:0 0 16px;">Great news — your order is on its way!</p>
+            <p style="color:#9CA3AF;font-size:14px;margin:0 0 24px;">
+              Order ID: <span style="color:#7C3AED;">${orderId.slice(0, 8).toUpperCase()}</span>
+            </p>
+            <div style="background:#13131F;border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:20px;text-align:center;">
+              <p style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">Tracking Number</p>
+              <p style="color:#F59E0B;font-size:22px;font-weight:700;font-family:monospace;margin:0;">${trackingNumber}</p>
+              ${carrierLine}
+            </div>
+            <p style="color:#9CA3AF;font-size:13px;margin:24px 0 0;">
+              Use your tracking number on the carrier&apos;s website to follow your shipment.
+              Magic is coming your way!
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px;border-top:1px solid #2D2D4E;text-align:center;">
+            <p style="color:#6B7280;font-size:12px;margin:0;">Questions? Contact us at support@mysticlab.com</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: "Your Mystic Lab Order Has Shipped!",
+    html,
+  });
+}
+
 function customOrderAdminHtml({
   customerName,
   customerEmail,
