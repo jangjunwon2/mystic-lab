@@ -14,6 +14,7 @@ interface RawProduct {
   is_featured: boolean;
   thumbnail_url: string | null;
   created_at: string;
+  display_order: number;
   product_translations: { name: string; language: string }[];
 }
 
@@ -24,10 +25,10 @@ export default async function AdminProductsPage() {
   const { data: products } = await supabase
     .from("products")
     .select(`
-      id, slug, category, price_usd, stock, is_active, is_featured, thumbnail_url, created_at,
+      id, slug, category, price_usd, stock, is_active, is_featured, thumbnail_url, created_at, display_order,
       product_translations(name, language)
     `)
-    .order("created_at", { ascending: false });
+    .order("display_order", { ascending: true });
 
   const rows = ((products ?? []) as RawProduct[]).map((p) => {
     const enName = p.product_translations?.find((t) => t.language === "en")?.name ?? p.slug;

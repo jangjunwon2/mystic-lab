@@ -13,6 +13,7 @@ interface ProductRow {
   is_featured: boolean;
   thumbnail_url: string | null;
   displayName: string;
+  display_order: number;
 }
 
 interface Props {
@@ -29,8 +30,11 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function ProductsAdminTable({ products }: Props) {
-  const [rows, setRows] = useState(products);
+  const [rows, setRows] = useState(
+    [...products].sort((a, b) => a.display_order - b.display_order)
+  );
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [orderSaving, setOrderSaving] = useState(false);
 
   async function toggleActive(id: string, current: boolean) {
     setLoadingId(id);
@@ -57,13 +61,44 @@ export default function ProductsAdminTable({ products }: Props) {
     setLoadingId(null);
   }
 
+  async function moveRow(index: number, direction: "up" | "down") {
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= rows.length) return;
+
+    const next = [...rows];
+    const [a, b] = [next[index], next[swapIndex]];
+    next[index] = { ...b, display_order: a.display_order };
+    next[swapIndex] = { ...a, display_order: b.display_order };
+    setRows(next);
+
+    setOrderSaving(true);
+    await Promise.all([
+      fetch(`/api/admin/products/${a.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ display_order: b.display_order }),
+      }),
+      fetch(`/api/admin/products/${b.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ display_order: a.display_order }),
+      }),
+    ]);
+    setOrderSaving(false);
+  }
+
   return (
     <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+      {orderSaving && (
+        <div className="px-4 py-2 text-xs" style={{ background: "#7C3AED22", color: "#A855F7" }}>
+          Saving order…
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-              {["Product", "Category", "Price", "Stock", "Status", "Actions"].map((h) => (
+              {["Order", "Product", "Category", "Price", "Stock", "Status", "Actions"].map((h) => (
                 <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                   {h}
                 </th>
@@ -73,7 +108,7 @@ export default function ProductsAdminTable({ products }: Props) {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
+                <td colSpan={7} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
                   No products yet.{" "}
                   <Link href="/admin/products/new" style={{ color: "#A855F7" }}>
                     Create one
@@ -81,12 +116,34 @@ export default function ProductsAdminTable({ products }: Props) {
                 </td>
               </tr>
             ) : (
-              rows.map((product) => (
+              rows.map((product, idx) => (
                 <tr
                   key={product.id}
                   className="border-b last:border-0"
                   style={{ borderColor: "#2D2D4E", opacity: loadingId === product.id ? 0.5 : 1 }}
                 >
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        onClick={() => moveRow(idx, "up")}
+                        disabled={idx === 0 || orderSaving}
+                        className="p-0.5 rounded text-xs disabled:opacity-20 hover:opacity-60 transition-opacity"
+                        style={{ color: "#9CA3AF" }}
+                        title="Move up"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => moveRow(idx, "down")}
+                        disabled={idx === rows.length - 1 || orderSaving}
+                        className="p-0.5 rounded text-xs disabled:opacity-20 hover:opacity-60 transition-opacity"
+                        style={{ color: "#9CA3AF" }}
+                        title="Move down"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       {product.thumbnail_url ? (
