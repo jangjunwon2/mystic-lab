@@ -1,115 +1,105 @@
 "use client";
 
 import { useState } from "react";
+import { Send, Users, ShoppingBag, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+
+type Segment = "all" | "buyers";
 
 const TEMPLATES = [
   {
     label: "New Product Launch",
-    subject: "✦ New Magic at Mystic Lab — Don't Miss It",
-    html: `<div style="font-family:Inter,Arial,sans-serif;background:#0D0D1A;padding:40px 16px;">
-  <div style="max-width:560px;margin:0 auto;background:#1A1A2E;border-radius:16px;border:1px solid #2D2D4E;overflow:hidden;">
-    <div style="background:linear-gradient(135deg,#7C3AED,#A855F7);padding:32px;text-align:center;">
-      <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:3px;">✦ MYSTIC LAB ✦</div>
-    </div>
-    <div style="padding:32px;">
-      <h2 style="color:#F0E6FF;margin:0 0 16px;">Something New Has Arrived</h2>
-      <p style="color:#9CA3AF;line-height:1.7;">We have a stunning new addition to our collection that we think you'll love. Crafted for professionals who demand the very best.</p>
-      <div style="text-align:center;margin-top:28px;">
-        <a href="https://mysticlab.com/products" style="display:inline-block;background:linear-gradient(135deg,#7C3AED,#A855F7);color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;">
-          Explore Now →
-        </a>
-      </div>
-    </div>
-    <div style="padding:16px 32px;border-top:1px solid #2D2D4E;text-align:center;">
-      <p style="color:#6B7280;font-size:12px;margin:0;">You're receiving this because you're a Mystic Lab member.</p>
-    </div>
-  </div>
-</div>`,
+    subject: "✨ New arrival at Mystic Lab",
+    html: `<h2 style="color:#7C3AED">New Arrival</h2><p>We just added an exciting new product to our collection. Check it out now!</p><a href="https://mystic-lab.vercel.app/en/products" style="display:inline-block;background:#7C3AED;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Shop Now</a>`,
   },
   {
-    label: "Exclusive Discount",
-    subject: "✦ A Special Offer Just for You",
-    html: `<div style="font-family:Inter,Arial,sans-serif;background:#0D0D1A;padding:40px 16px;">
-  <div style="max-width:560px;margin:0 auto;background:#1A1A2E;border-radius:16px;border:1px solid #2D2D4E;overflow:hidden;">
-    <div style="background:linear-gradient(135deg,#7C3AED,#A855F7);padding:32px;text-align:center;">
-      <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:3px;">✦ MYSTIC LAB ✦</div>
-    </div>
-    <div style="padding:32px;text-align:center;">
-      <p style="color:#9CA3AF;font-size:14px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;">Exclusive Member Offer</p>
-      <div style="font-size:48px;font-weight:800;color:#F59E0B;letter-spacing:-1px;">10% OFF</div>
-      <p style="color:#F0E6FF;margin:16px 0 8px;">Use code: <strong style="color:#A855F7;font-size:18px;">MAGIC10</strong></p>
-      <p style="color:#9CA3AF;font-size:13px;">Valid for the next 48 hours only.</p>
-      <div style="margin-top:28px;">
-        <a href="https://mysticlab.com/products" style="display:inline-block;background:linear-gradient(135deg,#7C3AED,#A855F7);color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;">
-          Shop Now →
-        </a>
-      </div>
-    </div>
-    <div style="padding:16px 32px;border-top:1px solid #2D2D4E;text-align:center;">
-      <p style="color:#6B7280;font-size:12px;margin:0;">You're receiving this because you're a Mystic Lab member.</p>
-    </div>
-  </div>
-</div>`,
+    label: "Discount Offer",
+    subject: "🎩 Exclusive discount for you",
+    html: `<h2 style="color:#F59E0B">Special Offer</h2><p>Use code <strong>MAGIC10</strong> for 10% off your next order. Limited time only!</p><a href="https://mystic-lab.vercel.app/en/products" style="display:inline-block;background:#F59E0B;color:#000;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Claim Offer</a>`,
+  },
+  {
+    label: "Tutorial Reminder",
+    subject: "📹 Don't forget your tutorials",
+    html: `<h2 style="color:#10B981">Your Tutorials Await</h2><p>You have unlocked tutorial videos — head to your account to watch them anytime.</p><a href="https://mystic-lab.vercel.app/en/account" style="display:inline-block;background:#10B981;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">View Tutorials</a>`,
   },
 ];
 
 export default function NewsletterClient() {
+  const [segment, setSegment] = useState<Segment>("all");
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
-  const [segment, setSegment] = useState<"all" | "buyers">("all");
-  const [preview, setPreview] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ sent: number; failed: number; message?: string } | null>(null);
   const [error, setError] = useState("");
 
-  function loadTemplate(idx: number) {
-    setSubject(TEMPLATES[idx].subject);
-    setHtml(TEMPLATES[idx].html);
-    setError("");
+  function applyTemplate(t: (typeof TEMPLATES)[0]) {
+    setSubject(t.subject);
+    setHtml(t.html);
     setResult(null);
+    setError("");
   }
 
-  async function send() {
+  async function handleSend() {
     if (!subject.trim() || !html.trim()) {
-      setError("Subject and HTML body are required.");
+      setError("제목과 내용을 모두 입력해주세요.");
       return;
     }
-    if (!confirm(`Send newsletter to "${segment === "all" ? "ALL members" : "buyers only"}"? This cannot be undone.`)) return;
-
     setSending(true);
     setError("");
     setResult(null);
-
-    const res = await fetch("/api/admin/newsletter/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, html, segment }),
-    });
-
-    const json = await res.json();
-    setSending(false);
-
-    if (!res.ok) {
-      setError(json.error ?? "Failed to send newsletter.");
-    } else {
-      setResult(json);
+    try {
+      const res = await fetch("/api/admin/newsletter/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, html, segment }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "발송에 실패했습니다.");
+      } else {
+        setResult(data);
+      }
+    } catch {
+      setError("네트워크 오류가 발생했습니다.");
+    } finally {
+      setSending(false);
     }
   }
 
   return (
-    <div style={{ maxWidth: 800 }}>
-      {/* Template selector */}
-      <div className="mb-6">
-        <p className="text-sm font-medium mb-3" style={{ color: "#9CA3AF" }}>
-          Quick Templates
-        </p>
+    <div className="max-w-3xl space-y-6">
+      {/* Segment */}
+      <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
+        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-3">수신 대상</p>
         <div className="flex gap-3">
-          {TEMPLATES.map((t, i) => (
+          {([
+            { value: "all", label: "전체 회원", icon: Users },
+            { value: "buyers", label: "구매자만", icon: ShoppingBag },
+          ] as const).map(({ value, label, icon: Icon }) => (
             <button
-              key={i}
-              onClick={() => loadTemplate(i)}
-              className="px-4 py-2 rounded-lg text-sm border transition-colors hover:border-purple-500"
-              style={{ background: "#1A1A2E", borderColor: "#2D2D4E", color: "#F0E6FF" }}
+              key={value}
+              onClick={() => setSegment(value)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                segment === value
+                  ? "bg-[#7C3AED] border-[#7C3AED] text-white"
+                  : "border-[#2D2D4E] text-[#9CA3AF] hover:border-[#7C3AED]/50 hover:text-[#F0E6FF]"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Templates */}
+      <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
+        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-3">빠른 템플릿</p>
+        <div className="flex flex-wrap gap-2">
+          {TEMPLATES.map((t) => (
+            <button
+              key={t.label}
+              onClick={() => applyTemplate(t)}
+              className="px-3 py-1.5 rounded-lg border border-[#2D2D4E] text-xs text-[#9CA3AF] hover:border-[#7C3AED]/50 hover:text-[#A855F7] transition-colors"
             >
               {t.label}
             </button>
@@ -117,103 +107,61 @@ export default function NewsletterClient() {
         </div>
       </div>
 
-      {/* Segment */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2" style={{ color: "#9CA3AF" }}>
-          Recipients
-        </label>
-        <div className="flex gap-4">
-          {(["all", "buyers"] as const).map((s) => (
-            <label key={s} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                value={s}
-                checked={segment === s}
-                onChange={() => setSegment(s)}
-                style={{ accentColor: "#7C3AED" }}
-              />
-              <span className="text-sm" style={{ color: "#F0E6FF" }}>
-                {s === "all" ? "All Members" : "Buyers Only"}
-              </span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Subject */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2" style={{ color: "#9CA3AF" }}>
-          Subject
-        </label>
-        <input
-          type="text"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="Email subject line..."
-          className="w-full px-4 py-2.5 rounded-lg text-sm outline-none border focus:border-purple-500 transition-colors"
-          style={{ background: "#1A1A2E", borderColor: "#2D2D4E", color: "#F0E6FF" }}
-        />
-      </div>
-
-      {/* HTML Body */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium" style={{ color: "#9CA3AF" }}>
-            HTML Body
-          </label>
-          <button
-            onClick={() => setPreview(!preview)}
-            className="text-xs px-3 py-1 rounded border transition-colors hover:border-purple-500"
-            style={{ borderColor: "#2D2D4E", color: "#A855F7" }}
-          >
-            {preview ? "Edit" : "Preview"}
-          </button>
-        </div>
-        {preview ? (
-          <div
-            className="w-full rounded-lg border overflow-auto"
-            style={{ background: "#fff", borderColor: "#2D2D4E", minHeight: 300 }}
-            dangerouslySetInnerHTML={{ __html: html }}
+      {/* Compose */}
+      <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5 space-y-4">
+        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">메일 작성</p>
+        <div>
+          <label className="text-xs text-[#6B7280] mb-1 block">제목</label>
+          <input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Email subject..."
+            className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-lg px-4 py-2.5 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
           />
-        ) : (
+        </div>
+        <div>
+          <label className="text-xs text-[#6B7280] mb-1 block">HTML 본문</label>
           <textarea
             value={html}
             onChange={(e) => setHtml(e.target.value)}
-            placeholder="<div>Your email HTML here...</div>"
-            rows={14}
-            className="w-full px-4 py-3 rounded-lg text-sm font-mono outline-none border focus:border-purple-500 transition-colors resize-y"
-            style={{ background: "#1A1A2E", borderColor: "#2D2D4E", color: "#F0E6FF" }}
+            placeholder="<h2>Hello!</h2><p>Your message here...</p>"
+            rows={10}
+            className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-lg px-4 py-3 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60 font-mono resize-y"
           />
+        </div>
+        {html && (
+          <div>
+            <p className="text-xs text-[#6B7280] mb-2">미리보기</p>
+            <div
+              className="bg-white rounded-lg p-4 text-sm overflow-auto max-h-64"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          </div>
         )}
       </div>
 
       {error && (
-        <p className="text-sm mb-4" style={{ color: "#EF4444" }}>
+        <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           {error}
-        </p>
+        </div>
       )}
 
       {result && (
-        <div
-          className="rounded-lg px-4 py-3 mb-4 text-sm"
-          style={{ background: "#10B98122", borderColor: "#10B981", border: "1px solid" }}
-        >
-          <span style={{ color: "#10B981" }}>
-            {result.message ?? `Sent to ${result.sent} recipient${result.sent !== 1 ? "s" : ""}.`}
-            {result.failed > 0 && (
-              <span style={{ color: "#F59E0B" }}> ({result.failed} failed)</span>
-            )}
-          </span>
+        <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          발송 완료 — 성공 {result.sent}건 / 실패 {result.failed}건
+          {result.message && <span className="text-[#9CA3AF] ml-1">({result.message})</span>}
         </div>
       )}
 
       <button
-        onClick={send}
+        onClick={handleSend}
         disabled={sending}
-        className="px-6 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
-        style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" }}
+        className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white text-sm font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
       >
-        {sending ? "Sending…" : "Send Newsletter"}
+        {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        {sending ? "발송 중..." : "발송하기"}
       </button>
     </div>
   );
