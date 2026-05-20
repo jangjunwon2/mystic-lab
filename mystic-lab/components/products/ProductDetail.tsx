@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
   ShoppingCart, Zap, Play, ArrowLeft,
-  CheckCircle2, AlertCircle, Star,
+  CheckCircle2, AlertCircle, Star, BadgeCheck,
 } from "lucide-react";
 import SolutionVideoSection from "@/components/video/SolutionVideoSection";
 import CloudflarePlayer from "@/components/video/CloudflarePlayer";
@@ -368,7 +368,15 @@ function ReviewCard({ review, isLoggedIn }: { review: ReviewWithProfile; isLogge
             <p className="text-sm font-medium text-[#F0E6FF]">
               {review.profiles?.display_name ?? "Anonymous"}
             </p>
-            <p className="text-[11px] text-[#6B7280]">{date}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-[11px] text-[#6B7280]">{date}</p>
+              {review.verified_purchase && (
+                <span className="flex items-center gap-1 text-[11px] font-medium" style={{ color: "#10B981" }}>
+                  <BadgeCheck className="w-3 h-3" />
+                  Verified Purchase
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <StarRating rating={review.rating} />
