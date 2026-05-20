@@ -8,7 +8,7 @@ interface Product { id: string; slug: string; product_translations: { name: stri
 interface Grant { id: string; note: string | null; expires_at: string | null; created_at: string; products: Product | null }
 interface OrderItem { id: string; quantity: number; price_usd: number; products: Product | null }
 interface Order { id: string; status: string; total_usd: number; created_at: string; order_items: OrderItem[] }
-interface Profile { id: string; display_name: string | null; role: string; status: string; suspension_reason: string | null; created_at: string }
+interface Profile { id: string; display_name: string | null; role: string; status: string; suspension_reason: string | null; admin_notes: string | null; created_at: string }
 
 interface Props {
   profile: Profile;
@@ -33,6 +33,9 @@ export default function UserDetailClient({ profile: initialProfile, email, order
   const [grantNote, setGrantNote] = useState("");
   const [grantExpiry, setGrantExpiry] = useState("");
   const [savingGrant, setSavingGrant] = useState(false);
+  const [adminNotes, setAdminNotes] = useState(initialProfile.admin_notes ?? "");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesStatus, setNotesStatus] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -93,6 +96,19 @@ export default function UserDetailClient({ profile: initialProfile, email, order
     if (!window.confirm("Revoke this video access?")) return;
     const res = await fetch(`/api/admin/users/${profile.id}/grants?grant_id=${grantId}`, { method: "DELETE" });
     if (res.ok) setGrants((prev) => prev.filter((g) => g.id !== grantId));
+  }
+
+  async function saveNotes() {
+    setSavingNotes(true);
+    setNotesStatus("");
+    const res = await fetch(`/api/admin/users/${profile.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ admin_notes: adminNotes }),
+    });
+    setSavingNotes(false);
+    setNotesStatus(res.ok ? "✅ Saved." : "❌ Failed.");
+    setTimeout(() => setNotesStatus(""), 3000);
   }
 
   async function sendEmail() {
@@ -329,6 +345,35 @@ export default function UserDetailClient({ profile: initialProfile, email, order
             ))}
           </div>
         )}
+      </div>
+
+      {/* Admin notes */}
+      <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+        <h3 className="font-semibold flex items-center gap-2 mb-4" style={{ color: "#F0E6FF" }}>
+          Internal Notes <span className="text-xs font-normal" style={{ color: "#6B7280" }}>(not visible to user)</span>
+        </h3>
+        <textarea
+          rows={4}
+          placeholder="Add private notes about this user..."
+          value={adminNotes}
+          onChange={(e) => setAdminNotes(e.target.value)}
+          style={{ ...inputStyle, width: "100%", resize: "vertical" }}
+        />
+        <div className="flex items-center gap-3 mt-2">
+          <button
+            onClick={saveNotes}
+            disabled={savingNotes}
+            className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+            style={{ background: "#2D2D4E", color: "#F0E6FF" }}
+          >
+            {savingNotes ? "Saving…" : "Save Notes"}
+          </button>
+          {notesStatus && (
+            <span className="text-xs" style={{ color: notesStatus.startsWith("✅") ? "#10B981" : "#EF4444" }}>
+              {notesStatus}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Send email */}
