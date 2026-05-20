@@ -2,7 +2,7 @@
 
 > 이 파일은 대화 초기화 후 문맥 복원을 위한 문서입니다.
 > 새 대화 시작 시 이 파일을 먼저 읽고 작업을 이어가세요.
-> 마지막 업데이트: 2026-05-20 (Phase 3 완료 + 추가 기능)
+> 마지막 업데이트: 2026-05-20 (Phase 5 완료 + 추가기능 + ml-deploy 동기화 필요)
 
 ---
 
@@ -514,9 +514,123 @@ Phase 4 (완료 ✅ 2026-05-20):
   - ✅ 회원 개별 이메일 발송 (/admin/users/[id] → Send Email 섹션)
   - ✅ 회원 CSV 내보내기 (UsersAdminTable 우측 상단 버튼)
   - ✅ 상품 노출 순서 편집 (ProductsAdminTable ▲▼ 버튼, display_order 필드)
+  - ✅ 리뷰 신고 시스템 (review_reports 테이블 + 관리자 Dismiss + 유저 Report 버튼)
 
-  DB 마이그레이션: supabase/migrations/005_display_order.sql
-  → Supabase SQL Editor에서 실행 필요 (products.display_order 컬럼 추가)
+  DB 마이그레이션:
+    - supabase/migrations/005_display_order.sql ✅ 실행 완료
+    - supabase/migrations/006_review_reports.sql ✅ 실행 완료
+
+Phase 5 (완료 ✅ 2026-05-20):
+  - ✅ Verified Purchase 뱃지 (리뷰 카드에 초록 BadgeCheck 아이콘)
+  - ✅ 수동 영상 권한 부여/회수 (manual_video_grants 테이블 + /admin/users/[id] UI)
+    - 영상 접근 4번째 경로: 관리자 → 구매 → 장비코드 → 수동 grant
+    - 만료일 설정 가능, 영구 또는 날짜 지정
+
+  DB 마이그레이션: supabase/migrations/007_manual_video_grants.sql
+  → Supabase SQL Editor에서 실행 필요
+
+Phase 6 (완료 ✅ 2026-05-20):
+  - ✅ SEO: sitemap.ts, robots.ts 추가
+  - ✅ 마이페이지 이름 인라인 편집 (AccountClient.tsx — Pencil 아이콘, Enter/Escape 키)
+  - ✅ 푸터 뉴스레터 구독 폼 (Footer.tsx — 이메일 입력 + 구독 API)
+  - ✅ 상품 페이지 조회수 트래킹 (ProductDetail.tsx + /api/products/view)
+  - ✅ 관리자 대시보드 접근 완전 수정:
+      - middleware.ts 생성 (proxy.ts를 re-export)
+      - proxy.ts에서 service role key로 RLS 우회하여 role 체크
+  - ✅ 레퍼럴 코드 추적 (lemon-webhook에서 custom_data.discount_code 추출)
+  - ✅ 뉴스레터 구독자 테이블 + 상품 조회수 테이블 추가
+  - ✅ SaveOrderInput에 appliedDiscountCode, appliedReferralCode, customerNote 추가
+
+  DB 마이그레이션: supabase/migrations/010_final_enhancements.sql ✅ 실행 완료
+    - orders: applied_discount_code, applied_referral_code, customer_note, refund_reason 컬럼
+    - newsletter_subscribers 테이블 (email, locale, source, subscribed_at, is_active)
+    - product_views 테이블 (product_id, locale, viewed_at)
+    - profiles.last_login_at 컬럼
+    - solution_videos.part_order 컬럼
+
+⚠️ Vercel 빌드 현황:
+  - ml-deploy에 위 파일들이 누락 또는 구버전으로 빌드 실패 중
+  - 위 '🚨 현재 가장 중요한 이슈' 섹션의 동기화 명령어 실행 필요
+```
+
+---
+
+## 🚨 현재 가장 중요한 이슈 — Vercel 빌드 실패 (ml-deploy 동기화 미완료)
+
+### 문제 상황
+소스(`Desktop/클로드/mystic-lab`)와 배포 레포(`Desktop/ml-deploy`)의 파일이 동기화되지 않았음.
+많은 파일이 ml-deploy에 **없거나 구버전**이라 Vercel 빌드가 실패 중.
+
+### 동기화 필요한 파일 목록
+
+#### ml-deploy에 **없는** 파일/폴더 (새로 복사 필요)
+```
+app/api/account/                          ← 계정 관련 API
+app/api/admin/newsletter/                 ← 뉴스레터 발송 API
+app/api/admin/custom-orders/[id]/reply/   ← 커스텀 의뢰 이메일 회신
+app/api/admin/orders/manual/              ← 수동 주문 생성
+app/api/admin/referrals/                  ← 레퍼럴 코드 API
+app/api/admin/reviews/                    ← 리뷰 관리 API
+app/api/admin/users/                      ← 회원 관리 API
+app/api/newsletter/                       ← 뉴스레터 구독 API
+app/api/products/                         ← 상품 조회수 API
+app/api/reviews/                          ← 리뷰 제출 API
+app/robots.ts                             ← robots.txt
+app/sitemap.ts                            ← sitemap.xml
+```
+
+#### ml-deploy에 있지만 **업데이트된** 파일 (덮어쓰기 필요)
+```
+app/[locale]/account/page.tsx
+app/[locale]/checkout/page.tsx
+app/[locale]/products/[slug]/page.tsx
+app/admin/analytics/page.tsx
+app/admin/layout.tsx
+app/admin/orders/page.tsx
+app/admin/products/[id]/edit/page.tsx
+app/admin/products/page.tsx
+app/api/admin/orders/[id]/route.ts
+app/api/admin/products/[id]/route.ts
+app/api/admin/products/route.ts
+app/api/payment/lemon-checkout/route.ts
+app/api/payment/lemon-webhook/route.ts
+components/account/AccountClient.tsx
+components/admin/CustomOrdersAdminTable.tsx
+components/admin/OrdersAdminTable.tsx
+components/admin/ProductForm.tsx
+components/admin/ProductsAdminTable.tsx
+components/layout/Footer.tsx
+components/products/ProductDetail.tsx
+components/video/SolutionVideoSection.tsx
+lib/payments/lemon.ts
+lib/payments/save-order.ts
+lib/payments/types.ts
+lib/resend/index.ts
+```
+
+### 한 번에 동기화하는 명령어 (다음 작업 시 실행)
+```powershell
+# 소스 경로
+$src = "C:\Users\jun92\Desktop\클로드\mystic-lab"
+$dst = "C:\Users\jun92\Desktop\ml-deploy"
+
+# 전체 동기화 (변경된 파일 포함)
+robocopy "$src\app" "$dst\app" /MIR /XD node_modules .next /XF "*.log"
+robocopy "$src\components" "$dst\components" /MIR /XD node_modules
+robocopy "$src\lib" "$dst\lib" /MIR /XD node_modules
+robocopy "$src\messages" "$dst\messages" /MIR
+robocopy "$src\supabase" "$dst\supabase" /MIR
+
+# 루트 파일들
+Copy-Item "$src\proxy.ts" "$dst\proxy.ts" -Force
+Copy-Item "$src\middleware.ts" "$dst\middleware.ts" -Force
+Copy-Item "$src\next.config.ts" "$dst\next.config.ts" -Force
+
+# 커밋 & 푸시
+cd $dst
+git add -A
+git commit -m "fix: sync all source files to ml-deploy for Vercel build"
+git push origin main
 ```
 
 ---
