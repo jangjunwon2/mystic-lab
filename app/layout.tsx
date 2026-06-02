@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     "Premium magic props and custom electronic devices for professional magicians worldwide. Discover the art of impossible.",
   keywords: ["magic", "magic shop", "magic props", "professional magician", "electronic magic"],
   authors: [{ name: "Mystic Lab" }],
+  manifest: "/manifest.json",
   openGraph: {
     type: "website",
     locale: "en_US",

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import SolutionVideoSection from "@/components/video/SolutionVideoSection";
 import CloudflarePlayer from "@/components/video/CloudflarePlayer";
+import MagicActivation from "@/components/products/MagicActivation";
 import type {
   ProductWithTranslations,
   ProductTranslation,
@@ -269,6 +270,11 @@ export default function ProductDetail({
             productSlug={product.slug}
           />
         </Section>
+
+        {/* ── Device Activation (Magic Calculator only) ── */}
+        {product.slug === "magic-calculator" && (
+          <MagicActivation productId={product.id} locale={locale} />
+        )}
 
         {/* ── Reviews ── */}
         <Section title={`${t("reviews.title")} (${reviews.length})`}>
