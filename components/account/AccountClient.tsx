@@ -5,15 +5,36 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Package, Play, LogOut, User, ChevronRight } from "lucide-react";
+import { Package, Play, LogOut, ChevronRight, Truck, ExternalLink, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-  paid: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  shipped: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  pending:   "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+  paid:      "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  shipped:   "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
   completed: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  refunded: "bg-red-500/15 text-red-400 border-red-500/30",
+  refunded:  "bg-red-500/15 text-red-400 border-red-500/30",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending:   "결제 대기",
+  paid:      "결제 완료",
+  shipped:   "배송중",
+  completed: "배송 완료",
+  refunded:  "환불",
+};
+
+// 배송사별 운송장 추적 URL
+const TRACKING_URLS: Record<string, (n: string) => string> = {
+  cj:      (n) => `https://www.cjlogistics.com/ko/tool/parcel/tracking?paramInvcNo=${n}`,
+  hanjin:  (n) => `https://www.hanjin.com/kor/CMS/DeliveryMgr/WaybillResult.do?mCode=MN038&wblnumList=${n}`,
+  lotte:   (n) => `https://www.lotteglogis.com/home/reservation/tracking/index?InvNo=${n}`,
+  epost:   (n) => `https://service.epost.go.kr/trace.RetrieveEmsRigiTraceList.comm?POST_CODE=${n}`,
+  logen:   (n) => `https://www.ilogen.com/m/personal/trace/${n}`,
+  dhl:     (n) => `https://www.dhl.com/kr-ko/home/tracking/tracking-parcel.html?submit=1&tracking-id=${n}`,
+  fedex:   (n) => `https://www.fedex.com/fedextrack/?trknbr=${n}`,
+  ups:     (n) => `https://www.ups.com/track?track=yes&trackNums=${n}`,
+  ems:     (n) => `https://service.epost.go.kr/trace.RetrieveEmsRigiTraceList.comm?POST_CODE=${n}`,
 };
 
 interface Order {
@@ -22,6 +43,9 @@ interface Order {
   total_usd: number;
   created_at: string;
   customer_email: string;
+  tracking_number: string | null;
+  tracking_carrier: string | null;
+  shipping_method: string | null;
   order_items: {
     id: string;
     quantity: number;
@@ -196,21 +220,33 @@ export default function AccountClient({ locale, profile, orders }: Props) {
   );
 }
 
+// 배송 진행 단계
+const STEPS = ["paid", "shipped", "completed"] as const;
+const STEP_LABELS: Record<string, string> = { paid: "결제 완료", shipped: "배송중", completed: "배송 완료" };
+
 function OrderCard({ order, locale }: { order: Order; locale: string }) {
-  const date = new Date(order.created_at).toLocaleDateString("en-US", {
+  const date = new Date(order.created_at).toLocaleDateString("ko-KR", {
     year: "numeric", month: "short", day: "numeric",
   });
 
+  const trackingUrl = order.tracking_number && order.tracking_carrier
+    ? TRACKING_URLS[order.tracking_carrier.toLowerCase()]?.(order.tracking_number)
+    : null;
+
+  const currentStep = STEPS.indexOf(order.status as typeof STEPS[number]);
+  const isInTransit = ["paid", "shipped", "completed"].includes(order.status);
+
   return (
-    <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
-      <div className="flex items-start justify-between mb-3">
+    <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5 space-y-4">
+      {/* 헤더 */}
+      <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs text-[#6B7280] mb-0.5">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+          <p className="text-xs text-[#6B7280] mb-0.5">주문번호 #{order.id.slice(0, 8).toUpperCase()}</p>
           <p className="text-xs text-[#6B7280]">{date}</p>
         </div>
         <div className="flex items-center gap-3">
           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border uppercase tracking-wide ${STATUS_COLORS[order.status] ?? ""}`}>
-            {order.status}
+            {STATUS_LABELS[order.status] ?? order.status}
           </span>
           <span className="text-sm font-semibold text-[#F59E0B]">
             ${order.total_usd.toFixed(2)}
@@ -218,16 +254,73 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
         </div>
       </div>
 
-      <div className="space-y-2">
+      {/* 배송 진행 단계 */}
+      {isInTransit && (
+        <div className="flex items-center gap-0">
+          {STEPS.map((step, i) => {
+            const done = currentStep >= i;
+            const active = currentStep === i;
+            return (
+              <div key={step} className="flex items-center flex-1">
+                <div className="flex flex-col items-center">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                    done ? "bg-[#7C3AED]" : "bg-[#2D2D4E]"
+                  } ${active ? "ring-2 ring-[#A855F7] ring-offset-1 ring-offset-[#1A1A2E]" : ""}`}>
+                    {done
+                      ? <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      : <span className="w-1.5 h-1.5 rounded-full bg-[#4B5563]" />}
+                  </div>
+                  <span className={`text-[9px] mt-1 whitespace-nowrap ${done ? "text-[#A855F7]" : "text-[#4B5563]"}`}>
+                    {STEP_LABELS[step]}
+                  </span>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <div className={`flex-1 h-0.5 mb-3 mx-1 ${currentStep > i ? "bg-[#7C3AED]" : "bg-[#2D2D4E]"}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 배송 추적 */}
+      {order.status === "shipped" && (
+        <div className="flex items-center justify-between bg-[#13131F] rounded-lg px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <Truck className="w-4 h-4 text-[#7C3AED] shrink-0" />
+            <div>
+              {order.tracking_carrier && (
+                <p className="text-xs text-[#9CA3AF] capitalize">{order.tracking_carrier.toUpperCase()}</p>
+              )}
+              {order.tracking_number ? (
+                <p className="text-xs font-mono text-[#F0E6FF]">{order.tracking_number}</p>
+              ) : (
+                <p className="text-xs text-[#6B7280]">운송장 번호 준비 중...</p>
+              )}
+            </div>
+          </div>
+          {trackingUrl && (
+            <a
+              href={trackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-[#A855F7] hover:text-[#C084FC] transition-colors"
+            >
+              배송 추적 <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* 상품 목록 */}
+      <div className="space-y-2 border-t border-[#2D2D4E] pt-3">
         {order.order_items.map((item) => {
           const name = item.products?.product_translations.find(
             (t) => t.language === locale
           )?.name ?? item.products?.product_translations[0]?.name ?? "Product";
           return (
             <div key={item.id} className="flex items-center justify-between text-sm">
-              <span className="text-[#9CA3AF]">
-                {name} × {item.quantity}
-              </span>
+              <span className="text-[#9CA3AF]">{name} × {item.quantity}</span>
               <span className="text-[#6B7280]">${(item.price_usd * item.quantity).toFixed(2)}</span>
             </div>
           );

@@ -32,6 +32,7 @@ export default async function AccountPage({ params }: Props) {
         .from("orders")
         .select(`
           id, status, total_usd, created_at, customer_email,
+          tracking_number, tracking_carrier, shipping_method,
           order_items (
             id, quantity, price_usd,
             products (id, slug, thumbnail_url, product_translations(name, language))
