@@ -11,6 +11,7 @@ import {
 import SolutionVideoSection from "@/components/video/SolutionVideoSection";
 import CloudflarePlayer from "@/components/video/CloudflarePlayer";
 import MagicActivation from "@/components/products/MagicActivation";
+import ReviewForm from "@/components/products/ReviewForm";
 import type {
   ProductWithTranslations,
   ProductTranslation,
@@ -278,6 +279,7 @@ export default function ProductDetail({
 
         {/* ── Reviews ── */}
         <Section title={`${t("reviews.title")} (${reviews.length})`}>
+          <ReviewForm productId={product.id} hasPurchased={hasPurchased} />
           {reviews.length === 0 ? (
             <div className="text-center py-10 text-[#9CA3AF] text-sm">
               {t("reviews.noReviews")}
