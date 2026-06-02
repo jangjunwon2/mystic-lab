@@ -72,7 +72,7 @@ export default function CountrySelect({
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        required={required}
+        aria-required={required}
         className="w-full flex items-center justify-between bg-[#13131F] border border-[#2D2D4E] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] transition-colors text-left"
         style={{ color: selected ? "#F0E6FF" : "#4B5563" }}
       >
