@@ -10,7 +10,8 @@ export default async function AdminOrdersPage() {
   const { data: orders } = await supabase
     .from("orders")
     .select(`
-      id, customer_email, total_usd, status, created_at, updated_at,
+      id, customer_email, total_usd, status, created_at,
+      tracking_number, tracking_carrier, shipping_method, shipping_address,
       order_items(
         id, quantity, price_usd,
         products(slug, product_translations(name, language))
