@@ -51,7 +51,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
 
   async function addByStreamId() {
     if (!addProductId || !addStreamId.trim()) {
-      setAddError("Product and Stream ID are required.");
+      setAddError("상품과 Stream ID는 필수입니다.");
       return;
     }
     setAdding(true);
@@ -75,7 +75,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
       setAddTitle("");
     } else {
       const data = await res.json().catch(() => ({}));
-      setAddError(data.error ?? "Failed to add video.");
+      setAddError(data.error ?? "영상 추가에 실패했습니다.");
     }
     setAdding(false);
   }
@@ -170,7 +170,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
   }
 
   async function deleteVideo(id: string) {
-    if (!confirm("Delete this video link?")) return;
+    if (!confirm("이 영상 링크를 삭제하시겠습니까?")) return;
     setLoadingId(id);
     const res = await fetch(`/api/admin/videos/${id}`, { method: "DELETE" });
     if (res.ok) setVideos((prev) => prev.filter((v) => v.id !== id));
@@ -208,7 +208,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
               }}
             >
               {mode === "id" ? <LinkIcon className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
-              {mode === "id" ? "Paste Stream ID" : "Upload Video File"}
+              {mode === "id" ? "Stream ID 붙여넣기" : "영상 파일 업로드"}
             </button>
           ))}
         </div>
@@ -218,12 +218,12 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
             /* ── Paste Stream ID ── */
             <div className="space-y-4">
               <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                Already uploaded to Cloudflare Stream? Paste the video ID here to link it to a product.
+                이미 Cloudflare Stream에 업로드하셨나요? 영상 ID를 붙여넣어 상품에 연결하세요.
               </p>
               {addError && <p className="text-sm" style={{ color: "#EF4444" }}>{addError}</p>}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Product</label>
+                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>상품</label>
                   <select value={addProductId} onChange={(e) => setAddProductId(e.target.value)} style={inputStyle}>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
@@ -231,7 +231,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Cloudflare Stream ID</label>
+                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Cloudflare Stream ID</label>{/* 고유명사 유지 */}
                   <input
                     value={addStreamId}
                     onChange={(e) => setAddStreamId(e.target.value)}
@@ -240,11 +240,11 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
                   />
                 </div>
                 <div>
-                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Title (optional)</label>
+                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>제목 (선택)</label>
                   <input
                     value={addTitle}
                     onChange={(e) => setAddTitle(e.target.value)}
-                    placeholder="e.g. Complete Solution"
+                    placeholder="예: 완전 해법 영상"
                     style={inputStyle}
                   />
                 </div>
@@ -255,18 +255,18 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
                 style={{ background: "#7C3AED", color: "#fff" }}
               >
-                {adding ? "Adding…" : "+ Link Video"}
+                {adding ? "추가 중…" : "+ 영상 연결"}
               </button>
             </div>
           ) : (
             /* ── Direct Upload ── */
             <div className="space-y-4">
               <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                Upload a video file directly to Cloudflare Stream. Requires{" "}
+영상 파일을 Cloudflare Stream에 직접 업로드합니다. 다음 환경변수가 필요합니다:{" "}
                 <code className="px-1 py-0.5 rounded" style={{ background: "#2D2D4E" }}>CLOUDFLARE_ACCOUNT_ID</code>{" "}
                 and{" "}
                 <code className="px-1 py-0.5 rounded" style={{ background: "#2D2D4E" }}>CLOUDFLARE_STREAM_TOKEN</code>.
-                In mock mode, a placeholder Stream ID is generated.
+Mock 모드에서는 임시 Stream ID가 생성됩니다.
               </p>
 
               {uploadError && (
@@ -279,7 +279,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
                   style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981" }}
                 >
                   <CheckCircle className="w-4 h-4 shrink-0" />
-                  Video uploaded and linked. Stream ID:{" "}
+영상이 업로드되어 연결되었습니다. Stream ID:{" "}
                   <code className="font-mono text-xs">{uploadedStreamId}</code>
                 </div>
               )}
@@ -287,7 +287,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
               {uploadStatus === "idle" || uploadStatus === "done" ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Product</label>
+                    <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>상품</label>
                     <select value={uploadProductId} onChange={(e) => setUploadProductId(e.target.value)} style={inputStyle}>
                       {products.map((p) => (
                         <option key={p.id} value={p.id}>{p.name}</option>
@@ -295,16 +295,16 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Title (optional)</label>
+                    <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>제목 (선택)</label>
                     <input
                       value={uploadTitle}
                       onChange={(e) => setUploadTitle(e.target.value)}
-                      placeholder="e.g. Full Performance Guide"
+                      placeholder="예: 전체 시연 가이드"
                       style={inputStyle}
                     />
                   </div>
                   <div>
-                    <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Video File</label>
+                    <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>영상 파일</label>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -320,9 +320,9 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
                   <div className="flex items-center gap-3">
                     <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#A855F7" }} />
                     <span className="text-sm" style={{ color: "#F0E6FF" }}>
-                      {uploadStatus === "requesting" && "Requesting upload URL…"}
-                      {uploadStatus === "uploading" && `Uploading… ${uploadProgress}%`}
-                      {uploadStatus === "saving" && "Saving video record…"}
+                      {uploadStatus === "requesting" && "업로드 URL 요청 중…"}
+                      {uploadStatus === "uploading" && `업로드 중… ${uploadProgress}%`}
+                      {uploadStatus === "saving" && "영상 정보 저장 중…"}
                     </span>
                   </div>
                   {uploadStatus === "uploading" && (

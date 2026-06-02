@@ -80,7 +80,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
   }
 
   async function remove(id: string, code: string) {
-    if (!confirm(`Delete referral code "${code}"?`)) return;
+    if (!confirm(`레퍼럴 코드 "${code}"를 삭제하시겠습니까?`)) return;
     setLoadingId(id);
     const res = await fetch(`/api/admin/referrals/${id}`, { method: "DELETE" });
     if (res.ok) {
@@ -97,13 +97,13 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
         style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}
       >
         <h2 className="text-base font-semibold mb-5" style={{ color: "#F0E6FF" }}>
-          New Referral Code
+          새 레퍼럴 코드
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
-              Code *
+              코드 *
             </label>
             <input
               type="text"
@@ -116,7 +116,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
           </div>
           <div>
             <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
-              Referrer Name *
+              추천인 이름 *
             </label>
             <input
               type="text"
@@ -129,7 +129,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
           </div>
           <div>
             <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
-              Referrer Email
+              추천인 이메일
             </label>
             <input
               type="email"
@@ -142,7 +142,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
           </div>
           <div>
             <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
-              Discount % for new buyers
+              신규 구매자 할인율 %
             </label>
             <input
               type="number"
@@ -169,7 +169,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
           className="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" }}
         >
-          {creating ? "Creating…" : "Create Code"}
+          {creating ? "생성 중…" : "코드 생성"}
         </button>
       </div>
 
@@ -179,7 +179,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["Code", "Referrer", "Discount", "Uses", "Status", "Actions"].map((h) => (
+                {["코드", "추천인", "할인", "사용 횟수", "상태", "관리"].map((h) => (
                   <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
@@ -190,7 +190,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
               {codes.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
-                    No referral codes yet.
+                    레퍼럴 코드가 없습니다.
                   </td>
                 </tr>
               ) : (
@@ -229,7 +229,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
                           color: rc.is_active ? "#10B981" : "#EF4444",
                         }}
                       >
-                        {rc.is_active ? "Active" : "Inactive"}
+                        {rc.is_active ? "활성" : "비활성"}
                       </button>
                     </td>
                     <td className="px-6 py-4">
@@ -239,7 +239,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
                         className="text-xs hover:opacity-80 transition-opacity"
                         style={{ color: "#EF4444" }}
                       >
-                        Delete
+                        삭제
                       </button>
                     </td>
                   </tr>

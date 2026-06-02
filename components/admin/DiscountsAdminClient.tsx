@@ -94,7 +94,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>
-          Discount Codes
+          할인 코드
         </h1>
         <button
           onClick={() => setCreating(!creating)}
@@ -102,7 +102,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
           style={{ background: "linear-gradient(135deg, #7C3AED, #A855F7)", color: "#fff" }}
         >
           <Plus className="w-4 h-4" />
-          {creating ? "Cancel" : "New Code"}
+          {creating ? "취소" : "새 코드"}
         </button>
       </div>
 
@@ -114,12 +114,12 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
           style={{ background: "#1A1A2E", borderColor: "#7C3AED" }}
         >
           <h2 className="text-sm font-semibold" style={{ color: "#A855F7" }}>
-            Create Discount Code
+            할인 코드 생성
           </h2>
 
           <div className="grid grid-cols-2 gap-4">
             <label className="space-y-1">
-              <span className="text-xs" style={{ color: "#9CA3AF" }}>Code *</span>
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>코드 *</span>
               <input
                 style={inputStyle}
                 value={form.code}
@@ -130,20 +130,20 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
             </label>
 
             <label className="space-y-1">
-              <span className="text-xs" style={{ color: "#9CA3AF" }}>Type *</span>
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>유형 *</span>
               <select
                 style={inputStyle}
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as "percent" | "fixed" })}
               >
-                <option value="percent">Percent (%)</option>
-                <option value="fixed">Fixed ($)</option>
+                <option value="percent">정률 할인 (%)</option>
+                <option value="fixed">정액 할인 ($)</option>
               </select>
             </label>
 
             <label className="space-y-1">
               <span className="text-xs" style={{ color: "#9CA3AF" }}>
-                Value * {form.type === "percent" ? "(%)" : "(USD)"}
+                값 * {form.type === "percent" ? "(%)" : "(USD)"}
               </span>
               <input
                 type="number"
@@ -159,19 +159,19 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
             </label>
 
             <label className="space-y-1">
-              <span className="text-xs" style={{ color: "#9CA3AF" }}>Max Uses (optional)</span>
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>최대 사용 횟수 (선택)</span>
               <input
                 type="number"
                 min="1"
                 style={inputStyle}
                 value={form.max_uses}
                 onChange={(e) => setForm({ ...form, max_uses: e.target.value })}
-                placeholder="Unlimited"
+                placeholder="무제한"
               />
             </label>
 
             <label className="col-span-2 space-y-1">
-              <span className="text-xs" style={{ color: "#9CA3AF" }}>Expires At (optional)</span>
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>만료일 (선택)</span>
               <input
                 type="datetime-local"
                 style={inputStyle}
@@ -187,7 +187,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
             className="px-6 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
             style={{ background: "#7C3AED", color: "#fff" }}
           >
-            {loadingId === "new" ? "Creating..." : "Create Code"}
+            {loadingId === "new" ? "생성 중..." : "코드 생성"}
           </button>
         </form>
       )}
@@ -204,7 +204,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                  {["Code", "Type", "Value", "Used / Max", "Expires", "Status", "Actions"].map((h) => (
+                  {["코드", "유형", "값", "사용 / 최대", "만료일", "상태", "관리"].map((h) => (
                     <th key={h} className="text-left px-5 py-3 font-medium" style={{ color: "#9CA3AF" }}>{h}</th>
                   ))}
                 </tr>
@@ -235,7 +235,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
                       </td>
                       <td className="px-5 py-3" style={{ color: expired ? "#EF4444" : "#9CA3AF" }}>
                         {code.expires_at
-                          ? new Date(code.expires_at).toLocaleDateString()
+                          ? new Date(code.expires_at).toLocaleDateString("ko-KR")
                           : "—"}
                       </td>
                       <td className="px-5 py-3">
@@ -246,7 +246,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
                             color: (code.is_active && !expired) ? "#10B981" : "#EF4444",
                           }}
                         >
-                          {expired ? "Expired" : code.is_active ? "Active" : "Inactive"}
+                          {expired ? "만료됨" : code.is_active ? "활성" : "비활성"}
                         </span>
                       </td>
                       <td className="px-5 py-3">
@@ -254,7 +254,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
                           <button
                             onClick={() => toggleActive(code)}
                             disabled={loadingId === code.id}
-                            title={code.is_active ? "Deactivate" : "Activate"}
+                            title={code.is_active ? "비활성화" : "활성화"}
                             style={{ color: code.is_active ? "#10B981" : "#9CA3AF" }}
                           >
                             {code.is_active
@@ -264,7 +264,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
                           <button
                             onClick={() => deleteCode(code.id)}
                             disabled={loadingId === code.id}
-                            title="Delete"
+                            title="삭제"
                             style={{ color: "#EF4444" }}
                           >
                             <Trash2 className="w-4 h-4" />
