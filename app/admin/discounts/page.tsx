@@ -1,7 +1,7 @@
-import { createAdminClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/server";
 import DiscountsAdminClient from "@/components/admin/DiscountsAdminClient";
 
-export const metadata = { title: "Discounts — Admin" };
+export const metadata = { title: "할인 코드 — Admin" };
 
 export default async function AdminDiscountsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

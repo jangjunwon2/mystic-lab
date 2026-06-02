@@ -5,17 +5,17 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata = { title: "Admin — Mystic Lab" };
 
 const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard", icon: "📊" },
-  { href: "/admin/analytics", label: "Analytics", icon: "📈" },
-  { href: "/admin/users", label: "Users", icon: "👥" },
-  { href: "/admin/products", label: "Products", icon: "🪄" },
-  { href: "/admin/orders", label: "Orders", icon: "📦" },
-  { href: "/admin/reviews", label: "Reviews", icon: "⭐" },
-  { href: "/admin/custom-orders", label: "Custom Orders", icon: "✉️" },
-  { href: "/admin/discounts", label: "Discounts", icon: "🏷️" },
-  { href: "/admin/videos", label: "Videos", icon: "🎬" },
-  { href: "/admin/unlock-codes", label: "Unlock Codes", icon: "🔑" },
-  { href: "/admin/announcements", label: "Announcements", icon: "📢" },
+  { href: "/admin",               label: "대시보드",     icon: "📊" },
+  { href: "/admin/analytics",     label: "분석",         icon: "📈" },
+  { href: "/admin/users",         label: "회원 관리",    icon: "👥" },
+  { href: "/admin/products",      label: "상품 관리",    icon: "🪄" },
+  { href: "/admin/orders",        label: "주문 관리",    icon: "📦" },
+  { href: "/admin/reviews",       label: "리뷰 관리",    icon: "⭐" },
+  { href: "/admin/custom-orders", label: "커스텀 의뢰",  icon: "✉️" },
+  { href: "/admin/discounts",     label: "할인 코드",    icon: "🏷️" },
+  { href: "/admin/videos",        label: "영상 관리",    icon: "🎬" },
+  { href: "/admin/unlock-codes",  label: "잠금해제 코드",icon: "🔑" },
+  { href: "/admin/announcements", label: "공지 배너",    icon: "📢" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -42,7 +42,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       >
         <div className="p-6 border-b" style={{ borderColor: "#2D2D4E" }}>
           <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#9CA3AF" }}>
-            Admin Panel
+            어드민 패널
           </p>
           <p className="font-semibold" style={{ color: "#A855F7" }}>
             Mystic Lab
@@ -72,7 +72,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             className="flex items-center gap-2 text-sm transition-colors hover:text-white"
             style={{ color: "#9CA3AF" }}
           >
-            ← Back to Store
+            ← 스토어로 돌아가기
           </Link>
         </div>
       </aside>

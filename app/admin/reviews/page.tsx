@@ -1,9 +1,9 @@
-import { createAdminClient } from "@/lib/supabase/server";
-import ReviewsAdminTable from "@/components/admin/ReviewsAdminTable";
+﻿import { createAdminClient } from "@/lib/supabase/server";
+import 리뷰 관리AdminTable from "@/components/admin/리뷰 관리AdminTable";
 
-export const metadata = { title: "Reviews — Admin" };
+export const metadata = { title: "리뷰 관리 — Admin" };
 
-export default async function AdminReviewsPage() {
+export default async function Admin리뷰 관리Page() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
@@ -23,7 +23,7 @@ export default async function AdminReviewsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>
-          Reviews
+          리뷰 관리
           {pending > 0 && (
             <span
               className="ml-3 px-2 py-0.5 rounded-full text-sm font-medium"
@@ -34,7 +34,7 @@ export default async function AdminReviewsPage() {
           )}
         </h1>
       </div>
-      <ReviewsAdminTable reviews={reviews ?? []} />
+      <리뷰 관리AdminTable reviews={reviews ?? []} />
     </div>
   );
 }

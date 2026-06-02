@@ -1,7 +1,7 @@
-import { createAdminClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/server";
 import UnlockCodesManager from "@/components/admin/UnlockCodesManager";
 
-export const metadata = { title: "Unlock Codes — Admin" };
+export const metadata = { title: "잠금해제 코드 — Admin" };
 
 interface RawProduct {
   id: string;
@@ -52,7 +52,7 @@ export default async function AdminUnlockCodesPage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-2" style={{ color: "#F0E6FF" }}>
-        Unlock Codes
+        잠금해제 코드
       </h1>
       <p className="text-sm mb-8" style={{ color: "#9CA3AF" }}>
         Generate unique unlock codes for products. Include these codes inside the shipped package.

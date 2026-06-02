@@ -368,7 +368,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                                   const name =
                                     item.products?.product_translations?.find((t) => t.language === "ko")?.name ??
                                     item.products?.product_translations?.find((t) => t.language === "en")?.name ??
-                                    item.products?.slug ?? "Unknown";
+                                    item.products?.slug ?? "알 수 없음";
                                   return (
                                     <div key={item.id} className="flex justify-between text-xs" style={{ color: "#F0E6FF" }}>
                                       <span>{name} × {item.quantity}</span>

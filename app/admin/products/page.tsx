@@ -1,8 +1,8 @@
-import { createAdminClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import ProductsAdminTable from "@/components/admin/ProductsAdminTable";
+import 상품 관리AdminTable from "@/components/admin/상품 관리AdminTable";
 
-export const metadata = { title: "Products — Admin" };
+export const metadata = { title: "상품 관리 — Admin" };
 
 interface RawProduct {
   id: string;
@@ -17,7 +17,7 @@ interface RawProduct {
   product_translations: { name: string; language: string }[];
 }
 
-export default async function AdminProductsPage() {
+export default async function Admin상품 관리Page() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
@@ -38,7 +38,7 @@ export default async function AdminProductsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>
-          Products
+          상품 관리
         </h1>
         <Link
           href="/admin/products/new"
@@ -49,7 +49,7 @@ export default async function AdminProductsPage() {
         </Link>
       </div>
 
-      <ProductsAdminTable products={rows} />
+      <상품 관리AdminTable products={rows} />
     </div>
   );
 }

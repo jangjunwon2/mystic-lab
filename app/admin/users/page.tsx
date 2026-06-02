@@ -1,9 +1,9 @@
-import { createAdminClient } from "@/lib/supabase/server";
-import UsersAdminTable, { type AdminUser } from "@/components/admin/UsersAdminTable";
+﻿import { createAdminClient } from "@/lib/supabase/server";
+import 회원 관리AdminTable, { type AdminUser } from "@/components/admin/회원 관리AdminTable";
 
-export const metadata = { title: "Users — Admin" };
+export const metadata = { title: "회원 관리 — Admin" };
 
-export default async function AdminUsersPage() {
+export default async function Admin회원 관리Page() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
@@ -12,7 +12,7 @@ export default async function AdminUsersPage() {
       .from("profiles")
       .select("id, display_name, role, status, suspension_reason, created_at")
       .order("created_at", { ascending: false }),
-    supabase.auth.admin.listUsers({ perPage: 1000 }),
+    supabase.auth.admin.list회원 관리({ perPage: 1000 }),
   ]);
 
   const emailMap = new Map<string, string>(
@@ -31,13 +31,13 @@ export default async function AdminUsersPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>
-          Users
+          회원 관리
         </h1>
         <span className="text-sm" style={{ color: "#9CA3AF" }}>
           {users.length} total members
         </span>
       </div>
-      <UsersAdminTable users={users} />
+      <회원 관리AdminTable users={users} />
     </div>
   );
 }

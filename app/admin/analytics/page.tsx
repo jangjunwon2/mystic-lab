@@ -1,6 +1,6 @@
-import { createAdminClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Analytics — Admin" };
+export const metadata = { title: "분석 — Admin" };
 
 interface OrderRow {
   total_usd: number;
@@ -224,36 +224,36 @@ export default async function AdminAnalyticsPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Revenue (30d)"
+          label="매출 (30일)"
           value={`$${recentRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
           sub={
             revChangePct !== null
               ? `${revChangePct > 0 ? "+" : ""}${revChangePct}% vs prev 30d`
-              : "No prior data"
+              : "이전 데이터 없음"
           }
           highlight
         />
         <StatCard
-          label="Orders (30d)"
+          label="주문 (30일)"
           value={String(recentOrderCount)}
           sub={`${prevOrders.filter((o) => ["paid","shipped","completed"].includes(o.status)).length} prev period`}
         />
         <StatCard
-          label="Avg Order"
+          label="평균 주문"
           value={`$${avgOrderValue.toFixed(0)}`}
-          sub="Last 30 days"
+          sub="최근 30일"
         />
         <StatCard
-          label="New Members"
+          label="신규 회원"
           value={String(newMembersThisMonth)}
-          sub="This calendar month"
+          sub="이번 달"
         />
       </div>
 
       {/* Revenue Chart */}
       <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
-          Daily Revenue — Last 30 Days
+          일별 매출 — 최근 30일
         </h2>
         <RevenueChart data={dailyData} />
         <p className="text-xs mt-2" style={{ color: "#4B5563" }}>
@@ -265,7 +265,7 @@ export default async function AdminAnalyticsPage() {
         {/* Top Products */}
         <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
           <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
-            Top Products by Revenue
+            매출 상위 상품
           </h2>
           {topProducts.length === 0 ? (
             <p className="text-sm" style={{ color: "#9CA3AF" }}>No order data yet.</p>
@@ -306,7 +306,7 @@ export default async function AdminAnalyticsPage() {
         {/* Order Status Breakdown */}
         <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
           <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
-            Orders by Status (All Time)
+            주문 상태별 현황 (전체)
           </h2>
           <div className="space-y-2">
             {Object.entries(statusMap)

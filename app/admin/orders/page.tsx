@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import OrdersAdminTable from "@/components/admin/OrdersAdminTable";
 
-export const metadata = { title: "Orders — Admin" };
+export const metadata = { title: "주문 관리 — Admin" };
 
 export default async function AdminOrdersPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,7 +23,7 @@ export default async function AdminOrdersPage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-8" style={{ color: "#F0E6FF" }}>
-        Orders
+        주문 관리
       </h1>
       <OrdersAdminTable orders={orders ?? []} />
     </div>

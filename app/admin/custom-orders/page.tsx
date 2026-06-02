@@ -1,7 +1,7 @@
-import { createAdminClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/server";
 import CustomOrdersAdminTable from "@/components/admin/CustomOrdersAdminTable";
 
-export const metadata = { title: "Custom Orders — Admin" };
+export const metadata = { title: "커스텀 의뢰 — Admin" };
 
 export default async function AdminCustomOrdersPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,7 +15,7 @@ export default async function AdminCustomOrdersPage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-8" style={{ color: "#F0E6FF" }}>
-        Custom Orders
+        커스텀 의뢰
       </h1>
       <CustomOrdersAdminTable requests={requests ?? []} />
     </div>
