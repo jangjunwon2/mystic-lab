@@ -3,7 +3,7 @@ import ReviewsAdminTable from "@/components/admin/ReviewsAdminTable";
 
 export const metadata = { title: "리뷰 관리 — Admin" };
 
-export default async function Admin리뷰 관리Page() {
+export default async function AdminReviewsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 

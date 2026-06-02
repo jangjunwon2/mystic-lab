@@ -17,7 +17,7 @@ interface RawProduct {
   product_translations: { name: string; language: string }[];
 }
 
-export default async function Admin상품 관리Page() {
+export default async function AdminProductsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 

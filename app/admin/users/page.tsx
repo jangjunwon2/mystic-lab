@@ -3,7 +3,7 @@ import UsersAdminTable, { type AdminUser } from "@/components/admin/UsersAdminTa
 
 export const metadata = { title: "회원 관리 — Admin" };
 
-export default async function Admin회원 관리Page() {
+export default async function AdminUsersPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
