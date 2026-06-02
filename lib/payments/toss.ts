@@ -49,6 +49,6 @@ export async function confirmTossPayment(
 /** KRW conversion rate — update periodically or replace with a live FX API */
 export const USD_TO_KRW = 1380;
 
-export function usdToKrw(usd: number): number {
-  return Math.round(usd * USD_TO_KRW);
+export function usdToKrw(usd: number, rate = USD_TO_KRW): number {
+  return Math.round(usd * rate);
 }

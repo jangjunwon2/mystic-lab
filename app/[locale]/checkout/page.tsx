@@ -17,9 +17,31 @@ import {
   Tag,
   Check,
   X,
+  Truck,
 } from "lucide-react";
 import { usdToKrw } from "@/lib/payments/toss";
 import type { CartItem } from "@/lib/payments/types";
+import { COUNTRIES } from "@/lib/constants/countries";
+
+interface ShippingAddress {
+  name: string;
+  phone: string;
+  line1: string;
+  line2: string;
+  city: string;
+  country: string;
+  postal: string;
+}
+
+interface KoreanAddress {
+  name: string;
+  phone: string;
+  line1: string;
+  line2: string;
+  postal: string;
+}
+
+const SHIPPING_COSTS: Record<string, number> = { standard: 0, express: 15 };
 
 // Lazy load Toss widget to avoid SSR issues
 const TossPaymentWidget = dynamic(
@@ -66,6 +88,14 @@ export default function CheckoutPage({ params }: Props) {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
+  const [krwRate, setKrwRate] = useState(1380);
+  const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard");
+  const [intlAddress, setIntlAddress] = useState<ShippingAddress>({
+    name: "", phone: "", line1: "", line2: "", city: "", country: "US", postal: "",
+  });
+  const [krAddress, setKrAddress] = useState<KoreanAddress>({
+    name: "", phone: "", line1: "", line2: "", postal: "",
+  });
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
@@ -76,6 +106,11 @@ export default function CheckoutPage({ params }: Props) {
       setItems([]);
     }
     setMounted(true);
+    // 실시간 환율 조회
+    fetch("/api/exchange-rate")
+      .then((r) => r.json())
+      .then((d: { usd_to_krw: number }) => { if (d.usd_to_krw > 0) setKrwRate(d.usd_to_krw); })
+      .catch(() => {});
   }, [params]);
 
   // Listen for Lemon Squeezy overlay success message
@@ -99,8 +134,9 @@ export default function CheckoutPage({ params }: Props) {
   }, []);
 
   const subtotalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
-  const totalUsd = Math.max(0, subtotalUsd - (appliedDiscount?.discountAmount ?? 0));
-  const totalKrw = usdToKrw(totalUsd);
+  const shippingUsd = track === "international" ? (SHIPPING_COSTS[shippingMethod] ?? 0) : 0;
+  const totalUsd = Math.max(0, subtotalUsd - (appliedDiscount?.discountAmount ?? 0) + shippingUsd);
+  const totalKrw = usdToKrw(totalUsd, krwRate);
 
   async function applyCoupon() {
     if (!couponCode.trim()) return;
@@ -140,8 +176,16 @@ export default function CheckoutPage({ params }: Props) {
     return true;
   };
 
+  const validateIntlAddress = (): boolean => {
+    if (!intlAddress.name.trim()) { setLsError("수신인 이름을 입력해주세요."); return false; }
+    if (!intlAddress.line1.trim()) { setLsError("주소를 입력해주세요."); return false; }
+    if (!intlAddress.country) { setLsError("국가를 선택해주세요."); return false; }
+    return true;
+  };
+
   const handleLemonPay = async () => {
     if (!validateEmail()) return;
+    if (!validateIntlAddress()) return;
     setLsError("");
     setLsLoading(true);
 
@@ -155,6 +199,8 @@ export default function CheckoutPage({ params }: Props) {
           locale,
           discountAmount: appliedDiscount?.discountAmount ?? 0,
           discountCodeId: appliedDiscount?.id ?? null,
+          shippingMethod,
+          shippingAddress: intlAddress,
         }),
       });
       const data = await res.json();
@@ -342,6 +388,103 @@ export default function CheckoutPage({ params }: Props) {
                       </p>
                     </div>
 
+                    {/* 배송 방법 */}
+                    <div>
+                      <p className="text-xs text-[#9CA3AF] uppercase tracking-wider mb-2">배송 방법</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([
+                          { key: "standard", label: "Standard (EMS)", sub: "7~14일 · 무료", price: "+$0" },
+                          { key: "express", label: "Express (DHL/FedEx)", sub: "3~5일", price: "+$15" },
+                        ] as const).map((m) => (
+                          <button
+                            key={m.key}
+                            type="button"
+                            onClick={() => setShippingMethod(m.key)}
+                            className={`flex flex-col p-3 rounded-lg border text-left transition-all ${
+                              shippingMethod === m.key
+                                ? "border-[#7C3AED] bg-[#7C3AED]/10"
+                                : "border-[#2D2D4E] hover:border-[#4B5563]"
+                            }`}
+                          >
+                            <span className="text-xs font-semibold text-[#F0E6FF]">{m.label}</span>
+                            <span className="text-[11px] text-[#9CA3AF] mt-0.5">{m.sub}</span>
+                            <span className={`text-xs font-bold mt-1 ${m.key === "express" ? "text-[#F59E0B]" : "text-[#10B981]"}`}>{m.price}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 국제 배송지 */}
+                    <div>
+                      <p className="text-xs text-[#9CA3AF] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Truck className="w-3.5 h-3.5" /> 배송지 정보
+                      </p>
+                      <div className="space-y-2.5">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="수신인 이름 *"
+                            value={intlAddress.name}
+                            onChange={(e) => setIntlAddress((p) => ({ ...p, name: e.target.value }))}
+                            maxLength={100}
+                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          />
+                          <input
+                            type="tel"
+                            placeholder="연락처"
+                            value={intlAddress.phone}
+                            onChange={(e) => setIntlAddress((p) => ({ ...p, phone: e.target.value }))}
+                            maxLength={30}
+                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="주소 *"
+                          value={intlAddress.line1}
+                          onChange={(e) => setIntlAddress((p) => ({ ...p, line1: e.target.value }))}
+                          maxLength={200}
+                          className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                        />
+                        <input
+                          type="text"
+                          placeholder="상세주소 (선택)"
+                          value={intlAddress.line2}
+                          onChange={(e) => setIntlAddress((p) => ({ ...p, line2: e.target.value }))}
+                          maxLength={200}
+                          className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="도시"
+                            value={intlAddress.city}
+                            onChange={(e) => setIntlAddress((p) => ({ ...p, city: e.target.value }))}
+                            maxLength={100}
+                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="우편번호"
+                            value={intlAddress.postal}
+                            onChange={(e) => setIntlAddress((p) => ({ ...p, postal: e.target.value }))}
+                            maxLength={20}
+                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          />
+                        </div>
+                        <select
+                          value={intlAddress.country}
+                          onChange={(e) => setIntlAddress((p) => ({ ...p, country: e.target.value }))}
+                          className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED]"
+                        >
+                          <option value="">국가 선택 *</option>
+                          {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
                     {lsError && (
                       <div className="flex items-center gap-2 bg-red-900/20 border border-red-500/30 rounded-lg px-4 py-3">
                         <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
@@ -381,7 +524,60 @@ export default function CheckoutPage({ params }: Props) {
 
                     <div className="text-xs text-[#6B7280] bg-[#13131F] rounded-lg px-3 py-2">
                       결제 금액: <span className="text-[#F59E0B] font-semibold">{totalKrw.toLocaleString()}원</span>
-                      <span className="ml-2 text-[#4B5563]">(≈ ${totalUsd.toLocaleString()} USD · 환율 1,380원 기준)</span>
+                      <span className="ml-2 text-[#4B5563]">(≈ ${totalUsd.toLocaleString()} USD · 환율 {krwRate.toLocaleString()}원)</span>
+                    </div>
+
+                    {/* 국내 배송지 */}
+                    <div>
+                      <p className="text-xs text-[#9CA3AF] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Truck className="w-3.5 h-3.5" /> 배송지 정보
+                      </p>
+                      <div className="space-y-2.5">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="수신인 이름 *"
+                            value={krAddress.name}
+                            onChange={(e) => setKrAddress((p) => ({ ...p, name: e.target.value }))}
+                            maxLength={50}
+                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          />
+                          <input
+                            type="tel"
+                            placeholder="연락처 *"
+                            value={krAddress.phone}
+                            onChange={(e) => setKrAddress((p) => ({ ...p, phone: e.target.value }))}
+                            maxLength={20}
+                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="주소 *"
+                          value={krAddress.line1}
+                          onChange={(e) => setKrAddress((p) => ({ ...p, line1: e.target.value }))}
+                          maxLength={200}
+                          className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="상세주소"
+                            value={krAddress.line2}
+                            onChange={(e) => setKrAddress((p) => ({ ...p, line2: e.target.value }))}
+                            maxLength={200}
+                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="우편번호"
+                            value={krAddress.postal}
+                            onChange={(e) => setKrAddress((p) => ({ ...p, postal: e.target.value }))}
+                            maxLength={10}
+                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <TossPaymentWidget
@@ -390,6 +586,7 @@ export default function CheckoutPage({ params }: Props) {
                       email={email}
                       items={items}
                       totalUsd={totalUsd}
+                      shippingAddress={krAddress}
                     />
                   </motion.div>
                 )}
@@ -441,7 +638,9 @@ export default function CheckoutPage({ params }: Props) {
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-[#9CA3AF]">배송비</span>
-                    <span className="text-[#9CA3AF]">결제 시 확정</span>
+                    <span className={shippingUsd > 0 ? "text-[#F0E6FF]" : "text-[#10B981]"}>
+                      {track === "international" ? (shippingUsd === 0 ? "무료" : `+$${shippingUsd}`) : "국내 무료"}
+                    </span>
                   </div>
                 </div>
 

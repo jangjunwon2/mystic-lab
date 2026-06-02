@@ -1,4 +1,4 @@
-{
+﻿{
   "nav": {
     "home": "홈",
     "products": "상품",
@@ -124,7 +124,9 @@
       "about": "소개",
       "contact": "문의",
       "privacy": "개인정보처리방침",
-      "terms": "이용약관"
+      "terms": "",
+      "refundPolicy": "환불 정책",
+      "shipping": "배송 안내"
     },
     "copyright": "© {year} Mystic Lab. All rights reserved."
   },
@@ -140,3 +142,4 @@
     "currency": "USD"
   }
 }
+

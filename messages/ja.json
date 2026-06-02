@@ -1,4 +1,4 @@
-{
+﻿{
   "nav": {
     "home": "ホーム",
     "products": "商品",
@@ -124,7 +124,9 @@
       "about": "会社概要",
       "contact": "お問い合わせ",
       "privacy": "プライバシーポリシー",
-      "terms": "利用規約"
+      "terms": "",
+      "refundPolicy": "返金ポリシー",
+      "shipping": "配送について"
     },
     "copyright": "© {year} Mystic Lab. All rights reserved."
   },
@@ -140,3 +142,4 @@
     "currency": "USD"
   }
 }
+

@@ -5,15 +5,24 @@ import { loadPaymentWidget, ANONYMOUS } from "@tosspayments/payment-widget-sdk";
 import type { PaymentWidgetInstance } from "@tosspayments/payment-widget-sdk";
 import { Loader2, AlertCircle } from "lucide-react";
 
+interface ShippingAddress {
+  name: string;
+  phone: string;
+  line1: string;
+  line2: string;
+  postal: string;
+}
+
 interface Props {
   amountKrw: number;
   locale: string;
   email: string;
   items: { id: string; slug: string; name: string; price_usd: number; quantity: number }[];
   totalUsd: number;
+  shippingAddress?: ShippingAddress;
 }
 
-export default function TossPaymentWidget({ amountKrw, locale, email, items, totalUsd }: Props) {
+export default function TossPaymentWidget({ amountKrw, locale, email, items, totalUsd, shippingAddress }: Props) {
   const widgetRef = useRef<PaymentWidgetInstance | null>(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -52,6 +61,12 @@ export default function TossPaymentWidget({ amountKrw, locale, email, items, tot
   const handlePay = async () => {
     if (!widgetRef.current) return;
     setError("");
+
+    if (!email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("이메일 주소를 올바르게 입력해주세요.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -60,7 +75,7 @@ export default function TossPaymentWidget({ amountKrw, locale, email, items, tot
       // Store cart data in sessionStorage so success page can confirm
       sessionStorage.setItem(
         "toss_pending",
-        JSON.stringify({ items, customerEmail: email, totalUsd, orderId })
+        JSON.stringify({ items, customerEmail: email, totalUsd, orderId, shippingAddress: shippingAddress ?? null })
       );
 
       await widgetRef.current.requestPayment({

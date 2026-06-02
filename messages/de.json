@@ -1,4 +1,4 @@
-{
+﻿{
   "nav": {
     "home": "Startseite",
     "products": "Produkte",
@@ -124,7 +124,9 @@
       "about": "Über Uns",
       "contact": "Kontakt",
       "privacy": "Datenschutzerklärung",
-      "terms": "Nutzungsbedingungen"
+      "terms": "",
+      "refundPolicy": "Rückgabe & Erstattung",
+      "shipping": "Versand"
     },
     "copyright": "© {year} Mystic Lab. Alle Rechte vorbehalten."
   },
@@ -140,3 +142,4 @@
     "currency": "USD"
   }
 }
+

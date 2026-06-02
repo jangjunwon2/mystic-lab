@@ -124,7 +124,9 @@
       "about": "About",
       "contact": "Contact",
       "privacy": "Privacy Policy",
-      "terms": "Terms of Service"
+      "terms": "Terms of Service",
+      "refundPolicy": "Refund Policy",
+      "shipping": "Shipping"
     },
     "copyright": "© {year} Mystic Lab. All rights reserved."
   },

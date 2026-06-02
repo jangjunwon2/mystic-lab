@@ -16,6 +16,8 @@ export default function Footer() {
     { href: `/${locale}/contact`, key: "contact" },
     { href: `/${locale}/privacy`, key: "privacy" },
     { href: `/${locale}/terms`, key: "terms" },
+    { href: `/${locale}/refund-policy`, key: "refundPolicy" },
+    { href: `/${locale}/shipping`, key: "shipping" },
   ] as const;
 
   return (

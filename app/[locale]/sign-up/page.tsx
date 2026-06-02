@@ -32,12 +32,20 @@ export default function SignUpPage({ params }: Props) {
     e.preventDefault();
     setError(null);
 
+    const trimmedName = name.trim();
+    if (!trimmedName) { setError("이름을 입력해주세요."); return; }
+    if (trimmedName.length > 50) { setError("이름은 50자 이하로 입력해주세요."); return; }
+
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("비밀번호가 일치하지 않습니다.");
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError("비밀번호는 최소 8자 이상이어야 합니다.");
+      return;
+    }
+    if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      setError("비밀번호에 숫자 또는 특수문자를 포함해주세요.");
       return;
     }
 
@@ -47,14 +55,24 @@ export default function SignUpPage({ params }: Props) {
       email: email.trim(),
       password,
       options: {
-        data: { full_name: name.trim() },
+        data: { full_name: trimmedName },
         emailRedirectTo: `${window.location.origin}/api/auth/callback?next=/${locale}/account`,
       },
     });
 
     setLoading(false);
     if (authError) {
-      setError(authError.message);
+      // Supabase 내부 메시지 → 사용자 친화적 메시지로 변환
+      const msg = authError.message.toLowerCase();
+      if (msg.includes("already registered") || msg.includes("already exists")) {
+        setError("이미 사용 중인 이메일입니다.");
+      } else if (msg.includes("invalid email")) {
+        setError("올바른 이메일 형식이 아닙니다.");
+      } else if (msg.includes("password")) {
+        setError("비밀번호가 보안 요건을 충족하지 않습니다.");
+      } else {
+        setError("회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      }
       return;
     }
 
@@ -144,6 +162,7 @@ export default function SignUpPage({ params }: Props) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  maxLength={50}
                   placeholder="Your name"
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
@@ -179,7 +198,7 @@ export default function SignUpPage({ params }: Props) {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  placeholder="Minimum 8 characters"
+                  placeholder="8자 이상, 숫자 또는 특수문자 포함"
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-10 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
                 <button
