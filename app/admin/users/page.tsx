@@ -1,5 +1,5 @@
 ﻿import { createAdminClient } from "@/lib/supabase/server";
-import 회원 관리AdminTable, { type AdminUser } from "@/components/admin/회원 관리AdminTable";
+import UsersAdminTable, { type AdminUser } from "@/components/admin/UsersAdminTable";
 
 export const metadata = { title: "회원 관리 — Admin" };
 
@@ -37,7 +37,7 @@ export default async function Admin회원 관리Page() {
           {users.length} total members
         </span>
       </div>
-      <회원 관리AdminTable users={users} />
+      <UsersAdminTable users={users} />
     </div>
   );
 }

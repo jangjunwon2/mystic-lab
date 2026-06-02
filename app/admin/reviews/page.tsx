@@ -1,5 +1,5 @@
 ﻿import { createAdminClient } from "@/lib/supabase/server";
-import 리뷰 관리AdminTable from "@/components/admin/리뷰 관리AdminTable";
+import ReviewsAdminTable from "@/components/admin/ReviewsAdminTable";
 
 export const metadata = { title: "리뷰 관리 — Admin" };
 
@@ -34,7 +34,7 @@ export default async function Admin리뷰 관리Page() {
           )}
         </h1>
       </div>
-      <리뷰 관리AdminTable reviews={reviews ?? []} />
+      <ReviewsAdminTable reviews={reviews ?? []} />
     </div>
   );
 }

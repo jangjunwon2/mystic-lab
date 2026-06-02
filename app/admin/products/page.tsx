@@ -1,6 +1,6 @@
 ﻿import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import 상품 관리AdminTable from "@/components/admin/상품 관리AdminTable";
+import ProductsAdminTable from "@/components/admin/ProductsAdminTable";
 
 export const metadata = { title: "상품 관리 — Admin" };
 
@@ -49,7 +49,7 @@ export default async function Admin상품 관리Page() {
         </Link>
       </div>
 
-      <상품 관리AdminTable products={rows} />
+      <ProductsAdminTable products={rows} />
     </div>
   );
 }
