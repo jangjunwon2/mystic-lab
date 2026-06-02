@@ -65,7 +65,7 @@ export default function ManualOrderForm({ users, products }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!selectedUserId) { setError("Select a user."); return; }
+    if (!selectedUserId) { setError("회원을 선택해주세요."); return; }
     if (items.some((i) => !i.product_id)) { setError("All items must have a product selected."); return; }
 
     setSaving(true);
@@ -81,9 +81,9 @@ export default function ManualOrderForm({ users, products }: Props) {
     });
     const json = await res.json();
     if (!res.ok) {
-      setError(json.error ?? "Failed to create order.");
+      setError(json.error ?? "주문 생성에 실패했습니다.");
     } else {
-      setSuccess(`Order created: #${(json.order_id as string).slice(0, 8).toUpperCase()}`);
+      setSuccess(`주문 생성 완료: #${(json.order_id as string).slice(0, 8).toUpperCase()}`);
       setTimeout(() => router.push("/admin/orders"), 1500);
     }
     setSaving(false);
@@ -110,13 +110,13 @@ export default function ManualOrderForm({ users, products }: Props) {
       {/* User selection */}
       <div className="rounded-xl border p-5 space-y-3" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <h3 className="font-medium flex items-center gap-2" style={{ color: "#F0E6FF" }}>
-          <UserSearch className="w-4 h-4 text-[#A855F7]" /> Customer
+          <UserSearch className="w-4 h-4 text-[#A855F7]" /> 고객
         </h3>
         <div className="relative">
           <input
             value={userSearch}
             onChange={(e) => { setUserSearch(e.target.value); setSelectedUserId(""); }}
-            placeholder="Search by email or name…"
+            placeholder="이메일 또는 이름으로 검색…"
             style={{ ...inputStyle, width: "100%" }}
           />
           {userSearch && !selectedUserId && filteredUsers.length > 0 && (
@@ -141,14 +141,14 @@ export default function ManualOrderForm({ users, products }: Props) {
         </div>
         {selectedUserId && (
           <p className="text-xs" style={{ color: "#10B981" }}>
-            ✓ Selected: {selectedEmail}
+            ✓ 선택됨: {selectedEmail}
           </p>
         )}
       </div>
 
       {/* Items */}
       <div className="rounded-xl border p-5 space-y-3" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
-        <h3 className="font-medium" style={{ color: "#F0E6FF" }}>Items</h3>
+        <h3 className="font-medium" style={{ color: "#F0E6FF" }}>주문 상품</h3>
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-2">
             <select
@@ -156,7 +156,7 @@ export default function ManualOrderForm({ users, products }: Props) {
               onChange={(e) => updateItem(i, "product_id", e.target.value)}
               style={{ ...inputStyle, flex: 1 }}
             >
-              <option value="">— Select product —</option>
+              <option value="">— 상품 선택 —</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>{p.name} (${p.price_usd})</option>
               ))}
@@ -195,22 +195,22 @@ export default function ManualOrderForm({ users, products }: Props) {
           className="flex items-center gap-1.5 text-xs transition-opacity hover:opacity-80"
           style={{ color: "#A855F7" }}
         >
-          <Plus className="w-3.5 h-3.5" /> Add item
+          <Plus className="w-3.5 h-3.5" /> 상품 추가
         </button>
         <div className="text-right pt-2 border-t" style={{ borderColor: "#2D2D4E" }}>
           <span className="text-sm font-semibold" style={{ color: "#F59E0B" }}>
-            Total: ${total.toFixed(2)}
+            합계: ${total.toFixed(2)}
           </span>
         </div>
       </div>
 
       {/* Note */}
       <div>
-        <label className="block text-xs mb-1.5" style={{ color: "#9CA3AF" }}>Admin note (optional)</label>
+        <label className="block text-xs mb-1.5" style={{ color: "#9CA3AF" }}>관리자 메모 (선택)</label>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="e.g. CS compensation, offline sale"
+          placeholder="예: CS 보상, 오프라인 판매"
           style={{ ...inputStyle, width: "100%" }}
         />
       </div>
@@ -221,7 +221,7 @@ export default function ManualOrderForm({ users, products }: Props) {
         className="w-full py-3 rounded-xl font-medium text-sm transition-opacity hover:opacity-90 disabled:opacity-50"
         style={{ background: "linear-gradient(135deg, #7C3AED, #A855F7)", color: "#fff" }}
       >
-        {saving ? "Creating order…" : "Create Order (status: paid)"}
+        {saving ? "주문 생성 중…" : "주문 생성 (상태: 결제 완료)"}
       </button>
     </form>
   );

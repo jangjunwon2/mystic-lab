@@ -87,9 +87,9 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>Announcements</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>공지 배너</h1>
           <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>
-            Active announcements appear at the top of every page on the store.
+            활성화된 공지는 스토어 모든 페이지 상단에 표시됩니다.
           </p>
         </div>
         <button
@@ -98,7 +98,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
           style={{ background: "linear-gradient(135deg, #7C3AED, #A855F7)", color: "#fff" }}
         >
           <Plus className="w-4 h-4" />
-          {creating ? "Cancel" : "New Announcement"}
+          {creating ? "취소" : "새 공지"}
         </button>
       </div>
 
@@ -108,22 +108,22 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
           className="rounded-xl border p-6 space-y-4"
           style={{ background: "#1A1A2E", borderColor: "#7C3AED" }}
         >
-          <h2 className="text-sm font-semibold" style={{ color: "#A855F7" }}>New Announcement</h2>
+          <h2 className="text-sm font-semibold" style={{ color: "#A855F7" }}>새 공지</h2>
 
           <label className="block space-y-1">
-            <span className="text-xs" style={{ color: "#9CA3AF" }}>Message *</span>
+            <span className="text-xs" style={{ color: "#9CA3AF" }}>메시지 *</span>
             <textarea
               style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
-              placeholder="🎉 Summer sale — 20% off all electronic devices this week!"
+              placeholder="🎉 여름 세일 — 이번 주 전 전자기기 20% 할인!"
               required
             />
           </label>
 
           <div className="grid grid-cols-2 gap-4">
             <label className="space-y-1">
-              <span className="text-xs" style={{ color: "#9CA3AF" }}>Link URL (optional)</span>
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>링크 URL (선택)</span>
               <input
                 style={inputStyle}
                 value={form.link_url}
@@ -132,16 +132,16 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs" style={{ color: "#9CA3AF" }}>Link Label (optional)</span>
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>링크 텍스트 (선택)</span>
               <input
                 style={inputStyle}
                 value={form.link_label}
                 onChange={(e) => setForm({ ...form, link_label: e.target.value })}
-                placeholder="Shop Now"
+                placeholder="지금 쇼핑하기"
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs" style={{ color: "#9CA3AF" }}>Starts At (optional)</span>
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>시작일 (선택)</span>
               <input
                 type="datetime-local"
                 style={inputStyle}
@@ -150,7 +150,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs" style={{ color: "#9CA3AF" }}>Ends At (optional)</span>
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>종료일 (선택)</span>
               <input
                 type="datetime-local"
                 style={inputStyle}
@@ -167,7 +167,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
               onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
               className="w-4 h-4 accent-purple-600"
             />
-            <span className="text-sm" style={{ color: "#F0E6FF" }}>Active immediately</span>
+            <span className="text-sm" style={{ color: "#F0E6FF" }}>즉시 활성화</span>
           </label>
 
           <button
@@ -176,7 +176,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
             className="px-6 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
             style={{ background: "#7C3AED", color: "#fff" }}
           >
-            {loadingId === "new" ? "Creating..." : "Create Announcement"}
+            {loadingId === "new" ? "생성 중..." : "공지 생성"}
           </button>
         </form>
       )}
@@ -214,15 +214,15 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
                       color: item.is_active ? "#10B981" : "#EF4444",
                     }}
                   >
-                    {item.is_active ? "Active" : "Inactive"}
+                    {item.is_active ? "활성" : "비활성"}
                   </span>
                   {item.ends_at && (
                     <span className="text-xs" style={{ color: "#9CA3AF" }}>
-                      Ends {new Date(item.ends_at).toLocaleDateString()}
+                      종료 {new Date(item.ends_at).toLocaleDateString("ko-KR")}
                     </span>
                   )}
                   <span className="text-xs" style={{ color: "#4B5563" }}>
-                    {new Date(item.created_at).toLocaleDateString()}
+                    {new Date(item.created_at).toLocaleDateString("ko-KR")}
                   </span>
                 </div>
               </div>
@@ -230,7 +230,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
                 <button
                   onClick={() => toggleActive(item)}
                   disabled={loadingId === item.id}
-                  title={item.is_active ? "Deactivate" : "Activate"}
+                  title={item.is_active ? "비활성화" : "활성화"}
                   style={{ color: item.is_active ? "#10B981" : "#9CA3AF" }}
                 >
                   {item.is_active
@@ -240,7 +240,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
                 <button
                   onClick={() => deleteItem(item.id)}
                   disabled={loadingId === item.id}
-                  title="Delete"
+                  title="삭제"
                   style={{ color: "#EF4444" }}
                 >
                   <Trash2 className="w-4 h-4" />

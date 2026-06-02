@@ -24,6 +24,14 @@ const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   banned:    { bg: "rgba(239,68,68,0.12)",  color: "#EF4444" },
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  active: "활성", suspended: "정지", banned: "차단",
+};
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  pending: "결제 대기", paid: "결제 완료", shipped: "배송중", completed: "배송 완료", refunded: "환불",
+};
+
 export default function UserDetailClient({ profile: initialProfile, email, orders, grants: initialGrants, allProducts }: Props) {
   const [profile, setProfile] = useState(initialProfile);
   const [grants, setGrants] = useState(initialGrants);
@@ -93,7 +101,7 @@ export default function UserDetailClient({ profile: initialProfile, email, order
   }
 
   async function revokeGrant(grantId: string) {
-    if (!window.confirm("Revoke this video access?")) return;
+    if (!window.confirm("이 영상 접근 권한을 회수하시겠습니까?")) return;
     const res = await fetch(`/api/admin/users/${profile.id}/grants?grant_id=${grantId}`, { method: "DELETE" });
     if (res.ok) setGrants((prev) => prev.filter((g) => g.id !== grantId));
   }
@@ -107,13 +115,13 @@ export default function UserDetailClient({ profile: initialProfile, email, order
       body: JSON.stringify({ admin_notes: adminNotes }),
     });
     setSavingNotes(false);
-    setNotesStatus(res.ok ? "✅ Saved." : "❌ Failed.");
+    setNotesStatus(res.ok ? "✅ 저장됨." : "❌ 실패.");
     setTimeout(() => setNotesStatus(""), 3000);
   }
 
   async function sendEmail() {
     if (!emailSubject.trim() || !emailMessage.trim()) {
-      setEmailStatus("❌ Subject and message required.");
+      setEmailStatus("❌ 제목과 내용을 입력해주세요.");
       return;
     }
     setSendingEmail(true);
@@ -125,12 +133,12 @@ export default function UserDetailClient({ profile: initialProfile, email, order
     });
     setSendingEmail(false);
     if (res.ok) {
-      setEmailStatus("✅ Email sent.");
+      setEmailStatus("✅ 이메일 발송 완료.");
       setEmailSubject("");
       setEmailMessage("");
     } else {
       const data = await res.json();
-      setEmailStatus(`❌ ${data.error ?? "Failed to send."}`);
+      setEmailStatus(`❌ ${data.error ?? "발송 실패."}`);
     }
   }
 
@@ -146,21 +154,21 @@ export default function UserDetailClient({ profile: initialProfile, email, order
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold mb-0.5" style={{ color: "#F0E6FF" }}>
-              {profile.display_name ?? "No name"}
+              {profile.display_name ?? "이름 없음"}
             </h2>
             <p className="text-sm" style={{ color: "#9CA3AF" }}>{email ?? "—"}</p>
             <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
-              Joined {new Date(profile.created_at).toLocaleDateString()} · Role: {profile.role}
+              가입일 {new Date(profile.created_at).toLocaleDateString("ko-KR")} · 권한: {profile.role}
             </p>
             {profile.suspension_reason && (
               <p className="text-xs mt-1" style={{ color: "#F59E0B" }}>
-                Reason: {profile.suspension_reason}
+                사유: {profile.suspension_reason}
               </p>
             )}
           </div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 rounded-full text-xs font-medium" style={{ background: st.bg, color: st.color }}>
-              {profile.status}
+              {STATUS_LABELS[profile.status] ?? profile.status}
             </span>
             {profile.role !== "admin" && (
               <>
@@ -172,15 +180,15 @@ export default function UserDetailClient({ profile: initialProfile, email, order
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
                       style={{ background: "rgba(245,158,11,0.12)", color: "#F59E0B" }}
                     >
-                      <ShieldOff className="w-3.5 h-3.5" /> Suspend
+                      <ShieldOff className="w-3.5 h-3.5" /> 정지
                     </button>
                     <button
-                      onClick={() => { if (window.confirm("Ban this user?")) updateStatus("banned"); }}
+                      onClick={() => { if (window.confirm("이 회원을 차단하시겠습니까?")) updateStatus("banned"); }}
                       disabled={loadingStatus}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
                       style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
                     >
-                      <Ban className="w-3.5 h-3.5" /> Ban
+                      <Ban className="w-3.5 h-3.5" /> 차단
                     </button>
                   </>
                 )}
@@ -191,7 +199,7 @@ export default function UserDetailClient({ profile: initialProfile, email, order
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
                     style={{ background: "rgba(16,185,129,0.12)", color: "#10B981" }}
                   >
-                    <ShieldCheck className="w-3.5 h-3.5" /> Restore
+                    <ShieldCheck className="w-3.5 h-3.5" /> 복구
                   </button>
                 )}
               </>
@@ -204,43 +212,43 @@ export default function UserDetailClient({ profile: initialProfile, email, order
       <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold flex items-center gap-2" style={{ color: "#F0E6FF" }}>
-            <Play className="w-4 h-4 text-[#A855F7]" /> Manual Video Access
+            <Play className="w-4 h-4 text-[#A855F7]" /> 수동 영상 접근 권한
           </h3>
           <button
             onClick={() => setShowGrantForm((v) => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
             style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7", border: "1px solid rgba(124,58,237,0.4)" }}
           >
-            <Plus className="w-3.5 h-3.5" /> Grant Access
+            <Plus className="w-3.5 h-3.5" /> 권한 부여
           </button>
         </div>
 
         {showGrantForm && (
           <div className="mb-4 p-4 rounded-lg space-y-3" style={{ background: "#13131F", border: "1px solid #2D2D4E" }}>
             <div>
-              <label className="text-xs text-[#9CA3AF] mb-1 block">Product</label>
+              <label className="text-xs text-[#9CA3AF] mb-1 block">상품</label>
               <select
                 value={grantProductId}
                 onChange={(e) => setGrantProductId(e.target.value)}
                 style={{ ...inputStyle, width: "100%" }}
               >
-                <option value="">— Select product —</option>
+                <option value="">— 상품 선택 —</option>
                 {allProducts.map((p) => (
                   <option key={p.id} value={p.id}>{p.name} ({p.slug})</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-xs text-[#9CA3AF] mb-1 block">Note (optional)</label>
+              <label className="text-xs text-[#9CA3AF] mb-1 block">메모 (선택)</label>
               <input
                 value={grantNote}
                 onChange={(e) => setGrantNote(e.target.value)}
-                placeholder="e.g. CS compensation, reviewer access"
+                placeholder="예: CS 보상, 리뷰어 접근"
                 style={{ ...inputStyle, width: "100%" }}
               />
             </div>
             <div>
-              <label className="text-xs text-[#9CA3AF] mb-1 block">Expires at (optional, leave blank = permanent)</label>
+              <label className="text-xs text-[#9CA3AF] mb-1 block">만료일 (선택, 비워두면 영구)</label>
               <input
                 type="datetime-local"
                 value={grantExpiry}
@@ -255,26 +263,26 @@ export default function UserDetailClient({ profile: initialProfile, email, order
                 className="px-4 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
                 style={{ background: "#7C3AED", color: "#fff" }}
               >
-                {savingGrant ? "Saving…" : "Save Grant"}
+                {savingGrant ? "저장 중…" : "권한 저장"}
               </button>
               <button
                 onClick={() => setShowGrantForm(false)}
                 className="px-4 py-1.5 rounded-lg text-xs font-medium"
                 style={{ background: "#2D2D4E", color: "#9CA3AF" }}
               >
-                Cancel
+                취소
               </button>
             </div>
           </div>
         )}
 
         {grants.length === 0 ? (
-          <p className="text-sm" style={{ color: "#6B7280" }}>No manual grants.</p>
+          <p className="text-sm" style={{ color: "#6B7280" }}>수동 부여 권한이 없습니다.</p>
         ) : (
           <div className="space-y-2">
             {grants.map((g) => {
               const name = g.products?.product_translations.find((t) => t.language === "en")?.name
-                ?? g.products?.slug ?? "Unknown product";
+                ?? g.products?.slug ?? "알 수 없는 상품";
               const expired = g.expires_at && new Date(g.expires_at) < new Date();
               return (
                 <div
@@ -284,21 +292,21 @@ export default function UserDetailClient({ profile: initialProfile, email, order
                 >
                   <div>
                     <p className="text-sm font-medium" style={{ color: expired ? "#6B7280" : "#F0E6FF" }}>
-                      {name} {expired && <span style={{ color: "#EF4444" }}>(expired)</span>}
+                      {name} {expired && <span style={{ color: "#EF4444" }}>(만료됨)</span>}
                     </p>
                     {g.note && <p className="text-xs" style={{ color: "#9CA3AF" }}>{g.note}</p>}
                     <p className="text-xs" style={{ color: "#6B7280" }}>
                       {g.expires_at
-                        ? `Expires ${new Date(g.expires_at).toLocaleDateString()}`
-                        : "Permanent"
-                      } · Granted {new Date(g.created_at).toLocaleDateString()}
+                        ? `만료 ${new Date(g.expires_at).toLocaleDateString("ko-KR")}`
+                        : "영구"
+                      } · 부여 {new Date(g.created_at).toLocaleDateString("ko-KR")}
                     </p>
                   </div>
                   <button
                     onClick={() => revokeGrant(g.id)}
                     className="p-1.5 rounded transition-colors hover:opacity-80"
                     style={{ color: "#EF4444" }}
-                    title="Revoke"
+                    title="회수"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -312,10 +320,10 @@ export default function UserDetailClient({ profile: initialProfile, email, order
       {/* Orders */}
       <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <h3 className="font-semibold flex items-center gap-2 mb-4" style={{ color: "#F0E6FF" }}>
-          <Package className="w-4 h-4 text-[#A855F7]" /> Orders ({orders.length})
+          <Package className="w-4 h-4 text-[#A855F7]" /> 주문 ({orders.length})
         </h3>
         {orders.length === 0 ? (
-          <p className="text-sm" style={{ color: "#6B7280" }}>No orders.</p>
+          <p className="text-sm" style={{ color: "#6B7280" }}>주문이 없습니다.</p>
         ) : (
           <div className="space-y-2">
             {orders.map((o) => (
@@ -338,7 +346,7 @@ export default function UserDetailClient({ profile: initialProfile, email, order
                 <div className="text-right">
                   <p className="text-sm font-medium" style={{ color: "#A855F7" }}>${o.total_usd.toFixed(2)}</p>
                   <p className="text-xs" style={{ color: "#6B7280" }}>
-                    {o.status} · {new Date(o.created_at).toLocaleDateString()}
+                    {ORDER_STATUS_LABELS[o.status] ?? o.status} · {new Date(o.created_at).toLocaleDateString("ko-KR")}
                   </p>
                 </div>
               </div>
@@ -350,11 +358,11 @@ export default function UserDetailClient({ profile: initialProfile, email, order
       {/* Admin notes */}
       <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <h3 className="font-semibold flex items-center gap-2 mb-4" style={{ color: "#F0E6FF" }}>
-          Internal Notes <span className="text-xs font-normal" style={{ color: "#6B7280" }}>(not visible to user)</span>
+          내부 메모 <span className="text-xs font-normal" style={{ color: "#6B7280" }}>(회원에게 보이지 않음)</span>
         </h3>
         <textarea
           rows={4}
-          placeholder="Add private notes about this user..."
+          placeholder="이 회원에 대한 비공개 메모를 입력하세요..."
           value={adminNotes}
           onChange={(e) => setAdminNotes(e.target.value)}
           style={{ ...inputStyle, width: "100%", resize: "vertical" }}
@@ -366,7 +374,7 @@ export default function UserDetailClient({ profile: initialProfile, email, order
             className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
             style={{ background: "#2D2D4E", color: "#F0E6FF" }}
           >
-            {savingNotes ? "Saving…" : "Save Notes"}
+            {savingNotes ? "저장 중…" : "메모 저장"}
           </button>
           {notesStatus && (
             <span className="text-xs" style={{ color: notesStatus.startsWith("✅") ? "#10B981" : "#EF4444" }}>
@@ -380,19 +388,19 @@ export default function UserDetailClient({ profile: initialProfile, email, order
       {email && (
         <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
           <h3 className="font-semibold flex items-center gap-2 mb-4" style={{ color: "#F0E6FF" }}>
-            <Mail className="w-4 h-4 text-[#A855F7]" /> Send Email to {email}
+            <Mail className="w-4 h-4 text-[#A855F7]" /> {email} 에게 이메일 발송
           </h3>
           <div className="space-y-3">
             <input
               type="text"
-              placeholder="Subject"
+              placeholder="제목"
               value={emailSubject}
               onChange={(e) => setEmailSubject(e.target.value)}
               style={{ ...inputStyle, width: "100%" }}
             />
             <textarea
               rows={4}
-              placeholder="Your message..."
+              placeholder="메시지를 입력하세요..."
               value={emailMessage}
               onChange={(e) => setEmailMessage(e.target.value)}
               style={{ ...inputStyle, width: "100%", resize: "vertical" }}
@@ -404,7 +412,7 @@ export default function UserDetailClient({ profile: initialProfile, email, order
                 className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
                 style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" }}
               >
-                {sendingEmail ? "Sending…" : "Send Email"}
+                {sendingEmail ? "발송 중…" : "이메일 발송"}
               </button>
               {emailStatus && (
                 <span
