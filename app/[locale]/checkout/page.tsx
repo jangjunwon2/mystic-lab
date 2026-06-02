@@ -21,7 +21,9 @@ import {
 } from "lucide-react";
 import { usdToKrw } from "@/lib/payments/toss";
 import type { CartItem } from "@/lib/payments/types";
-import { COUNTRIES } from "@/lib/constants/countries";
+import CountrySelect from "@/components/ui/CountrySelect";
+import { getPhoneCode } from "@/lib/constants/countries";
+import type { Country } from "@/lib/constants/countries";
 
 interface ShippingAddress {
   name: string;
@@ -429,14 +431,22 @@ export default function CheckoutPage({ params }: Props) {
                             maxLength={100}
                             className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
                           />
-                          <input
-                            type="tel"
-                            placeholder="연락처"
-                            value={intlAddress.phone}
-                            onChange={(e) => setIntlAddress((p) => ({ ...p, phone: e.target.value }))}
-                            maxLength={30}
-                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
-                          />
+                          <div className="relative">
+                            {intlAddress.country && (
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#9CA3AF] font-mono pointer-events-none select-none">
+                                {getPhoneCode(intlAddress.country)}
+                              </span>
+                            )}
+                            <input
+                              type="tel"
+                              placeholder="연락처"
+                              value={intlAddress.phone}
+                              onChange={(e) => setIntlAddress((p) => ({ ...p, phone: e.target.value }))}
+                              maxLength={30}
+                              className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                              style={{ paddingLeft: intlAddress.country ? `${getPhoneCode(intlAddress.country).length * 8 + 16}px` : "12px" }}
+                            />
+                          </div>
                         </div>
                         <input
                           type="text"
@@ -472,16 +482,18 @@ export default function CheckoutPage({ params }: Props) {
                             className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
                           />
                         </div>
-                        <select
+                        <CountrySelect
                           value={intlAddress.country}
-                          onChange={(e) => setIntlAddress((p) => ({ ...p, country: e.target.value }))}
-                          className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED]"
-                        >
-                          <option value="">국가 선택 *</option>
-                          {COUNTRIES.map((c) => (
-                            <option key={c.code} value={c.code}>{c.name}</option>
-                          ))}
-                        </select>
+                          onChange={(c: Country) => {
+                            // 국가 변경 시 전화번호 국가코드 자동 입력 (비어있을 때만)
+                            setIntlAddress((p) => ({
+                              ...p,
+                              country: c.code,
+                              phone: p.phone ? p.phone : c.phone,
+                            }));
+                          }}
+                          placeholder="국가 선택 *"
+                        />
                       </div>
                     </div>
 
