@@ -68,7 +68,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
   }
 
   async function deleteReview(id: string) {
-    if (!window.confirm("Delete this review permanently?")) return;
+    if (!window.confirm("이 리뷰를 영구적으로 삭제하시겠습니까?")) return;
     setLoadingId(id);
     const res = await fetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
     if (res.ok) setReviews((prev) => prev.filter((r) => r.id !== id));
@@ -92,12 +92,12 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
             }}
           >
             {f === "pending"
-              ? `Pending (${pendingCount})`
+              ? `승인 대기 (${pendingCount})`
               : f === "reported"
-              ? `Reported (${reportedCount})`
+              ? `신고됨 (${reportedCount})`
               : f === "approved"
-              ? "Approved"
-              : `All (${reviews.length})`}
+              ? "승인됨"
+              : `전체 (${reviews.length})`}
           </button>
         ))}
       </div>
@@ -105,14 +105,14 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
       <div className="space-y-3">
         {filtered.length === 0 ? (
           <div className="rounded-xl border p-12 text-center" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
-            <p style={{ color: "#9CA3AF" }}>No reviews found.</p>
+            <p style={{ color: "#9CA3AF" }}>리뷰가 없습니다.</p>
           </div>
         ) : (
           filtered.map((r) => {
             const productName =
               r.products?.product_translations.find((t) => t.language === "en")?.name ??
               r.products?.slug ??
-              "Unknown product";
+              "알 수 없는 상품";
             const isLoading = loadingId === r.id;
             return (
               <div
@@ -129,9 +129,9 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <span className="text-sm font-medium" style={{ color: "#F0E6FF" }}>
-                        {r.profiles?.display_name ?? "Anonymous"}
+                        {r.profiles?.display_name ?? "익명"}
                       </span>
-                      <span className="text-xs" style={{ color: "#9CA3AF" }}>on</span>
+                      <span className="text-xs" style={{ color: "#9CA3AF" }}>·</span>
                       <span className="text-sm font-medium" style={{ color: "#A855F7" }}>
                         {productName}
                       </span>
@@ -143,14 +143,14 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                             : { background: "rgba(245,158,11,0.12)", color: "#F59E0B" }
                         }
                       >
-                        {r.is_approved ? "Approved" : "Pending"}
+                        {r.is_approved ? "승인됨" : "승인 대기"}
                       </span>
                       {r.is_reported && (
                         <span
                           className="px-2 py-0.5 rounded-full text-xs font-medium"
                           style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
                         >
-                          🚩 Reported
+                          🚩 신고됨
                         </span>
                       )}
                     </div>
@@ -170,7 +170,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                       <p className="text-sm" style={{ color: "#9CA3AF" }}>{r.comment}</p>
                     )}
                     <p className="text-xs mt-2" style={{ color: "#6B7280" }}>
-                      {new Date(r.created_at).toLocaleDateString()}
+                      {new Date(r.created_at).toLocaleDateString("ko-KR")}
                     </p>
                   </div>
 
@@ -180,17 +180,17 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                       <button
                         onClick={() => dismissReport(r.id)}
                         disabled={isLoading}
-                        title="Dismiss Report"
+                        title="신고 해제"
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
                         style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
                       >
-                        <XCircle className="w-3.5 h-3.5" /> Dismiss Report
+                        <XCircle className="w-3.5 h-3.5" /> 신고 해제
                       </button>
                     )}
                     <button
                       onClick={() => toggleApprove(r)}
                       disabled={isLoading}
-                      title={r.is_approved ? "Unapprove" : "Approve"}
+                      title={r.is_approved ? "승인 취소" : "승인"}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
                       style={
                         r.is_approved
@@ -199,15 +199,15 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                       }
                     >
                       {r.is_approved ? (
-                        <><XCircle className="w-3.5 h-3.5" /> Unapprove</>
+                        <><XCircle className="w-3.5 h-3.5" /> 승인 취소</>
                       ) : (
-                        <><CheckCircle2 className="w-3.5 h-3.5" /> Approve</>
+                        <><CheckCircle2 className="w-3.5 h-3.5" /> 승인</>
                       )}
                     </button>
                     <button
                       onClick={() => deleteReview(r.id)}
                       disabled={isLoading}
-                      title="Delete"
+                      title="삭제"
                       className="p-1.5 rounded transition-colors hover:opacity-80"
                       style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
                     >

@@ -105,7 +105,26 @@
     "orders": "주문 내역",
     "tutorials": "해법 영상",
     "noOrders": "아직 주문 내역이 없습니다.",
-    "watchTutorial": "해법 영상 보기"
+    "watchTutorial": "해법 영상 보기",
+    "signOut": "로그아웃",
+    "adminDashboard": "관리자 대시보드",
+    "browseProducts": "상품 보러가기",
+    "noTutorials": "아직 해법 영상이 없습니다. 상품을 구매하면 영상이 잠금 해제됩니다.",
+    "orderNumber": "주문번호",
+    "trackShipment": "배송 추적",
+    "trackingPending": "운송장 번호 준비 중...",
+    "status": {
+      "pending": "결제 대기",
+      "paid": "결제 완료",
+      "shipped": "배송중",
+      "completed": "배송 완료",
+      "refunded": "환불"
+    },
+    "steps": {
+      "paid": "결제 완료",
+      "shipped": "배송중",
+      "completed": "배송 완료"
+    }
   },
   "unlock": {
     "title": "해법 영상 잠금 해제",
@@ -142,4 +161,3 @@
     "currency": "USD"
   }
 }
-

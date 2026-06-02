@@ -105,7 +105,26 @@
     "orders": "Mes Commandes",
     "tutorials": "Mes Tutoriels",
     "noOrders": "Aucune commande pour l'instant.",
-    "watchTutorial": "Voir le Tutoriel"
+    "watchTutorial": "Voir le Tutoriel",
+    "signOut": "Déconnexion",
+    "adminDashboard": "Tableau de Bord Admin",
+    "browseProducts": "Voir les Produits",
+    "noTutorials": "Aucun tutoriel pour l'instant. Achetez un produit pour les débloquer.",
+    "orderNumber": "Commande",
+    "trackShipment": "Suivre l'Envoi",
+    "trackingPending": "Numéro de suivi en attente...",
+    "status": {
+      "pending": "Paiement en Attente",
+      "paid": "Payé",
+      "shipped": "Expédié",
+      "completed": "Livré",
+      "refunded": "Remboursé"
+    },
+    "steps": {
+      "paid": "Payé",
+      "shipped": "Expédié",
+      "completed": "Livré"
+    }
   },
   "unlock": {
     "title": "Déverrouiller le Tutoriel",
@@ -142,4 +161,3 @@
     "currency": "USD"
   }
 }
-

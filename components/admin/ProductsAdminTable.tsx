@@ -48,7 +48,7 @@ export default function ProductsAdminTable({ products }: Props) {
   }
 
   async function deleteProduct(id: string, name: string) {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    if (!confirm(`"${name}" 상품을 삭제하시겠습니까? 되돌릴 수 없습니다.`)) return;
     setLoadingId(id);
     const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
     if (res.ok) {
@@ -63,7 +63,7 @@ export default function ProductsAdminTable({ products }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-              {["Product", "Category", "Price", "Stock", "Status", "Actions"].map((h) => (
+              {["상품", "카테고리", "가격", "재고", "상태", "관리"].map((h) => (
                 <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                   {h}
                 </th>
@@ -74,9 +74,9 @@ export default function ProductsAdminTable({ products }: Props) {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
-                  No products yet.{" "}
+                  아직 상품이 없습니다.{" "}
                   <Link href="/admin/products/new" style={{ color: "#A855F7" }}>
-                    Create one
+                    상품 추가하기
                   </Link>
                 </td>
               </tr>
@@ -130,7 +130,7 @@ export default function ProductsAdminTable({ products }: Props) {
                         color: product.is_active ? "#10B981" : "#EF4444",
                       }}
                     >
-                      {product.is_active ? "Active" : "Inactive"}
+                      {product.is_active ? "활성" : "비활성"}
                     </button>
                   </td>
                   <td className="px-6 py-4">
@@ -140,7 +140,7 @@ export default function ProductsAdminTable({ products }: Props) {
                         className="text-xs hover:opacity-80 transition-opacity"
                         style={{ color: "#A855F7" }}
                       >
-                        Edit
+                        수정
                       </Link>
                       <button
                         onClick={() => deleteProduct(product.id, product.displayName)}
@@ -148,7 +148,7 @@ export default function ProductsAdminTable({ products }: Props) {
                         className="text-xs hover:opacity-80 transition-opacity"
                         style={{ color: "#EF4444" }}
                       >
-                        Delete
+                        삭제
                       </button>
                     </div>
                   </td>

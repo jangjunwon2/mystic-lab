@@ -16,14 +16,6 @@ const STATUS_COLORS: Record<string, string> = {
   refunded:  "bg-red-500/15 text-red-400 border-red-500/30",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  pending:   "결제 대기",
-  paid:      "결제 완료",
-  shipped:   "배송중",
-  completed: "배송 완료",
-  refunded:  "환불",
-};
-
 // 배송사별 운송장 추적 URL
 const TRACKING_URLS: Record<string, (n: string) => string> = {
   cj:      (n) => `https://www.cjlogistics.com/ko/tool/parcel/tracking?paramInvcNo=${n}`,
@@ -125,7 +117,7 @@ export default function AccountClient({ locale, profile, orders }: Props) {
             className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#9CA3AF] transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            Sign Out
+            {t("signOut")}
           </button>
         </motion.div>
 
@@ -135,7 +127,7 @@ export default function AccountClient({ locale, profile, orders }: Props) {
             href="/admin"
             className="flex items-center justify-between bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-4 py-3 mb-6 hover:bg-[#F59E0B]/15 transition-colors"
           >
-            <span className="text-sm font-medium text-[#F59E0B]">Admin Dashboard</span>
+            <span className="text-sm font-medium text-[#F59E0B]">{t("adminDashboard")}</span>
             <ChevronRight className="w-4 h-4 text-[#F59E0B]" />
           </Link>
         )}
@@ -172,13 +164,13 @@ export default function AccountClient({ locale, profile, orders }: Props) {
                   href={`/${locale}/products`}
                   className="inline-block mt-4 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
                 >
-                  Browse Products
+                  {t("browseProducts")}
                 </Link>
               </div>
             ) : (
               <div className="space-y-4">
                 {typedOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} locale={locale} />
+                  <OrderCard key={order.id} order={order} locale={locale} t={t} />
                 ))}
               </div>
             )}
@@ -194,12 +186,12 @@ export default function AccountClient({ locale, profile, orders }: Props) {
             {purchasedOrders.length === 0 ? (
               <div className="text-center py-16 text-[#9CA3AF]">
                 <Play className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">No tutorials yet. Purchase a product to unlock tutorials.</p>
+                <p className="text-sm">{t("noTutorials")}</p>
                 <Link
                   href={`/${locale}/products`}
                   className="inline-block mt-4 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
                 >
-                  Browse Products
+                  {t("browseProducts")}
                 </Link>
               </div>
             ) : (
@@ -222,10 +214,17 @@ export default function AccountClient({ locale, profile, orders }: Props) {
 
 // 배송 진행 단계
 const STEPS = ["paid", "shipped", "completed"] as const;
-const STEP_LABELS: Record<string, string> = { paid: "결제 완료", shipped: "배송중", completed: "배송 완료" };
 
-function OrderCard({ order, locale }: { order: Order; locale: string }) {
-  const date = new Date(order.created_at).toLocaleDateString("ko-KR", {
+function OrderCard({
+  order,
+  locale,
+  t,
+}: {
+  order: Order;
+  locale: string;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const date = new Date(order.created_at).toLocaleDateString(locale, {
     year: "numeric", month: "short", day: "numeric",
   });
 
@@ -241,12 +240,12 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
       {/* 헤더 */}
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs text-[#6B7280] mb-0.5">주문번호 #{order.id.slice(0, 8).toUpperCase()}</p>
+          <p className="text-xs text-[#6B7280] mb-0.5">{t("orderNumber")} #{order.id.slice(0, 8).toUpperCase()}</p>
           <p className="text-xs text-[#6B7280]">{date}</p>
         </div>
         <div className="flex items-center gap-3">
           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border uppercase tracking-wide ${STATUS_COLORS[order.status] ?? ""}`}>
-            {STATUS_LABELS[order.status] ?? order.status}
+            {t(`status.${order.status}`)}
           </span>
           <span className="text-sm font-semibold text-[#F59E0B]">
             ${order.total_usd.toFixed(2)}
@@ -271,7 +270,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
                       : <span className="w-1.5 h-1.5 rounded-full bg-[#4B5563]" />}
                   </div>
                   <span className={`text-[9px] mt-1 whitespace-nowrap ${done ? "text-[#A855F7]" : "text-[#4B5563]"}`}>
-                    {STEP_LABELS[step]}
+                    {t(`steps.${step}`)}
                   </span>
                 </div>
                 {i < STEPS.length - 1 && (
@@ -295,7 +294,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
               {order.tracking_number ? (
                 <p className="text-xs font-mono text-[#F0E6FF]">{order.tracking_number}</p>
               ) : (
-                <p className="text-xs text-[#6B7280]">운송장 번호 준비 중...</p>
+                <p className="text-xs text-[#6B7280]">{t("trackingPending")}</p>
               )}
             </div>
           </div>
@@ -306,7 +305,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-xs text-[#A855F7] hover:text-[#C084FC] transition-colors"
             >
-              배송 추적 <ExternalLink className="w-3 h-3" />
+              {t("trackShipment")} <ExternalLink className="w-3 h-3" />
             </a>
           )}
         </div>

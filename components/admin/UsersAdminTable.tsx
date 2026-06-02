@@ -5,9 +5,13 @@ import Link from "next/link";
 import { Search, ShieldOff, ShieldCheck, Ban, ChevronRight } from "lucide-react";
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  active:    { bg: "rgba(16,185,129,0.12)", color: "#10B981", label: "Active" },
-  suspended: { bg: "rgba(245,158,11,0.12)", color: "#F59E0B", label: "Suspended" },
-  banned:    { bg: "rgba(239,68,68,0.12)",  color: "#EF4444", label: "Banned" },
+  active:    { bg: "rgba(16,185,129,0.12)", color: "#10B981", label: "활성" },
+  suspended: { bg: "rgba(245,158,11,0.12)", color: "#F59E0B", label: "정지" },
+  banned:    { bg: "rgba(239,68,68,0.12)",  color: "#EF4444", label: "차단" },
+};
+
+const STATUS_FILTER_LABELS: Record<string, string> = {
+  active: "활성", suspended: "정지", banned: "차단",
 };
 
 export interface AdminUser {
@@ -57,7 +61,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
   }
 
   async function handleSuspend(user: AdminUser) {
-    const reason = window.prompt(`Suspension reason for ${user.email ?? user.display_name}:`);
+    const reason = window.prompt(`${user.email ?? user.display_name} 정지 사유:`);
     if (reason === null) return;
     await updateStatus(user.id, "suspended", reason);
   }
@@ -100,7 +104,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by email or name…"
+            placeholder="이메일 또는 이름으로 검색…"
             style={{ ...inputBase, paddingLeft: "36px", width: "100%" }}
           />
         </div>
@@ -116,7 +120,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
               borderColor: statusFilter === s ? "#7C3AED" : "#2D2D4E",
             }}
           >
-            {s === "all" ? `All (${users.length})` : s}
+            {s === "all" ? `전체 (${users.length})` : STATUS_FILTER_LABELS[s] ?? s}
           </button>
         ))}
         <button
@@ -133,7 +137,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["Name", "Email", "Role", "Status", "Joined", "Actions"].map((h) => (
+                {["이름", "이메일", "권한", "상태", "가입일", "관리"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
@@ -144,7 +148,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-12 text-center" style={{ color: "#9CA3AF" }}>
-                    No users found.
+                    회원이 없습니다.
                   </td>
                 </tr>
               ) : (
@@ -191,7 +195,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
                         </div>
                       </td>
                       <td className="px-5 py-3.5 text-xs" style={{ color: "#6B7280" }}>
-                        {new Date(user.created_at).toLocaleDateString()}
+                        {new Date(user.created_at).toLocaleDateString("ko-KR")}
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
@@ -201,7 +205,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
                               <button
                                 onClick={() => handleSuspend(user)}
                                 disabled={isLoading}
-                                title="Suspend"
+                                title="정지"
                                 className="p-1.5 rounded transition-colors hover:opacity-80"
                                 style={{ background: "rgba(245,158,11,0.12)", color: "#F59E0B" }}
                               >
@@ -209,12 +213,12 @@ export default function UsersAdminTable({ users: initial }: Props) {
                               </button>
                               <button
                                 onClick={() => {
-                                  if (window.confirm(`Ban ${user.email}? They will lose all access.`)) {
+                                  if (window.confirm(`${user.email} 회원을 차단하시겠습니까? 모든 접근 권한을 잃게 됩니다.`)) {
                                     updateStatus(user.id, "banned");
                                   }
                                 }}
                                 disabled={isLoading}
-                                title="Ban"
+                                title="차단"
                                 className="p-1.5 rounded transition-colors hover:opacity-80"
                                 style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
                               >
@@ -226,7 +230,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
                             <button
                               onClick={() => updateStatus(user.id, "active", "")}
                               disabled={isLoading}
-                              title="Restore"
+                              title="복구"
                               className="p-1.5 rounded transition-colors hover:opacity-80"
                               style={{ background: "rgba(16,185,129,0.12)", color: "#10B981" }}
                             >
@@ -238,7 +242,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
                             href={`/admin/users/${user.id}`}
                             className="p-1.5 rounded transition-colors hover:opacity-80"
                             style={{ background: "#2D2D4E", color: "#A855F7" }}
-                            title="View detail"
+                            title="상세 보기"
                           >
                             <ChevronRight className="w-3.5 h-3.5" />
                           </Link>

@@ -105,7 +105,26 @@
     "orders": "我的订单",
     "tutorials": "我的教程",
     "noOrders": "暂无订单。",
-    "watchTutorial": "观看教程"
+    "watchTutorial": "观看教程",
+    "signOut": "退出登录",
+    "adminDashboard": "管理后台",
+    "browseProducts": "浏览商品",
+    "noTutorials": "暂无教程。购买商品即可解锁教程。",
+    "orderNumber": "订单号",
+    "trackShipment": "物流追踪",
+    "trackingPending": "运单号准备中...",
+    "status": {
+      "pending": "待付款",
+      "paid": "已付款",
+      "shipped": "配送中",
+      "completed": "已送达",
+      "refunded": "已退款"
+    },
+    "steps": {
+      "paid": "已付款",
+      "shipped": "配送中",
+      "completed": "已送达"
+    }
   },
   "unlock": {
     "title": "解锁教程",
@@ -142,4 +161,3 @@
     "currency": "USD"
   }
 }
-

@@ -105,7 +105,26 @@
     "orders": "注文履歴",
     "tutorials": "マイチュートリアル",
     "noOrders": "まだ注文はありません。",
-    "watchTutorial": "チュートリアルを見る"
+    "watchTutorial": "チュートリアルを見る",
+    "signOut": "ログアウト",
+    "adminDashboard": "管理ダッシュボード",
+    "browseProducts": "商品を見る",
+    "noTutorials": "まだチュートリアルがありません。商品を購入するとチュートリアルが解除されます。",
+    "orderNumber": "注文番号",
+    "trackShipment": "配送追跡",
+    "trackingPending": "追跡番号を準備中...",
+    "status": {
+      "pending": "支払い待ち",
+      "paid": "支払い完了",
+      "shipped": "配送中",
+      "completed": "配送完了",
+      "refunded": "返金"
+    },
+    "steps": {
+      "paid": "支払い完了",
+      "shipped": "配送中",
+      "completed": "配送完了"
+    }
   },
   "unlock": {
     "title": "チュートリアルを解除",
@@ -142,4 +161,3 @@
     "currency": "USD"
   }
 }
-

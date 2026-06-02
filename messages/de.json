@@ -105,7 +105,26 @@
     "orders": "Meine Bestellungen",
     "tutorials": "Meine Tutorials",
     "noOrders": "Noch keine Bestellungen.",
-    "watchTutorial": "Tutorial Ansehen"
+    "watchTutorial": "Tutorial Ansehen",
+    "signOut": "Abmelden",
+    "adminDashboard": "Admin-Dashboard",
+    "browseProducts": "Produkte Ansehen",
+    "noTutorials": "Noch keine Tutorials. Kaufen Sie ein Produkt, um Tutorials freizuschalten.",
+    "orderNumber": "Bestellung",
+    "trackShipment": "Sendung Verfolgen",
+    "trackingPending": "Sendungsnummer ausstehend...",
+    "status": {
+      "pending": "Zahlung Ausstehend",
+      "paid": "Bezahlt",
+      "shipped": "Versendet",
+      "completed": "Geliefert",
+      "refunded": "Erstattet"
+    },
+    "steps": {
+      "paid": "Bezahlt",
+      "shipped": "Versendet",
+      "completed": "Geliefert"
+    }
   },
   "unlock": {
     "title": "Tutorial Freischalten",
@@ -142,4 +161,3 @@
     "currency": "USD"
   }
 }
-

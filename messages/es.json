@@ -105,7 +105,26 @@
     "orders": "Mis Pedidos",
     "tutorials": "Mis Tutoriales",
     "noOrders": "Aún no tienes pedidos.",
-    "watchTutorial": "Ver Tutorial"
+    "watchTutorial": "Ver Tutorial",
+    "signOut": "Cerrar Sesión",
+    "adminDashboard": "Panel de Administración",
+    "browseProducts": "Ver Productos",
+    "noTutorials": "Aún no tienes tutoriales. Compra un producto para desbloquearlos.",
+    "orderNumber": "Pedido",
+    "trackShipment": "Rastrear Envío",
+    "trackingPending": "Número de seguimiento pendiente...",
+    "status": {
+      "pending": "Pago Pendiente",
+      "paid": "Pagado",
+      "shipped": "Enviado",
+      "completed": "Entregado",
+      "refunded": "Reembolsado"
+    },
+    "steps": {
+      "paid": "Pagado",
+      "shipped": "Enviado",
+      "completed": "Entregado"
+    }
   },
   "unlock": {
     "title": "Desbloquear Tutorial",
@@ -142,4 +161,3 @@
     "currency": "USD"
   }
 }
-

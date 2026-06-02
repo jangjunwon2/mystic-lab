@@ -105,7 +105,26 @@
     "orders": "My Orders",
     "tutorials": "My Tutorials",
     "noOrders": "No orders yet.",
-    "watchTutorial": "Watch Tutorial"
+    "watchTutorial": "Watch Tutorial",
+    "signOut": "Sign Out",
+    "adminDashboard": "Admin Dashboard",
+    "browseProducts": "Browse Products",
+    "noTutorials": "No tutorials yet. Purchase a product to unlock tutorials.",
+    "orderNumber": "Order",
+    "trackShipment": "Track Shipment",
+    "trackingPending": "Tracking number pending...",
+    "status": {
+      "pending": "Payment Pending",
+      "paid": "Paid",
+      "shipped": "Shipped",
+      "completed": "Delivered",
+      "refunded": "Refunded"
+    },
+    "steps": {
+      "paid": "Paid",
+      "shipped": "Shipped",
+      "completed": "Delivered"
+    }
   },
   "unlock": {
     "title": "Unlock Tutorial",
