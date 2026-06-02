@@ -12,7 +12,7 @@ export default async function AdminUsersPage() {
       .from("profiles")
       .select("id, display_name, role, status, suspension_reason, created_at")
       .order("created_at", { ascending: false }),
-    supabase.auth.admin.list회원 관리({ perPage: 1000 }),
+    supabase.auth.admin.listUsers({ perPage: 1000 }),
   ]);
 
   const emailMap = new Map<string, string>(
