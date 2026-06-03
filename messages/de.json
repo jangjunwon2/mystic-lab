@@ -310,5 +310,20 @@
     "calculatedAtCheckout": "Beim Checkout berechnet",
     "proceedToCheckout": "Zur Kasse",
     "secureCheckout": "Sicherer Checkout"
+  },
+  "success": {
+    "confirming": "Zahlung wird bestätigt...",
+    "errorTitle": "Zahlungsbestätigung fehlgeschlagen",
+    "retry": "Erneut versuchen",
+    "title": "Bestellung abgeschlossen!",
+    "body": "Ihre Zahlung ist abgeschlossen. Eine Bestellbestätigung und Anleitung zum Tutorial-Zugang werden per E-Mail gesendet.",
+    "nextSteps": "Nächste Schritte",
+    "step1": "Eine Bestellbestätigung per E-Mail kommt in Kürze.",
+    "step2": "Beim Versand teilen wir eine Sendungsnummer mit.",
+    "step3": "Ihre Tutorials finden Sie in Mein Konto.",
+    "viewOrders": "Meine Bestellungen ansehen",
+    "continueShopping": "Weiter einkaufen",
+    "errInvalidPayment": "Ungültige Zahlungsinformationen.",
+    "errConfirmFailed": "Zahlungsbestätigung fehlgeschlagen."
   }
 }

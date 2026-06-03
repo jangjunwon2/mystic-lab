@@ -310,5 +310,20 @@
     "calculatedAtCheckout": "Calculé au paiement",
     "proceedToCheckout": "Passer au paiement",
     "secureCheckout": "Paiement sécurisé"
+  },
+  "success": {
+    "confirming": "Confirmation de votre paiement...",
+    "errorTitle": "Échec de la confirmation du paiement",
+    "retry": "Réessayer",
+    "title": "Commande terminée !",
+    "body": "Votre paiement est terminé. Une confirmation de commande et un guide d'accès aux tutoriels vous seront envoyés par e-mail.",
+    "nextSteps": "Prochaines étapes",
+    "step1": "Un e-mail de confirmation arrivera bientôt.",
+    "step2": "Nous vous communiquerons un numéro de suivi à l'expédition.",
+    "step3": "Retrouvez vos tutoriels dans Mon compte.",
+    "viewOrders": "Voir mes commandes",
+    "continueShopping": "Continuer vos achats",
+    "errInvalidPayment": "Informations de paiement invalides.",
+    "errConfirmFailed": "Échec de la confirmation du paiement."
   }
 }

@@ -310,5 +310,20 @@
     "calculatedAtCheckout": "결제 시 계산",
     "proceedToCheckout": "결제하기",
     "secureCheckout": "안전한 결제"
+  },
+  "success": {
+    "confirming": "결제를 확인하는 중...",
+    "errorTitle": "결제 확인 실패",
+    "retry": "다시 시도",
+    "title": "주문 완료!",
+    "body": "결제가 완료됐습니다. 이메일로 주문 확인서와 튜토리얼 접근 안내가 발송됩니다.",
+    "nextSteps": "다음 단계",
+    "step1": "주문 확인 이메일이 곧 발송됩니다.",
+    "step2": "발송 시 운송장 번호를 안내드립니다.",
+    "step3": "튜토리얼은 마이페이지에서 확인하세요.",
+    "viewOrders": "내 주문 확인",
+    "continueShopping": "쇼핑 계속하기",
+    "errInvalidPayment": "결제 정보가 올바르지 않습니다.",
+    "errConfirmFailed": "결제 확인에 실패했습니다."
   }
 }

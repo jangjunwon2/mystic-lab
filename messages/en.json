@@ -310,5 +310,20 @@
     "calculatedAtCheckout": "Calculated at checkout",
     "proceedToCheckout": "Proceed to Checkout",
     "secureCheckout": "Secure checkout"
+  },
+  "success": {
+    "confirming": "Confirming your payment...",
+    "errorTitle": "Payment confirmation failed",
+    "retry": "Try again",
+    "title": "Order Complete!",
+    "body": "Your payment is complete. An order confirmation and tutorial access guide will be emailed to you.",
+    "nextSteps": "Next Steps",
+    "step1": "An order confirmation email will arrive shortly.",
+    "step2": "We'll share a tracking number when it ships.",
+    "step3": "Find your tutorials in My Page.",
+    "viewOrders": "View My Orders",
+    "continueShopping": "Continue Shopping",
+    "errInvalidPayment": "Invalid payment information.",
+    "errConfirmFailed": "Payment confirmation failed."
   }
 }

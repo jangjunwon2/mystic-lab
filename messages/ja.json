@@ -310,5 +310,20 @@
     "calculatedAtCheckout": "購入手続き時に計算",
     "proceedToCheckout": "購入手続きへ",
     "secureCheckout": "安全な決済"
+  },
+  "success": {
+    "confirming": "決済を確認しています...",
+    "errorTitle": "決済確認に失敗しました",
+    "retry": "再試行",
+    "title": "注文完了！",
+    "body": "決済が完了しました。注文確認とチュートリアルアクセス案内をメールでお送りします。",
+    "nextSteps": "次のステップ",
+    "step1": "まもなく注文確認メールが届きます。",
+    "step2": "発送時に追跡番号をお知らせします。",
+    "step3": "チュートリアルはマイページでご確認ください。",
+    "viewOrders": "注文を確認",
+    "continueShopping": "買い物を続ける",
+    "errInvalidPayment": "決済情報が正しくありません。",
+    "errConfirmFailed": "決済確認に失敗しました。"
   }
 }

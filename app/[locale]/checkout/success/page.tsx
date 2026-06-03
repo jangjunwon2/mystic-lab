@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, AlertCircle, BookOpen, ShoppingBag } from "lucide-react";
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export default function CheckoutSuccessPage({ params, searchParams }: Props) {
+  const t = useTranslations("success");
   const [locale, setLocale] = useState("en");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
@@ -88,7 +90,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
         const { paymentKey, orderId, amount } = sp;
         if (!paymentKey || !orderId || !amount) {
           setStatus("error");
-          setErrorMsg("결제 정보가 올바르지 않습니다.");
+          setErrorMsg(t("errInvalidPayment"));
           return;
         }
 
@@ -130,7 +132,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
         if (!res.ok) {
           const data = await res.json();
           setStatus("error");
-          setErrorMsg(data.error ?? "결제 확인에 실패했습니다.");
+          setErrorMsg(data.error ?? t("errConfirmFailed"));
           return;
         }
 
@@ -157,7 +159,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
       <div className="min-h-screen bg-[#0D0D1A] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-10 h-10 animate-spin text-[#7C3AED] mx-auto mb-4" />
-          <p className="text-[#9CA3AF] text-sm">결제를 확인하는 중...</p>
+          <p className="text-[#9CA3AF] text-sm">{t("confirming")}</p>
         </div>
       </div>
     );
@@ -170,13 +172,13 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-400" />
           </div>
-          <h1 className="text-xl font-bold text-[#F0E6FF] mb-2">결제 확인 실패</h1>
+          <h1 className="text-xl font-bold text-[#F0E6FF] mb-2">{t("errorTitle")}</h1>
           <p className="text-[#9CA3AF] text-sm mb-6">{errorMsg}</p>
           <Link
             href={`/${locale}/checkout`}
             className="inline-flex items-center gap-2 border border-[#2D2D4E] text-[#9CA3AF] hover:text-[#A855F7] text-sm px-6 py-3 rounded-xl transition-colors"
           >
-            다시 시도
+            {t("retry")}
           </Link>
         </div>
       </div>
@@ -207,7 +209,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           className="text-3xl font-bold text-[#F0E6FF] mb-3"
           style={{ fontFamily: "var(--font-cinzel), serif" }}
         >
-          주문 완료!
+          {t("title")}
         </motion.h1>
 
         <motion.p
@@ -216,7 +218,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           transition={{ delay: 0.25 }}
           className="text-[#9CA3AF] text-sm leading-relaxed mb-8"
         >
-          결제가 완료됐습니다. 이메일로 주문 확인서와 튜토리얼 접근 안내가 발송됩니다.
+          {t("body")}
         </motion.p>
 
         <motion.div
@@ -226,14 +228,10 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5 mb-8 text-left"
         >
           <p className="text-xs text-[#7C3AED] font-semibold uppercase tracking-wider mb-3">
-            다음 단계
+            {t("nextSteps")}
           </p>
           <ul className="space-y-2">
-            {[
-              "주문 확인 이메일이 곧 발송됩니다.",
-              "발송 시 운송장 번호를 안내드립니다.",
-              "튜토리얼은 마이페이지에서 확인하세요.",
-            ].map((step, i) => (
+            {[t("step1"), t("step2"), t("step3")].map((step, i) => (
               <li key={i} className="flex items-start gap-2.5 text-sm text-[#9CA3AF]">
                 <span className="w-5 h-5 rounded-full bg-[#7C3AED]/20 text-[#A855F7] text-xs flex items-center justify-center shrink-0 mt-0.5 font-semibold">
                   {i + 1}
@@ -255,14 +253,14 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
             className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white text-sm font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition-opacity"
           >
             <BookOpen className="w-4 h-4" />
-            내 주문 확인
+            {t("viewOrders")}
           </Link>
           <Link
             href={`/${locale}/products`}
             className="flex items-center gap-2 border border-[#2D2D4E] text-[#9CA3AF] hover:text-[#A855F7] hover:border-[#7C3AED] text-sm px-6 py-3 rounded-xl transition-colors"
           >
             <ShoppingBag className="w-4 h-4" />
-            쇼핑 계속하기
+            {t("continueShopping")}
           </Link>
         </motion.div>
       </motion.div>

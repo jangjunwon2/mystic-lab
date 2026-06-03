@@ -310,5 +310,20 @@
     "calculatedAtCheckout": "结账时计算",
     "proceedToCheckout": "去结算",
     "secureCheckout": "安全结账"
+  },
+  "success": {
+    "confirming": "正在确认支付...",
+    "errorTitle": "支付确认失败",
+    "retry": "重试",
+    "title": "下单完成！",
+    "body": "支付已完成。订单确认和教程访问指南将通过邮件发送。",
+    "nextSteps": "下一步",
+    "step1": "订单确认邮件即将送达。",
+    "step2": "发货时将提供物流单号。",
+    "step3": "在我的页面查看教程。",
+    "viewOrders": "查看我的订单",
+    "continueShopping": "继续购物",
+    "errInvalidPayment": "支付信息无效。",
+    "errConfirmFailed": "支付确认失败。"
   }
 }
