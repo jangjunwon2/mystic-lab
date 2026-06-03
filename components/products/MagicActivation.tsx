@@ -141,7 +141,7 @@ export default function MagicActivation({ productId, locale }: Props) {
       </div>
       <div className="w-12 h-px bg-[#7C3AED] mb-6" />
 
-      <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-6 max-w-lg">
+      <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-6 w-full">
         <p className="text-[#9CA3AF] text-sm mb-4 leading-relaxed">{text.desc}</p>
 
         {deviceToken ? (

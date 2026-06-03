@@ -34,18 +34,33 @@ export async function PATCH(request: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id, product_id } = await request.json();
-  if (!id || !product_id) return NextResponse.json({ error: "id and product_id required" }, { status: 400 });
+  const { id, action, product_id } = await request.json();
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
-  const { error } = await supabase
-    .from("product_unlock_codes")
-    .update({ product_id })
-    .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  // 기기 바인딩 강제 해제 — 등록된 단말기 권한 즉시 취소
+  if (action === "release") {
+    const { error } = await supabase
+      .from("product_unlock_codes")
+      .update({ active_token_hash: null, last_activated_at: null })
+      .eq("id", id);
+    if (error) return NextResponse.json({ error: "기기 해제에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // 상품 재지정
+  if (product_id) {
+    const { error } = await supabase
+      .from("product_unlock_codes")
+      .update({ product_id })
+      .eq("id", id);
+    if (error) return NextResponse.json({ error: "상품 변경에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  return NextResponse.json({ error: "action 또는 product_id가 필요합니다." }, { status: 400 });
 }
 
 export async function POST(request: Request) {

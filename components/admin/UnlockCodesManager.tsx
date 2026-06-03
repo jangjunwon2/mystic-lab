@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Copy, Check, Trash2, Unlink, Smartphone } from "lucide-react";
 
 interface Product {
   id: string;
@@ -13,6 +14,10 @@ interface CodeRow {
   product_id: string;
   created_at: string;
   first_used_at: string | null;
+  code_plain: string | null;
+  is_activated: boolean;
+  last_activated_at: string | null;
+  is_member: boolean;
   product_name: string;
 }
 
@@ -25,15 +30,14 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
   const [codes, setCodes] = useState(initialCodes);
   const [selectedProductId, setSelectedProductId] = useState(products[0]?.id ?? "");
   const [generating, setGenerating] = useState(false);
-  const [newCode, setNewCode] = useState<{ plain: string; productName: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   async function generateCode() {
     if (!selectedProductId) return;
     setGenerating(true);
     setError(null);
-    setNewCode(null);
 
     const res = await fetch("/api/admin/unlock-codes", {
       method: "POST",
@@ -43,30 +47,67 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
 
     if (res.ok) {
       const data = await res.json();
-      const productName = products.find((p) => p.id === selectedProductId)?.name ?? "Unknown";
-      setNewCode({ plain: data.code, productName });
+      const productName = products.find((p) => p.id === selectedProductId)?.name ?? "알 수 없음";
       setCodes((prev) => [
         {
           id: data.id,
           product_id: selectedProductId,
           created_at: new Date().toISOString(),
           first_used_at: null,
+          code_plain: data.code,
+          is_activated: false,
+          last_activated_at: null,
+          is_member: false,
           product_name: productName,
         },
         ...prev,
       ]);
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Failed to generate code.");
+      setError(data.error ?? "코드 생성에 실패했습니다.");
     }
     setGenerating(false);
   }
 
-  function copyCode() {
-    if (!newCode) return;
-    navigator.clipboard.writeText(newCode.plain);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  function copyCode(id: string, code: string | null) {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  }
+
+  async function releaseDevice(id: string) {
+    if (!confirm("이 코드의 등록된 단말기 권한을 취소할까요? 사용자는 다시 기기 등록을 해야 합니다.")) return;
+    setBusyId(id);
+    const res = await fetch("/api/admin/unlock-codes", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "release" }),
+    });
+    if (res.ok) {
+      setCodes((prev) => prev.map((c) => (c.id === id ? { ...c, is_activated: false, last_activated_at: null } : c)));
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "기기 해제에 실패했습니다.");
+    }
+    setBusyId(null);
+  }
+
+  async function deleteCode(id: string) {
+    if (!confirm("이 코드를 영구 삭제할까요? 되돌릴 수 없습니다.")) return;
+    setBusyId(id);
+    const res = await fetch("/api/admin/unlock-codes", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) {
+      setCodes((prev) => prev.filter((c) => c.id !== id));
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "삭제에 실패했습니다.");
+    }
+    setBusyId(null);
   }
 
   const inputStyle = {
@@ -78,12 +119,14 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
     fontSize: "14px",
   };
 
+  const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("ko-KR", { dateStyle: "medium", timeStyle: "short" }) : null);
+
   return (
     <div className="space-y-6">
-      {/* Generate Form */}
+      {/* 생성 폼 */}
       <div className="rounded-xl p-6 border space-y-4" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>
-          Generate New Code
+          새 코드 수동 발급
         </h2>
 
         {error && (
@@ -92,36 +135,10 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
           </p>
         )}
 
-        {newCode && (
-          <div className="p-4 rounded-lg border" style={{ background: "#0D0D1A", borderColor: "#F59E0B" }}>
-            <p className="text-xs mb-1" style={{ color: "#F59E0B" }}>
-              ⚠ Copy this code now — it will not be shown again!
-            </p>
-            <p className="text-xs mb-3" style={{ color: "#9CA3AF" }}>
-              Product: {newCode.productName}
-            </p>
-            <div className="flex items-center gap-3">
-              <code
-                className="flex-1 font-mono text-lg tracking-wider"
-                style={{ color: "#F0E6FF" }}
-              >
-                {newCode.plain}
-              </code>
-              <button
-                onClick={copyCode}
-                className="px-3 py-1.5 rounded text-sm font-medium transition-opacity hover:opacity-80"
-                style={{ background: "#F59E0B22", color: "#F59E0B", border: "1px solid #F59E0B" }}
-              >
-                {copied ? "Copied!" : "Copy"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-end gap-4">
+        <div className="flex flex-wrap items-end gap-4">
           <div>
             <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>
-              Select Product
+              상품 선택
             </label>
             <select
               value={selectedProductId}
@@ -141,27 +158,27 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
             className="px-5 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
             style={{ background: "#7C3AED", color: "#fff" }}
           >
-            {generating ? "Generating…" : "Generate Code"}
+            {generating ? "발급 중…" : "코드 발급"}
           </button>
         </div>
+        <p className="text-xs" style={{ color: "#6B7280" }}>
+          발급된 코드는 평문으로 보관되어 아래 목록에서 언제든 다시 확인·복사할 수 있습니다.
+        </p>
       </div>
 
-      {/* Code List */}
+      {/* 코드 목록 */}
       <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <div className="px-6 py-4 border-b" style={{ borderColor: "#2D2D4E" }}>
           <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>
-            Generated Codes ({codes.length})
+            발급된 코드 ({codes.length})
           </h2>
-          <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>
-            Plain text codes are not stored — only SHA-256 hashes. Codes shown here cannot be recovered.
-          </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["Product", "Code ID", "Generated", "First Used"].map((h) => (
-                  <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
+                {["상품", "코드", "발급 경로", "기기 등록", "마지막 활성화", "관리"].map((h) => (
+                  <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
                 ))}
@@ -170,34 +187,75 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
             <tbody>
               {codes.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
-                    No codes generated yet.
+                  <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
+                    발급된 코드가 없습니다.
                   </td>
                 </tr>
               ) : (
                 codes.map((code) => (
-                  <tr
-                    key={code.id}
-                    className="border-b last:border-0"
-                    style={{ borderColor: "#2D2D4E" }}
-                  >
-                    <td className="px-6 py-4 font-medium" style={{ color: "#F0E6FF" }}>
+                  <tr key={code.id} className="border-b last:border-0" style={{ borderColor: "#2D2D4E", opacity: busyId === code.id ? 0.5 : 1 }}>
+                    <td className="px-4 py-4 font-medium whitespace-nowrap" style={{ color: "#F0E6FF" }}>
                       {code.product_name}
                     </td>
-                    <td className="px-6 py-4 font-mono text-xs" style={{ color: "#9CA3AF" }}>
-                      {code.id.slice(0, 8)}…
+                    <td className="px-4 py-4">
+                      {code.code_plain ? (
+                        <div className="flex items-center gap-2">
+                          <code className="font-mono text-xs tracking-wider px-2 py-1 rounded" style={{ background: "#0D0D1A", color: "#A855F7" }}>
+                            {code.code_plain}
+                          </code>
+                          <button
+                            onClick={() => copyCode(code.id, code.code_plain)}
+                            aria-label="코드 복사"
+                            className="p-1 rounded transition-opacity hover:opacity-70"
+                            style={{ color: "#9CA3AF" }}
+                          >
+                            {copiedId === code.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="font-mono text-xs" style={{ color: "#6B7280" }}>{code.id.slice(0, 8)}… (평문 없음)</span>
+                      )}
                     </td>
-                    <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
-                      {new Date(code.created_at).toLocaleDateString()}
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={code.is_member
+                        ? { background: "#7C3AED22", color: "#A855F7", border: "1px solid #7C3AED44" }
+                        : { background: "#2D2D4E", color: "#9CA3AF" }}>
+                        {code.is_member ? "회원 자동발급" : "수동 발급"}
+                      </span>
                     </td>
-                    <td className="px-6 py-4">
-                      {code.first_used_at ? (
-                        <span style={{ color: "#10B981" }}>
-                          {new Date(code.first_used_at).toLocaleDateString()}
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      {code.is_activated ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: "#10B981" }}>
+                          <Smartphone className="w-3.5 h-3.5" /> 등록됨
                         </span>
                       ) : (
-                        <span style={{ color: "#9CA3AF" }}>Not used</span>
+                        <span className="text-xs" style={{ color: "#6B7280" }}>미등록</span>
                       )}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs" style={{ color: "#9CA3AF" }}>
+                      {fmt(code.last_activated_at) ?? "—"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => releaseDevice(code.id)}
+                          disabled={!code.is_activated || busyId === code.id}
+                          title="기기 강제 해제"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-30"
+                          style={{ background: "#F59E0B22", color: "#F59E0B", border: "1px solid #F59E0B44" }}
+                        >
+                          <Unlink className="w-3.5 h-3.5" /> 기기 해제
+                        </button>
+                        <button
+                          onClick={() => deleteCode(code.id)}
+                          disabled={busyId === code.id}
+                          title="코드 삭제"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                          style={{ background: "#EF444422", color: "#EF4444", border: "1px solid #EF444444" }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> 삭제
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

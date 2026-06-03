@@ -210,7 +210,7 @@ export default function ProductDetail({
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={handleAddToCart}
                 disabled={product.stock === 0}
@@ -235,16 +235,18 @@ export default function ProductDetail({
                   {t("buyNow")}
                 </Link>
               )}
-            </div>
 
-            {/* Wishlist + Share */}
-            <div className="flex items-center gap-3 mt-5">
+              {/* Wishlist — right of Buy Now */}
               <WishlistButton
                 productId={product.id}
                 isLoggedIn={isLoggedIn}
                 locale={locale}
-                className="p-2 rounded-lg bg-[#1A1A2E] border border-[#2D2D4E] hover:border-[#EF4444]/50 transition-colors"
+                className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] hover:border-[#EF4444]/50 transition-colors"
               />
+            </div>
+
+            {/* Share */}
+            <div className="mt-6">
               <ShareButtons name={translation?.name ?? product.slug} />
             </div>
           </motion.div>
@@ -407,22 +409,30 @@ function ShareButtons({ name }: { name: string }) {
   }
 
   return (
-    <div className="flex items-center gap-2 mt-5 pt-5 border-t border-[#2D2D4E]">
-      <Share2 className="w-3.5 h-3.5 text-[#6B7280]" />
+    <div className="flex items-center gap-3 pt-5 border-t border-[#2D2D4E]">
+      <span className="flex items-center gap-1.5 text-xs text-[#6B7280]">
+        <Share2 className="w-3.5 h-3.5" />
+        공유하기
+      </span>
       <button
         onClick={copyLink}
-        className="flex items-center gap-1.5 text-xs text-[#6B7280] hover:text-[#9CA3AF] transition-colors"
+        aria-label="링크 복사"
+        className={`flex items-center justify-center w-9 h-9 rounded-full border transition-all ${
+          copied
+            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+            : "bg-[#1A1A2E] border-[#2D2D4E] text-[#9CA3AF] hover:border-[#7C3AED]/60 hover:text-[#A855F7]"
+        }`}
       >
-        {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-        {copied ? "Copied!" : "Copy link"}
+        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       </button>
-      <span className="text-[#2D2D4E]">·</span>
       <button
         onClick={shareTwitter}
-        className="text-xs text-[#6B7280] hover:text-[#9CA3AF] transition-colors"
+        aria-label="X(트위터) 공유"
+        className="flex items-center justify-center w-9 h-9 rounded-full bg-[#1A1A2E] border border-[#2D2D4E] text-[#9CA3AF] hover:border-[#7C3AED]/60 hover:text-[#F0E6FF] transition-all text-sm font-semibold"
       >
-        𝕏 / Twitter
+        𝕏
       </button>
+      {copied && <span className="text-xs text-emerald-400">복사됨!</span>}
     </div>
   );
 }

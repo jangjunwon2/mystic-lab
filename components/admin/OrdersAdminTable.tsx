@@ -14,6 +14,14 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   refunded: "#EF4444",
 };
 
+const STATUS_LABELS: Record<OrderStatus, string> = {
+  pending: "결제대기",
+  paid: "결제완료",
+  shipped: "배송중",
+  completed: "배송완료",
+  refunded: "환불됨",
+};
+
 interface OrderItem {
   id: string;
   quantity: number;
@@ -193,7 +201,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                 borderColor: filter === s ? "#7C3AED" : "#2D2D4E",
               }}
             >
-              {s === "all" ? `전체 (${orders.length})` : s}
+              {s === "all" ? `전체 (${orders.length})` : STATUS_LABELS[s as OrderStatus]}
             </button>
           ))}
         </div>
@@ -222,7 +230,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
-                    No orders found.
+                    주문이 없습니다.
                   </td>
                 </tr>
               ) : (
@@ -251,7 +259,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                             color: STATUS_COLORS[order.status as OrderStatus] ?? "#9CA3AF",
                           }}
                         >
-                          {order.status}
+                          {STATUS_LABELS[order.status as OrderStatus] ?? order.status}
                         </span>
                       </td>
                       <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
@@ -267,7 +275,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                           >
                             {ORDER_STATUSES.map((s) => (
                               <option key={s} value={s}>
-                                {s}
+                                {STATUS_LABELS[s]}
                               </option>
                             ))}
                           </select>
@@ -305,7 +313,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                             )}
                             {order.shipping_method && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-[#7C3AED22] text-[#A855F7] border border-[#7C3AED44]">
-                                {order.shipping_method === "express" ? "Express (DHL·FedEx)" : "Standard (EMS)"}
+                                {order.shipping_method === "express" ? "특송 (DHL·FedEx)" : "일반배송 (EMS)"}
                               </span>
                             )}
                           </div>
