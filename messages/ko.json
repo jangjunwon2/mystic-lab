@@ -209,5 +209,13 @@
     "unlockTutorial": "튜토리얼 잠금 해제",
     "notRegistered": "등록되지 않은 이메일입니다.",
     "signInError": "로그인 중 오류가 발생했습니다. 다시 시도해주세요."
+  },
+  "cart": {
+    "empty": "장바구니가 비어 있습니다.",
+    "browseProducts": "상품 둘러보기",
+    "continueShopping": "쇼핑 계속하기",
+    "calculatedAtCheckout": "결제 시 계산",
+    "proceedToCheckout": "결제하기",
+    "secureCheckout": "안전한 결제"
   }
 }

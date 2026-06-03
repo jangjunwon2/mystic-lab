@@ -209,5 +209,13 @@
     "unlockTutorial": "Unlock tutorial",
     "notRegistered": "This email is not registered.",
     "signInError": "An error occurred during sign-in. Please try again."
+  },
+  "cart": {
+    "empty": "Your cart is empty.",
+    "browseProducts": "Browse Products",
+    "continueShopping": "Continue Shopping",
+    "calculatedAtCheckout": "Calculated at checkout",
+    "proceedToCheckout": "Proceed to Checkout",
+    "secureCheckout": "Secure checkout"
   }
 }

@@ -209,5 +209,13 @@
     "unlockTutorial": "Débloquer le tutoriel",
     "notRegistered": "Cet e-mail n'est pas enregistré.",
     "signInError": "Une erreur s'est produite lors de la connexion. Veuillez réessayer."
+  },
+  "cart": {
+    "empty": "Votre panier est vide.",
+    "browseProducts": "Parcourir les produits",
+    "continueShopping": "Continuer vos achats",
+    "calculatedAtCheckout": "Calculé au paiement",
+    "proceedToCheckout": "Passer au paiement",
+    "secureCheckout": "Paiement sécurisé"
   }
 }

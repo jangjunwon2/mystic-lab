@@ -209,5 +209,13 @@
     "unlockTutorial": "Desbloquear tutorial",
     "notRegistered": "Este correo no está registrado.",
     "signInError": "Ocurrió un error al iniciar sesión. Inténtalo de nuevo."
+  },
+  "cart": {
+    "empty": "Tu carrito está vacío.",
+    "browseProducts": "Ver productos",
+    "continueShopping": "Seguir comprando",
+    "calculatedAtCheckout": "Calculado al finalizar la compra",
+    "proceedToCheckout": "Ir a pagar",
+    "secureCheckout": "Pago seguro"
   }
 }

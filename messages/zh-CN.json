@@ -209,5 +209,13 @@
     "unlockTutorial": "解锁教程",
     "notRegistered": "该邮箱未注册。",
     "signInError": "登录时发生错误，请重试。"
+  },
+  "cart": {
+    "empty": "购物车是空的。",
+    "browseProducts": "浏览商品",
+    "continueShopping": "继续购物",
+    "calculatedAtCheckout": "结账时计算",
+    "proceedToCheckout": "去结算",
+    "secureCheckout": "安全结账"
   }
 }

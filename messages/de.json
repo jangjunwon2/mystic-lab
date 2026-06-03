@@ -209,5 +209,13 @@
     "unlockTutorial": "Tutorial freischalten",
     "notRegistered": "Diese E-Mail ist nicht registriert.",
     "signInError": "Bei der Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+  },
+  "cart": {
+    "empty": "Ihr Warenkorb ist leer.",
+    "browseProducts": "Produkte ansehen",
+    "continueShopping": "Weiter einkaufen",
+    "calculatedAtCheckout": "Beim Checkout berechnet",
+    "proceedToCheckout": "Zur Kasse",
+    "secureCheckout": "Sicherer Checkout"
   }
 }
