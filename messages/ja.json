@@ -325,5 +325,18 @@
     "continueShopping": "買い物を続ける",
     "errInvalidPayment": "決済情報が正しくありません。",
     "errConfirmFailed": "決済確認に失敗しました。"
+  },
+  "tutorial": {
+    "solutionTutorial": "解法動画",
+    "verifiedOnly": "この動画は正規購入者専用です。",
+    "comingSoonTitle": "動画準備中",
+    "comingSoonBody": "この動画へのアクセス権があります。動画は処理中で、まもなくここに表示されます。",
+    "lockedTitle": "動画はロック中",
+    "purchaseBody": "この商品を購入すると、ステップごとの解説や演出のヒントを含む完全な解法動画が解除されます。",
+    "purchaseBtn": "購入して解除",
+    "lockedBodyGuest": "解法動画は正規購入者のみ視聴できます。ログインするか、デバイスに印刷された秘密コードを入力してください。",
+    "signIn": "ログイン",
+    "enterDeviceCode": "デバイスコード入力",
+    "myLibrary": "マイライブラリ"
   }
 }

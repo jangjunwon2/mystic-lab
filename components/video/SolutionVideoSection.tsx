@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Lock, Play, ShoppingCart, KeyRound, LogIn } from "lucide-react";
 import CloudflarePlayer from "@/components/video/CloudflarePlayer";
 
@@ -24,6 +25,7 @@ export default function SolutionVideoSection({
   locale,
   productSlug,
 }: Props) {
+  const t = useTranslations("tutorial");
   // Case 1: Has signed URL → play the video
   if (signedUrl) {
     return (
@@ -33,11 +35,11 @@ export default function SolutionVideoSection({
         )}
         <CloudflarePlayer
           src={signedUrl}
-          title={videoTitle ?? "Solution Tutorial"}
+          title={videoTitle ?? t("solutionTutorial")}
         />
         <p className="text-xs flex items-center gap-1.5" style={{ color: "#6B7280" }}>
           <Play className="w-3 h-3" />
-          This tutorial is exclusively for verified purchasers.
+          {t("verifiedOnly")}
         </p>
       </div>
     );
@@ -57,10 +59,10 @@ export default function SolutionVideoSection({
           <Play className="w-6 h-6" style={{ color: "#A855F7" }} />
         </div>
         <p className="font-medium mb-2" style={{ color: "#F0E6FF" }}>
-          Tutorial Coming Soon
+          {t("comingSoonTitle")}
         </p>
         <p className="text-sm" style={{ color: "#9CA3AF" }}>
-          You have access to this tutorial. The video is being processed and will appear here shortly.
+          {t("comingSoonBody")}
         </p>
       </div>
     );
@@ -79,10 +81,9 @@ export default function SolutionVideoSection({
         >
           <Lock className="w-6 h-6" style={{ color: "#9CA3AF" }} />
         </div>
-        <p className="font-medium mb-2" style={{ color: "#F0E6FF" }}>Tutorial Locked</p>
+        <p className="font-medium mb-2" style={{ color: "#F0E6FF" }}>{t("lockedTitle")}</p>
         <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: "#9CA3AF" }}>
-          Purchase this product to unlock the full solution tutorial, including step-by-step
-          explanations and performance tips.
+          {t("purchaseBody")}
         </p>
         <Link
           href={`/${locale}/checkout?product=${productSlug}`}
@@ -90,7 +91,7 @@ export default function SolutionVideoSection({
           style={{ background: "linear-gradient(135deg, #7C3AED, #A855F7)", color: "#fff" }}
         >
           <ShoppingCart className="w-4 h-4" />
-          Purchase to Unlock
+          {t("purchaseBtn")}
         </Link>
       </div>
     );
@@ -110,10 +111,9 @@ export default function SolutionVideoSection({
           <Lock className="w-6 h-6" style={{ color: "#9CA3AF" }} />
         </div>
         <div className="text-center sm:text-left">
-          <p className="font-medium mb-1" style={{ color: "#F0E6FF" }}>Tutorial Locked</p>
+          <p className="font-medium mb-1" style={{ color: "#F0E6FF" }}>{t("lockedTitle")}</p>
           <p className="text-sm mb-5" style={{ color: "#9CA3AF" }}>
-            The solution tutorial is available to verified purchasers. Sign in to your account,
-            or use the secret code printed inside your device.
+            {t("lockedBodyGuest")}
           </p>
           <div className="flex flex-wrap justify-center sm:justify-start gap-3">
             <Link
@@ -126,7 +126,7 @@ export default function SolutionVideoSection({
               }}
             >
               <LogIn className="w-4 h-4" />
-              Sign In
+              {t("signIn")}
             </Link>
             <Link
               href={`/${locale}/unlock`}
@@ -134,7 +134,7 @@ export default function SolutionVideoSection({
               style={{ color: "#9CA3AF", border: "1px solid #2D2D4E" }}
             >
               <KeyRound className="w-4 h-4" />
-              Enter Device Code
+              {t("enterDeviceCode")}
             </Link>
           </div>
         </div>

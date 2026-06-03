@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ChevronLeft } from "lucide-react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
@@ -22,6 +23,7 @@ function pickName(translations: { name: string; language: string }[] | undefined
 // 해법 영상 전용 시청 페이지 — 상세 페이지를 거치지 않고 바로 영상 재생
 export default async function TutorialPage({ params }: Props) {
   const { locale, slug } = await params;
+  const tt = await getTranslations("tutorial");
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -82,7 +84,7 @@ export default async function TutorialPage({ params }: Props) {
           className="inline-flex items-center gap-1 text-sm text-[#9CA3AF] hover:text-[#A855F7] transition-colors mb-6"
         >
           <ChevronLeft className="w-4 h-4" />
-          {locale === "ko" ? "내 보관함" : "My Library"}
+          {tt("myLibrary")}
         </Link>
 
         <h1
@@ -92,7 +94,7 @@ export default async function TutorialPage({ params }: Props) {
           {name}
         </h1>
         <p className="text-sm text-[#9CA3AF] mb-6">
-          {videoData?.title ?? (locale === "ko" ? "해법 영상" : "Solution Tutorial")}
+          {videoData?.title ?? tt("solutionTutorial")}
         </p>
 
         {signedUrl ? (

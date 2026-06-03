@@ -325,5 +325,18 @@
     "continueShopping": "Continuer vos achats",
     "errInvalidPayment": "Informations de paiement invalides.",
     "errConfirmFailed": "Échec de la confirmation du paiement."
+  },
+  "tutorial": {
+    "solutionTutorial": "Tutoriel de solution",
+    "verifiedOnly": "Ce tutoriel est réservé aux acheteurs vérifiés.",
+    "comingSoonTitle": "Tutoriel bientôt disponible",
+    "comingSoonBody": "Vous avez accès à ce tutoriel. La vidéo est en cours de traitement et apparaîtra ici sous peu.",
+    "lockedTitle": "Tutoriel verrouillé",
+    "purchaseBody": "Achetez ce produit pour débloquer le tutoriel complet, avec explications étape par étape et conseils de présentation.",
+    "purchaseBtn": "Acheter pour débloquer",
+    "lockedBodyGuest": "Le tutoriel est réservé aux acheteurs vérifiés. Connectez-vous ou utilisez le code secret imprimé dans votre appareil.",
+    "signIn": "Se connecter",
+    "enterDeviceCode": "Saisir le code",
+    "myLibrary": "Ma bibliothèque"
   }
 }

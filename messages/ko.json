@@ -325,5 +325,18 @@
     "continueShopping": "쇼핑 계속하기",
     "errInvalidPayment": "결제 정보가 올바르지 않습니다.",
     "errConfirmFailed": "결제 확인에 실패했습니다."
+  },
+  "tutorial": {
+    "solutionTutorial": "해법 영상",
+    "verifiedOnly": "이 영상은 정품 구매자 전용입니다.",
+    "comingSoonTitle": "영상 준비 중",
+    "comingSoonBody": "이 영상에 접근 권한이 있습니다. 영상이 처리 중이며 곧 여기에 표시됩니다.",
+    "lockedTitle": "영상 잠김",
+    "purchaseBody": "이 상품을 구매하면 단계별 설명과 연출 팁이 포함된 전체 해법 영상이 잠금 해제됩니다.",
+    "purchaseBtn": "구매하고 잠금 해제",
+    "lockedBodyGuest": "해법 영상은 정품 구매자만 볼 수 있습니다. 로그인하거나 기기에 인쇄된 비밀 코드를 입력하세요.",
+    "signIn": "로그인",
+    "enterDeviceCode": "기기 코드 입력",
+    "myLibrary": "내 보관함"
   }
 }

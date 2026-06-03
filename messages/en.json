@@ -325,5 +325,18 @@
     "continueShopping": "Continue Shopping",
     "errInvalidPayment": "Invalid payment information.",
     "errConfirmFailed": "Payment confirmation failed."
+  },
+  "tutorial": {
+    "solutionTutorial": "Solution Tutorial",
+    "verifiedOnly": "This tutorial is exclusively for verified purchasers.",
+    "comingSoonTitle": "Tutorial Coming Soon",
+    "comingSoonBody": "You have access to this tutorial. The video is being processed and will appear here shortly.",
+    "lockedTitle": "Tutorial Locked",
+    "purchaseBody": "Purchase this product to unlock the full solution tutorial, including step-by-step explanations and performance tips.",
+    "purchaseBtn": "Purchase to Unlock",
+    "lockedBodyGuest": "The solution tutorial is available to verified purchasers. Sign in to your account, or use the secret code printed inside your device.",
+    "signIn": "Sign In",
+    "enterDeviceCode": "Enter Device Code",
+    "myLibrary": "My Library"
   }
 }

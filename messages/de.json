@@ -325,5 +325,18 @@
     "continueShopping": "Weiter einkaufen",
     "errInvalidPayment": "Ungültige Zahlungsinformationen.",
     "errConfirmFailed": "Zahlungsbestätigung fehlgeschlagen."
+  },
+  "tutorial": {
+    "solutionTutorial": "Lösungs-Tutorial",
+    "verifiedOnly": "Dieses Tutorial ist ausschließlich für verifizierte Käufer.",
+    "comingSoonTitle": "Tutorial folgt in Kürze",
+    "comingSoonBody": "Sie haben Zugriff auf dieses Tutorial. Das Video wird verarbeitet und erscheint in Kürze hier.",
+    "lockedTitle": "Tutorial gesperrt",
+    "purchaseBody": "Kaufen Sie dieses Produkt, um das vollständige Tutorial mit Schritt-für-Schritt-Erklärungen und Vorführtipps freizuschalten.",
+    "purchaseBtn": "Kaufen zum Freischalten",
+    "lockedBodyGuest": "Das Tutorial ist für verifizierte Käufer verfügbar. Melden Sie sich an oder verwenden Sie den im Gerät aufgedruckten Geheimcode.",
+    "signIn": "Anmelden",
+    "enterDeviceCode": "Gerätecode eingeben",
+    "myLibrary": "Meine Bibliothek"
   }
 }

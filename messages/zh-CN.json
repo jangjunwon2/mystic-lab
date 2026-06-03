@@ -325,5 +325,18 @@
     "continueShopping": "继续购物",
     "errInvalidPayment": "支付信息无效。",
     "errConfirmFailed": "支付确认失败。"
+  },
+  "tutorial": {
+    "solutionTutorial": "解法视频",
+    "verifiedOnly": "本视频仅限已验证购买者观看。",
+    "comingSoonTitle": "视频即将上线",
+    "comingSoonBody": "您拥有该视频的访问权限。视频正在处理中，稍后将在此显示。",
+    "lockedTitle": "视频已锁定",
+    "purchaseBody": "购买此商品即可解锁完整解法视频，包含分步讲解和表演技巧。",
+    "purchaseBtn": "购买以解锁",
+    "lockedBodyGuest": "解法视频仅限已验证购买者观看。请登录账户，或输入设备内印刷的密码。",
+    "signIn": "登录",
+    "enterDeviceCode": "输入设备代码",
+    "myLibrary": "我的资料库"
   }
 }
