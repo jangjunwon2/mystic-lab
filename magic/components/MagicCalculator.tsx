@@ -723,19 +723,21 @@ export default function MagicCalculator({ locale, productId }: Props) {
             className="flex-1 overflow-y-auto space-y-3 select-text text-right"
             style={{ touchAction: "pan-y", overscrollBehavior: "contain" }}
           >
-            {peekLogs.map((log, index) => (
-              <div key={index} className="text-3xl font-bold text-white font-mono whitespace-nowrap leading-tight">
-                {log}
-              </div>
-            ))}
-            {/* 마지막 결과값 — 입력값과 구분되도록 살짝 다른 색 */}
-            {lastResult && (
-              <div className="text-3xl font-bold font-mono whitespace-nowrap leading-tight" style={{ color: "#C4B5FD" }}>
-                {lastResult}
-              </div>
-            )}
+            {/* = 결과값은 표시하지 않음. 입력값 목록 중 '최종 입력값'만 다른 색으로 강조 */}
+            {peekLogs.map((log, index) => {
+              const isLatest = !currentInputNumber && index === peekLogs.length - 1;
+              return (
+                <div
+                  key={index}
+                  className="text-3xl font-bold font-mono whitespace-nowrap leading-tight"
+                  style={{ color: isLatest ? "#C4B5FD" : "#FFFFFF" }}
+                >
+                  {log}
+                </div>
+              );
+            })}
             {currentInputNumber && (
-              <div className="text-3xl font-bold text-white/50 font-mono whitespace-nowrap leading-tight italic">
+              <div className="text-3xl font-bold font-mono whitespace-nowrap leading-tight" style={{ color: "#C4B5FD" }}>
                 {currentInputNumber}
               </div>
             )}
