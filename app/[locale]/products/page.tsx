@@ -31,6 +31,7 @@ export interface BundleItemView {
   price_usd: number;
   thumbnail_url: string | null;
   quantity: number;
+  stock: number;
 }
 
 export interface BundleView {
@@ -40,6 +41,7 @@ export interface BundleView {
   items: BundleItemView[];
   original: number;
   discounted: number;
+  soldOut: boolean;
 }
 
 interface RawBundleRow {
@@ -52,6 +54,7 @@ interface RawBundleRow {
       id: string;
       slug: string;
       price_usd: number;
+      stock: number;
       thumbnail_url: string | null;
       product_translations: { name: string; language: string }[];
     } | null;
@@ -119,7 +122,7 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
   if (!filters.category && !filters.search) {
     const { data: bundleData } = await supabase
       .from("bundles")
-      .select("id, name, discount_percent, bundle_items(quantity, products(id, slug, price_usd, thumbnail_url, product_translations(name, language)))")
+      .select("id, name, discount_percent, bundle_items(quantity, products(id, slug, price_usd, stock, thumbnail_url, product_translations(name, language)))")
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
@@ -140,6 +143,7 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
               price_usd: prod.price_usd,
               thumbnail_url: prod.thumbnail_url,
               quantity: bi.quantity,
+              stock: prod.stock ?? 0,
             };
           });
         const original = items.reduce((s, it) => s + it.price_usd * it.quantity, 0);
@@ -150,6 +154,7 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
           items,
           original,
           discounted: original * (1 - b.discount_percent / 100),
+          soldOut: items.some((it) => it.stock < it.quantity),
         };
       })
       .filter((b) => b.items.length >= 2);

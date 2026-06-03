@@ -12,7 +12,7 @@ export default async function AdminReviewsPage() {
   const { data: reviewRows } = await supabase
     .from("reviews")
     .select(`
-      id, rating, comment, is_approved, is_reported, created_at, user_id,
+      id, rating, comment, is_approved, created_at, user_id,
       products(slug, product_translations(name, language))
     `)
     .order("created_at", { ascending: false })
@@ -23,7 +23,6 @@ export default async function AdminReviewsPage() {
     rating: number;
     comment: string | null;
     is_approved: boolean;
-    is_reported: boolean;
     created_at: string;
     user_id: string;
     products: { slug: string; product_translations: { name: string; language: string }[] } | null;

@@ -96,22 +96,28 @@ export default function BundlesSection({ bundles, locale }: Props) {
                 <span className="text-xl font-bold text-[#A855F7]">${b.discounted.toFixed(2)}</span>
                 <p className="text-xs text-[#10B981] mt-0.5">${(b.original - b.discounted).toFixed(2)} {locale === "ko" ? "절약" : "saved"}</p>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <button
-                  onClick={() => addBundle(b, false)}
-                  className="px-3 py-2 rounded-lg text-xs font-medium border transition-colors"
-                  style={{ background: "#1A1A2E", color: "#A855F7", borderColor: "#7C3AED66" }}
-                >
-                  {addedId === b.id ? <Check className="w-4 h-4" /> : (locale === "ko" ? "담기" : "Add")}
-                </button>
-                <button
-                  onClick={() => addBundle(b, true)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)" }}
-                >
-                  {locale === "ko" ? "바로 구매" : "Buy"}
-                </button>
-              </div>
+              {b.soldOut ? (
+                <span className="px-3 py-2 rounded-lg text-xs font-semibold shrink-0" style={{ background: "#2D2D4E", color: "#9CA3AF" }}>
+                  {locale === "ko" ? "품절" : "Sold out"}
+                </span>
+              ) : (
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => addBundle(b, false)}
+                    className="px-3 py-2 rounded-lg text-xs font-medium border transition-colors"
+                    style={{ background: "#1A1A2E", color: "#A855F7", borderColor: "#7C3AED66" }}
+                  >
+                    {addedId === b.id ? <Check className="w-4 h-4" /> : (locale === "ko" ? "담기" : "Add")}
+                  </button>
+                  <button
+                    onClick={() => addBundle(b, true)}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)" }}
+                  >
+                    {locale === "ko" ? "바로 구매" : "Buy"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ))}

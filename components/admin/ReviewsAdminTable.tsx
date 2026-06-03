@@ -13,7 +13,6 @@ interface Review {
   rating: number;
   comment: string | null;
   is_approved: boolean;
-  is_reported: boolean;
   created_at: string;
   user_id: string;
   products: Product | null;

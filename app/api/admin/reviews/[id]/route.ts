@@ -12,12 +12,11 @@ export async function PATCH(request: Request, ctx: RouteContext) {
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await ctx.params;
-  const body = await request.json() as { is_approved?: boolean; is_reported?: boolean };
+  const body = await request.json() as { is_approved?: boolean };
 
-  // 허용 필드 화이트리스트
+  // 허용 필드 화이트리스트 (게시/미노출)
   const updatePayload: Record<string, boolean> = {};
   if (typeof body.is_approved === "boolean") updatePayload.is_approved = body.is_approved;
-  if (typeof body.is_reported === "boolean") updatePayload.is_reported = body.is_reported;
 
   if (Object.keys(updatePayload).length === 0) {
     return NextResponse.json({ error: "변경할 항목이 없습니다." }, { status: 400 });
