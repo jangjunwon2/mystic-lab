@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, AlertCircle, BookOpen, ShoppingBag } from "lucide-react";
@@ -34,9 +34,13 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
   const [locale, setLocale] = useState("en");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
+  const confirmedRef = useRef(false);
 
   useEffect(() => {
     async function handleSuccess() {
+      // 중복 확정 방지 (StrictMode·재렌더·새로고침 직후 이중 호출 차단)
+      if (confirmedRef.current) return;
+      confirmedRef.current = true;
       const { locale: l } = await params;
       const sp = await searchParams;
       setLocale(l);
