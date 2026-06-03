@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { Send, Zap, CheckCircle2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   params: Promise<{ locale: string }>;
@@ -28,6 +29,22 @@ export default function CustomOrderPage({ params }: Props) {
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
   }, [params]);
+
+  // 로그인 회원이면 이름·이메일 자동 입력 (수정 가능). 빈 칸만 채워 사용자 입력은 보존
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      const user = data.user;
+      if (!user) return;
+      const name = (user.user_metadata?.full_name as string | undefined)?.trim() ?? "";
+      const email = user.email ?? "";
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || name,
+        email: prev.email || email,
+      }));
+    });
+  }, []);
 
   const update = (field: keyof typeof form) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
