@@ -118,7 +118,7 @@ export default function ProductDetail({
                   <div className="w-28 h-28 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/40 flex items-center justify-center">
                     <div className="w-14 h-14 rounded-full bg-[#7C3AED]/50 animate-pulse" />
                   </div>
-                  <p className="text-[#4B5563] text-xs">Product Image Coming Soon</p>
+                  <p className="text-[#4B5563] text-xs">Image Coming Soon</p>
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D1A]/40 to-transparent pointer-events-none" />
