@@ -31,6 +31,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     const statusUpdate: Record<string, string> = { status: body.status };
     if (body.status === "shipped") statusUpdate.shipped_at = nowIso;
     if (body.status === "completed") statusUpdate.completed_at = nowIso;
+
+    // 환불 전환 시 재고·마일리지 복원 (상태 변경 전 멱등 처리)
+    if (body.status === "refunded") {
+      const { reverseOrderEffects } = await import("@/lib/payments/refund-order");
+      await reverseOrderEffects(supabase, id);
+    }
+
     const { error } = await supabase.from("orders").update(statusUpdate).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

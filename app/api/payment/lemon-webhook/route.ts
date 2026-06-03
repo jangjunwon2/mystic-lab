@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (orderRow) {
+        const { reverseOrderEffects } = await import("@/lib/payments/refund-order");
+        await reverseOrderEffects(supabase, orderRow.id); // 재고·마일리지 복원
         await supabase.from("orders").update({ status: "refunded" }).eq("id", orderRow.id);
         sendRefundConfirmation({
           to: orderRow.customer_email ?? email ?? "",
