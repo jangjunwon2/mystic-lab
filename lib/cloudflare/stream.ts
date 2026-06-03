@@ -24,7 +24,12 @@ export async function generateSignedUrl(
 ): Promise<string> {
   // 외부 플랫폼(Vimeo / YouTube)은 서명 없이 임베드 URL로 변환
   if (streamId.startsWith("vimeo:")) {
-    return `https://player.vimeo.com/video/${streamId.slice("vimeo:".length)}`;
+    // 형식: "vimeo:ID" 또는 "vimeo:ID:HASH" (비공개/링크 전용 영상의 개인정보 해시)
+    const rest = streamId.slice("vimeo:".length);
+    const [id, hash] = rest.split(":");
+    return hash
+      ? `https://player.vimeo.com/video/${id}?h=${hash}`
+      : `https://player.vimeo.com/video/${id}`;
   }
   if (streamId.startsWith("yt:")) {
     return `https://www.youtube.com/embed/${streamId.slice("yt:".length)}`;

@@ -58,11 +58,19 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
     setAdding(true);
     setAddError(null);
 
-    // Vimeo는 URL/숫자에서 ID 추출 후 `vimeo:` 접두사로 저장 (Cloudflare는 UUID 그대로)
+    // Vimeo는 URL/숫자에서 ID(+비공개 해시) 추출 후 `vimeo:` 접두사로 저장 (Cloudflare는 UUID 그대로)
     let storedId = addStreamId.trim();
     if (addSource === "vimeo") {
-      const m = storedId.match(/(?:vimeo\.com\/(?:video\/)?)?(\d+)/);
-      storedId = `vimeo:${m ? m[1] : storedId}`;
+      const raw = storedId;
+      const idMatch = raw.match(/(\d{6,})/);
+      const id = idMatch ? idMatch[1] : raw;
+      // 링크 전용(비공개) 영상 해시: vimeo.com/ID/HASH, ?h=HASH, player.../video/ID/HASH 형태 지원
+      const hashMatch =
+        raw.match(/[?&]h=([0-9a-zA-Z]+)/) ||
+        raw.match(/vimeo\.com\/\d+\/([0-9a-zA-Z]+)/) ||
+        raw.match(/player\.vimeo\.com\/video\/\d+\/([0-9a-zA-Z]+)/);
+      const hash = hashMatch ? hashMatch[1] : "";
+      storedId = hash ? `vimeo:${id}:${hash}` : `vimeo:${id}`;
     }
 
     const res = await fetch("/api/admin/videos", {
@@ -261,7 +269,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
                   <input
                     value={addStreamId}
                     onChange={(e) => setAddStreamId(e.target.value)}
-                    placeholder={addSource === "vimeo" ? "예: 123456789 또는 https://vimeo.com/123456789" : "예: 5d5bc37ffcf54c9b82e99682…"}
+                    placeholder={addSource === "vimeo" ? "예: https://vimeo.com/123456789/abcdef1234 (비공개면 URL 전체 붙여넣기)" : "예: 5d5bc37ffcf54c9b82e99682…"}
                     style={inputStyle}
                   />
                 </div>
