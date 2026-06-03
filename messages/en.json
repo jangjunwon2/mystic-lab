@@ -357,6 +357,13 @@
   "calc": {
     "blockTitle": "Device Activation Required",
     "blockBody": "This device is not activated, or its authorization has expired because the code was used to register another smartphone. Please register your device on the product detail page first.",
-    "goToProduct": "Go to Product Page"
+    "goToProduct": "Go to Product Page",
+    "maTitle": "Magic Calculator Web App",
+    "maDesc": "Your auto-issued activation code. Exactly one active device is allowed per code; registering a new device revokes the previous one.",
+    "maOpen": "Open Web App",
+    "maRegister": "Register Device & Open App",
+    "maRegistering": "Registering...",
+    "maErrActivation": "Activation failed",
+    "maErrServer": "Failed to communicate with server."
   }
 }

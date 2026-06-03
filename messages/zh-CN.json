@@ -357,6 +357,13 @@
   "calc": {
     "blockTitle": "需要激活设备",
     "blockBody": "此设备未激活，或因该代码已用于注册其他手机而授权已过期。请先在商品详情页底部完成设备注册。",
-    "goToProduct": "前往商品页面"
+    "goToProduct": "前往商品页面",
+    "maTitle": "魔术计算器网页应用",
+    "maDesc": "这是为您自动发放的正品激活码。每个激活码仅允许一台设备激活，在其他设备上重新注册将注销原设备的权限。",
+    "maOpen": "打开网页应用",
+    "maRegister": "注册设备并打开应用",
+    "maRegistering": "注册中...",
+    "maErrActivation": "激活失败",
+    "maErrServer": "与服务器通信失败。"
   }
 }

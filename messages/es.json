@@ -357,6 +357,13 @@
   "calc": {
     "blockTitle": "Activación de dispositivo requerida",
     "blockBody": "Este dispositivo no está activado, o su autorización ha caducado porque el código se usó para registrar otro teléfono. Registra tu dispositivo en la página de detalles del producto primero.",
-    "goToProduct": "Ir a la página del producto"
+    "goToProduct": "Ir a la página del producto",
+    "maTitle": "App web Calculadora Mágica",
+    "maDesc": "Tu código de activación emitido automáticamente. Solo se permite un dispositivo activo por código; registrar uno nuevo revoca el anterior.",
+    "maOpen": "Abrir app web",
+    "maRegister": "Registrar dispositivo y abrir",
+    "maRegistering": "Registrando...",
+    "maErrActivation": "Error de activación",
+    "maErrServer": "Error al comunicarse con el servidor."
   }
 }

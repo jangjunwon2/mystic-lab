@@ -2,6 +2,7 @@
 // v2
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Zap, Copy, Check } from "lucide-react";
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 // 회원 구매자에게 해법 영상 하단에서 자동 발급 코드 + 웹앱 실행을 제공
 export default function MagicMemberAccess({ productId, locale }: Props) {
   const router = useRouter();
-  const isKo = locale === "ko";
+  const t = useTranslations("calc");
 
   const [code, setCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,10 +57,10 @@ export default function MagicMemberAccess({ productId, locale }: Props) {
         try { localStorage.setItem("ml_calc_device_token", d.deviceToken); } catch { /* ignore */ }
         router.push(`/${locale}/calc`);
       } else {
-        setError(d.error ?? (isKo ? "기기 등록 실패" : "Activation failed"));
+        setError(d.error ?? t("maErrActivation"));
       }
     } catch {
-      setError(isKo ? "서버와의 통신이 실패했습니다." : "Failed to communicate with server.");
+      setError(t("maErrServer"));
     } finally {
       setActivating(false);
     }
@@ -80,13 +81,11 @@ export default function MagicMemberAccess({ productId, locale }: Props) {
       <div className="flex items-center gap-2 mb-3">
         <Zap className="w-4 h-4 text-[#A855F7]" />
         <h3 className="text-sm font-semibold text-[#F0E6FF]">
-          {isKo ? "마술 계산기 웹앱" : "Magic Calculator Web App"}
+          {t("maTitle")}
         </h3>
       </div>
       <p className="text-xs text-[#9CA3AF] mb-4 leading-relaxed">
-        {isKo
-          ? "회원님께 자동 발급된 정품 인증 코드입니다. 코드 1개당 1대의 기기만 활성화되며, 다른 기기에서 다시 등록하면 기존 기기의 권한은 취소됩니다."
-          : "Your auto-issued activation code. Exactly one active device is allowed per code; registering a new device revokes the previous one."}
+        {t("maDesc")}
       </p>
 
       <div className="flex items-center gap-2 mb-4">
@@ -112,7 +111,7 @@ export default function MagicMemberAccess({ productId, locale }: Props) {
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:opacity-90 active:scale-95 transition-all duration-150"
         >
           <Zap className="w-4 h-4" />
-          {isKo ? "웹앱 열기" : "Open Web App"}
+          {t("maOpen")}
         </button>
       ) : (
         <button
@@ -122,9 +121,7 @@ export default function MagicMemberAccess({ productId, locale }: Props) {
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:opacity-90 active:scale-95 transition-all duration-150 disabled:opacity-50"
         >
           <Zap className="w-4 h-4" />
-          {activating
-            ? (isKo ? "기기 등록 중..." : "Registering...")
-            : (isKo ? "기기 등록 후 웹앱 열기" : "Register Device & Open App")}
+          {activating ? t("maRegistering") : t("maRegister")}
         </button>
       )}
     </div>

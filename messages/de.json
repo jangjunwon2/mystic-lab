@@ -357,6 +357,13 @@
   "calc": {
     "blockTitle": "Geräteaktivierung erforderlich",
     "blockBody": "Dieses Gerät ist nicht aktiviert oder seine Autorisierung ist abgelaufen, weil der Code zur Registrierung eines anderen Smartphones verwendet wurde. Bitte registrieren Sie Ihr Gerät zuerst auf der Produktdetailseite.",
-    "goToProduct": "Zur Produktseite"
+    "goToProduct": "Zur Produktseite",
+    "maTitle": "Magischer Rechner Web-App",
+    "maDesc": "Ihr automatisch ausgestellter Aktivierungscode. Pro Code ist nur ein aktives Gerät erlaubt; die Registrierung eines neuen Geräts widerruft das vorherige.",
+    "maOpen": "Web-App öffnen",
+    "maRegister": "Gerät registrieren & öffnen",
+    "maRegistering": "Registrierung...",
+    "maErrActivation": "Aktivierung fehlgeschlagen",
+    "maErrServer": "Kommunikation mit dem Server fehlgeschlagen."
   }
 }

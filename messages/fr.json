@@ -357,6 +357,13 @@
   "calc": {
     "blockTitle": "Activation de l'appareil requise",
     "blockBody": "Cet appareil n'est pas activé, ou son autorisation a expiré car le code a été utilisé pour enregistrer un autre téléphone. Veuillez d'abord enregistrer votre appareil sur la page du produit.",
-    "goToProduct": "Aller à la page du produit"
+    "goToProduct": "Aller à la page du produit",
+    "maTitle": "App web Calculatrice Magique",
+    "maDesc": "Votre code d'activation émis automatiquement. Un seul appareil actif est autorisé par code ; en enregistrer un nouveau révoque le précédent.",
+    "maOpen": "Ouvrir l'app web",
+    "maRegister": "Enregistrer l'appareil et ouvrir",
+    "maRegistering": "Enregistrement...",
+    "maErrActivation": "Échec de l'activation",
+    "maErrServer": "Échec de communication avec le serveur."
   }
 }
