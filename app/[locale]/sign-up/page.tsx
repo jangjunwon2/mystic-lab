@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, UserPlus, Eye, EyeOff, Sparkles, CheckCircle2, ChevronDown, MapPin } from "lucide-react";
 import { COUNTRIES } from "@/lib/constants/countries";
@@ -24,6 +25,7 @@ interface Props {
 
 export default function SignUpPage({ params }: Props) {
   const router = useRouter();
+  const t = useTranslations("signUp");
   const [locale, setLocale] = useState("en");
 
   const [name, setName] = useState("");
@@ -80,23 +82,15 @@ export default function SignUpPage({ params }: Props) {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t("errPasswordMismatch"));
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("errPasswordShort"));
       return;
     }
     if (!termsAgreed || !privacyAgreed || !ageConfirmed) {
-      setError(
-        locale === "ko"
-          ? "필수 항목에 모두 동의해주세요."
-          : locale === "ja"
-          ? "必須項目にすべて同意してください。"
-          : locale === "zh-CN"
-          ? "请同意所有必填项后继续。"
-          : "Please accept the required agreements to continue."
-      );
+      setError(t("errRequiredAgreements"));
       return;
     }
 
@@ -153,17 +147,16 @@ export default function SignUpPage({ params }: Props) {
               className="text-xl font-bold text-[#F0E6FF] mb-3"
               style={{ fontFamily: "var(--font-cinzel), serif" }}
             >
-              Check Your Email
+              {t("successTitle")}
             </h2>
             <p className="text-sm text-[#9CA3AF] mb-6">
-              We sent a confirmation link to <strong className="text-[#F0E6FF]">{email}</strong>.
-              Click the link to activate your account.
+              {t("successBody", { email })}
             </p>
             <Link
               href={`/${locale}/sign-in`}
               className="inline-flex items-center gap-2 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
             >
-              Back to Sign In
+              {t("backToSignIn")}
             </Link>
           </div>
         </motion.div>
@@ -194,10 +187,10 @@ export default function SignUpPage({ params }: Props) {
             className="text-2xl font-bold text-[#F0E6FF] mb-1"
             style={{ fontFamily: "var(--font-cinzel), serif" }}
           >
-            Create Account
+            {t("title")}
           </h1>
           <p className="text-sm text-[#9CA3AF]">
-            Join Mystic Lab to access your tutorials and orders
+            {t("subtitle")}
           </p>
         </div>
 
@@ -211,7 +204,7 @@ export default function SignUpPage({ params }: Props) {
           <form onSubmit={handleSignUp} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                Display Name
+                {t("nameLabel")}
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
@@ -220,7 +213,7 @@ export default function SignUpPage({ params }: Props) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  placeholder="Your name"
+                  placeholder={t("namePlaceholder")}
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
               </div>
@@ -228,7 +221,7 @@ export default function SignUpPage({ params }: Props) {
 
             <div>
               <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                Email
+                {t("emailLabel")}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
@@ -245,7 +238,7 @@ export default function SignUpPage({ params }: Props) {
 
             <div>
               <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                Password
+                {t("passwordLabel")}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
@@ -255,7 +248,7 @@ export default function SignUpPage({ params }: Props) {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  placeholder="Minimum 8 characters"
+                  placeholder={t("passwordPlaceholder")}
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-10 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
                 <button
@@ -270,7 +263,7 @@ export default function SignUpPage({ params }: Props) {
 
             <div>
               <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                Confirm Password
+                {t("confirmLabel")}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
@@ -279,7 +272,7 @@ export default function SignUpPage({ params }: Props) {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  placeholder="Repeat your password"
+                  placeholder={t("confirmPlaceholder")}
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
               </div>
@@ -294,13 +287,7 @@ export default function SignUpPage({ params }: Props) {
               >
                 <span className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5" />
-                  {locale === "ko"
-                    ? "기본 배송지 저장 (선택)"
-                    : locale === "ja"
-                    ? "配送先を保存（任意）"
-                    : locale === "zh-CN"
-                    ? "保存收货地址（可选）"
-                    : "Save Shipping Address (optional)"}
+                  {t("saveAddress")}
                 </span>
                 <ChevronDown
                   className="w-4 h-4 transition-transform"
@@ -312,14 +299,14 @@ export default function SignUpPage({ params }: Props) {
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   <input
                     type="text"
-                    placeholder={locale === "ko" ? "받는 분 성함" : "Full name"}
+                    placeholder={t("addrName")}
                     value={addrName}
                     onChange={(e) => setAddrName(e.target.value)}
                     className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
                   />
                   <input
                     type="text"
-                    placeholder={locale === "ko" ? "연락처" : "Phone"}
+                    placeholder={t("addrPhone")}
                     value={addrPhone}
                     onChange={(e) => setAddrPhone(e.target.value)}
                     className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
@@ -330,7 +317,7 @@ export default function SignUpPage({ params }: Props) {
                       <div className="col-span-2 flex gap-2">
                         <input
                           type="text"
-                          placeholder="우편번호"
+                          placeholder={t("addrPostal")}
                           value={addrPostal}
                           readOnly
                           className="flex-1 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
@@ -365,35 +352,35 @@ export default function SignUpPage({ params }: Props) {
                         onChange={(e) => setAddrCountry(e.target.value)}
                         className="bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] focus:outline-none focus:border-[#7C3AED]"
                       >
-                        <option value="">Country</option>
+                        <option value="">{t("country")}</option>
                         {COUNTRIES.map((c) => (
                           <option key={c.code} value={c.code}>{c.name}</option>
                         ))}
                       </select>
                       <input
                         type="text"
-                        placeholder="Postal code"
+                        placeholder={t("addrPostal")}
                         value={addrPostal}
                         onChange={(e) => setAddrPostal(e.target.value)}
                         className="bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
                       />
                       <input
                         type="text"
-                        placeholder="Address line 1"
+                        placeholder={t("addrLine1")}
                         value={addrLine1}
                         onChange={(e) => setAddrLine1(e.target.value)}
                         className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
                       />
                       <input
                         type="text"
-                        placeholder="Address line 2 (optional)"
+                        placeholder={t("addrLine2")}
                         value={addrLine2}
                         onChange={(e) => setAddrLine2(e.target.value)}
                         className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
                       />
                       <input
                         type="text"
-                        placeholder="City"
+                        placeholder={t("addrCity")}
                         value={addrCity}
                         onChange={(e) => setAddrCity(e.target.value)}
                         className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
@@ -466,13 +453,7 @@ export default function SignUpPage({ params }: Props) {
                   className="mt-0.5 w-4 h-4 rounded border-[#2D2D4E] bg-[#13131F] text-[#7C3AED] accent-[#7C3AED] shrink-0"
                 />
                 <span className="text-xs text-[#9CA3AF] group-hover:text-[#C084FC] transition-colors leading-relaxed">
-                  {locale === "ko"
-                    ? <>만 14세 이상임을 확인합니다 <span className="text-red-400">*</span></>
-                    : locale === "ja"
-                    ? <>14歳以上であることを確認します <span className="text-red-400">*</span></>
-                    : locale === "zh-CN"
-                    ? <>我确认我已年满14周岁 <span className="text-red-400">*</span></>
-                    : <>I confirm I am at least 16 years old <span className="text-red-400">*</span></>}
+                  {t("ageConfirm")} <span className="text-red-400">*</span>
                 </span>
               </label>
 
@@ -484,19 +465,7 @@ export default function SignUpPage({ params }: Props) {
                   className="mt-0.5 w-4 h-4 rounded border-[#2D2D4E] bg-[#13131F] text-[#7C3AED] accent-[#7C3AED] shrink-0"
                 />
                 <span className="text-xs text-[#9CA3AF] group-hover:text-[#C084FC] transition-colors leading-relaxed">
-                  {locale === "ko"
-                    ? "Mystic Lab의 마케팅 이메일 수신에 동의합니다 (선택)"
-                    : locale === "ja"
-                    ? "Mystic Labからのプロモーションメールの受信に同意します（任意）"
-                    : locale === "zh-CN"
-                    ? "我同意接收Mystic Lab的推广邮件（选填）"
-                    : locale === "de"
-                    ? "Ich stimme dem Erhalt von Werbe-E-Mails von Mystic Lab zu (optional)"
-                    : locale === "fr"
-                    ? "J'accepte de recevoir des emails promotionnels de Mystic Lab (facultatif)"
-                    : locale === "es"
-                    ? "Acepto recibir emails promocionales de Mystic Lab (opcional)"
-                    : "I agree to receive promotional emails from Mystic Lab (optional)"}
+                  {t("marketing")}
                 </span>
               </label>
             </div>
@@ -511,15 +480,15 @@ export default function SignUpPage({ params }: Props) {
               ) : (
                 <UserPlus className="w-4 h-4" />
               )}
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? t("submitting") : t("submit")}
             </button>
           </form>
         </div>
 
         <p className="text-center text-sm text-[#6B7280] mt-6">
-          Already have an account?{" "}
+          {t("alreadyHaveAccount")}{" "}
           <Link href={`/${locale}/sign-in`} className="text-[#A855F7] hover:text-[#C084FC] transition-colors">
-            Sign in
+            {t("signInLink")}
           </Link>
         </p>
       </motion.div>
