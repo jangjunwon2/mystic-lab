@@ -31,15 +31,8 @@ interface ShippingOrder {
   order_items: OrderItem[];
 }
 
-interface Stats {
-  pending: number;
-  shipped: number;
-  completed: number;
-}
-
 interface Props {
   orders: ShippingOrder[];
-  stats: Stats;
 }
 
 type FilterTab = "all" | "paid" | "shipped" | "completed";
@@ -72,7 +65,7 @@ const inputStyle = {
   fontSize: "13px",
 };
 
-export default function ShippingAdminTable({ orders: initialOrders, stats }: Props) {
+export default function ShippingAdminTable({ orders: initialOrders }: Props) {
   const [orders, setOrders] = useState(initialOrders);
   const [filter, setFilter] = useState<FilterTab>("all");
   const [trackingInputs, setTrackingInputs] = useState<Record<string, { number: string; carrier: string }>>({});
@@ -80,6 +73,13 @@ export default function ShippingAdminTable({ orders: initialOrders, stats }: Pro
   const [msg, setMsg] = useState<string | null>(null);
 
   const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
+
+  // 통계는 현재 주문 상태(클라이언트 state)에서 파생 → 발송 처리 시 즉시 갱신
+  const stats = {
+    pending: orders.filter((o) => o.status === "paid").length,
+    shipped: orders.filter((o) => o.status === "shipped").length,
+    completed: orders.filter((o) => o.status === "completed").length,
+  };
 
   async function saveTracking(orderId: string) {
     const t = trackingInputs[orderId];

@@ -22,11 +22,6 @@ export default async function AdminShippingPage() {
     .limit(500);
 
   const all = orders ?? [];
-  const stats = {
-    pending: all.filter((o: { status: string }) => o.status === "paid").length,
-    shipped: all.filter((o: { status: string }) => o.status === "shipped").length,
-    completed: all.filter((o: { status: string }) => o.status === "completed").length,
-  };
 
   return (
     <div className="p-8">
@@ -38,7 +33,7 @@ export default async function AdminShippingPage() {
           결제 완료된 주문의 발송 처리 및 배송 추적을 관리합니다.
         </p>
       </div>
-      <ShippingAdminTable orders={all} stats={stats} />
+      <ShippingAdminTable orders={all} />
     </div>
   );
 }

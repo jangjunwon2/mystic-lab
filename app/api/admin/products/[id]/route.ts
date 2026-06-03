@@ -15,7 +15,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
-  const { slug, category, price_usd, stock, is_active, is_featured, thumbnail_url, demo_video_cloudflare_id, image_urls, translations } = body;
+  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations } = body;
 
   const updatePayload: Record<string, unknown> = {};
   if (slug !== undefined) updatePayload.slug = slug;
@@ -24,6 +24,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (stock !== undefined) updatePayload.stock = stock;
   if (is_active !== undefined) updatePayload.is_active = is_active;
   if (is_featured !== undefined) updatePayload.is_featured = is_featured;
+  if (is_digital !== undefined) updatePayload.is_digital = is_digital;
   if (thumbnail_url !== undefined) updatePayload.thumbnail_url = thumbnail_url;
   if (demo_video_cloudflare_id !== undefined) updatePayload.demo_video_cloudflare_id = demo_video_cloudflare_id;
   if (image_urls !== undefined) updatePayload.image_urls = image_urls;

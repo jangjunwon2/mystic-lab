@@ -54,15 +54,32 @@ export default async function AdminUnlockCodesPage() {
     name: pickName(p.product_translations, p.slug),
   }));
 
-  const codes = ((codesRes.data ?? []) as RawCode[]).map((c) => ({
+  const rawCodes = (codesRes.data ?? []) as RawCode[];
+
+  // 회원 코드의 소유자 이름 조회 (user_id → display_name)
+  const userIds = Array.from(new Set(rawCodes.map((c) => c.user_id).filter((id): id is string => !!id)));
+  const memberNames = new Map<string, string>();
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", userIds);
+    for (const p of (profiles ?? []) as { id: string; display_name: string | null }[]) {
+      if (p.display_name) memberNames.set(p.id, p.display_name);
+    }
+  }
+
+  const codes = rawCodes.map((c) => ({
     id: c.id,
     product_id: c.product_id,
+    product_slug: c.products?.slug ?? "",
     created_at: c.created_at,
     first_used_at: c.first_used_at,
     code_plain: c.code_plain,
     is_activated: !!c.active_token_hash,
     last_activated_at: c.last_activated_at,
     is_member: !!c.user_id,
+    member_name: c.user_id ? memberNames.get(c.user_id) ?? null : null,
     product_name: pickName(c.products?.product_translations, c.products?.slug ?? "알 수 없음"),
   }));
 

@@ -18,6 +18,19 @@ const STATUS_COLORS: Record<string, string> = {
   refunded: "bg-red-500/15 text-red-400 border-red-500/30",
 };
 
+// 주문 상태 다국어 라벨 (7개 언어)
+const STATUS_LABELS: Record<string, Record<string, string>> = {
+  pending: { ko: "결제 대기", en: "Pending Payment", ja: "支払い待ち", "zh-CN": "待付款", es: "Pago pendiente", fr: "Paiement en attente", de: "Zahlung ausstehend" },
+  paid: { ko: "결제 완료", en: "Paid", ja: "支払い完了", "zh-CN": "已付款", es: "Pagado", fr: "Payé", de: "Bezahlt" },
+  shipped: { ko: "배송 중", en: "Shipping", ja: "配送中", "zh-CN": "配送中", es: "En envío", fr: "En cours de livraison", de: "Versand" },
+  completed: { ko: "배송 완료", en: "Delivered", ja: "配達完了", "zh-CN": "已送达", es: "Entregado", fr: "Livré", de: "Geliefert" },
+  refunded: { ko: "환불", en: "Refunded", ja: "返金済み", "zh-CN": "已退款", es: "Reembolsado", fr: "Remboursé", de: "Erstattet" },
+};
+
+function statusLabel(status: string, locale: string): string {
+  return STATUS_LABELS[status]?.[locale] ?? STATUS_LABELS[status]?.en ?? status;
+}
+
 interface Order {
   id: string;
   status: string;
@@ -92,6 +105,20 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
   const purchasedOrders = typedOrders.filter((o) =>
     ["paid", "shipped", "completed"].includes(o.status)
   );
+
+  // 해법 영상 — 동일 상품은 중복 구매여도 1개만 노출
+  type TutorialProduct = NonNullable<Order["order_items"][number]["products"]>;
+  const dedupedTutorials: TutorialProduct[] = (() => {
+    const map = new Map<string, TutorialProduct>();
+    for (const order of purchasedOrders) {
+      for (const item of order.order_items) {
+        if (item.products && !map.has(item.products.id)) {
+          map.set(item.products.id, item.products);
+        }
+      }
+    }
+    return [...map.values()];
+  })();
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -288,14 +315,10 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {purchasedOrders.flatMap((order) =>
-                  order.order_items
-                    .filter((item) => item.products)
-                    .map((item) => (
-                      <TutorialCard key={item.id} item={item} locale={locale} t={t} />
-                    ))
-                )}
+              <div className="rounded-xl border border-[#2D2D4E] overflow-hidden divide-y divide-[#2D2D4E]">
+                {dedupedTutorials.map((prod) => (
+                  <TutorialRow key={prod.id} product={prod} locale={locale} t={t} />
+                ))}
               </div>
             )}
           </motion.div>
@@ -508,13 +531,6 @@ const CARRIER_URLS: Record<string, string> = {
   EMS:          "https://service.epost.go.kr/trace.RetrieveEmsRigiTraceList.comm?POST_CODE=",
 };
 
-function getGatewayLabel(ref: string | null) {
-  if (!ref) return null;
-  if (ref.startsWith("toss_")) return { label: "Toss", color: "#3B82F6" };
-  if (ref.startsWith("lemon_")) return { label: "Lemon", color: "#84CC16" };
-  return null;
-}
-
 function OrderCard({ order, locale }: { order: Order; locale: string }) {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
@@ -525,7 +541,6 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
   });
   // 리뷰는 배송완료(completed) 주문만 작성 가능
   const eligible = order.status === "completed";
-  const gateway = getGatewayLabel(order.stripe_payment_intent_id);
   const trackingUrl = order.tracking_carrier && order.tracking_number
     ? (CARRIER_URLS[order.tracking_carrier] ?? null)
     : null;
@@ -541,23 +556,18 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
           <p className="text-xs text-[#6B7280]">{date}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          {gateway && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-              style={{ background: `${gateway.color}22`, color: gateway.color, border: `1px solid ${gateway.color}44` }}>
-              {gateway.label}
-            </span>
-          )}
-          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border uppercase tracking-wide ${STATUS_COLORS[order.status] ?? ""}`}>
-            {order.status}
+          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border tracking-wide ${STATUS_COLORS[order.status] ?? ""}`}>
+            {statusLabel(order.status, locale)}
           </span>
           <span className="text-sm font-semibold text-[#F59E0B]">
             ${order.total_usd.toFixed(2)}
           </span>
           <Link
             href={`/${locale}/orders/${order.id}`}
-            className="flex items-center gap-1 text-[10px] text-[#6B7280] hover:text-[#A855F7] transition-colors"
+            className="flex items-center gap-1 text-[11px] font-medium text-[#A855F7] hover:text-[#C084FC] border border-[#7C3AED]/40 hover:border-[#A855F7]/60 rounded-full px-2.5 py-1 transition-colors"
           >
             <ExternalLink className="w-3 h-3" />
+            {locale === "ko" ? "주문 상세" : locale === "ja" ? "注文詳細" : locale === "zh-CN" ? "订单详情" : "Order Details"}
           </Link>
         </div>
       </div>
@@ -761,44 +771,44 @@ function ReviewInlineForm({
   );
 }
 
-function TutorialCard({
-  item,
+function TutorialRow({
+  product,
   locale,
   t,
 }: {
-  item: Order["order_items"][0];
+  product: NonNullable<Order["order_items"][number]["products"]>;
   locale: string;
   t: ReturnType<typeof useTranslations>;
 }) {
-  const name = item.products?.product_translations.find(
+  const name = product.product_translations.find(
     (tr) => tr.language === locale
-  )?.name ?? item.products?.product_translations[0]?.name ?? "Product";
-  const slug = item.products?.slug;
+  )?.name ?? product.product_translations[0]?.name ?? "Product";
 
   return (
     <Link
-      href={slug ? `/${locale}/products/${slug}` : "#"}
-      className="block bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-4 hover:border-[#7C3AED]/60 hover:shadow-[0_0_20px_rgba(124,58,237,0.15)] transition-all duration-300 group"
+      href={`/${locale}/tutorials/${product.slug}`}
+      className="flex items-center gap-4 bg-[#1A1A2E] px-4 py-3 hover:bg-[#21213a] transition-colors group"
     >
-      <div className="aspect-video bg-[#13131F] rounded-lg mb-3 overflow-hidden flex items-center justify-center relative">
-        {item.products?.thumbnail_url ? (
+      {/* 썸네일 */}
+      <div className="w-20 h-12 shrink-0 bg-[#13131F] rounded-md overflow-hidden flex items-center justify-center relative">
+        {product.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.products.thumbnail_url} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img src={product.thumbnail_url} alt={name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-[#7C3AED]/30 flex items-center justify-center">
-            <Play className="w-5 h-5 text-[#A855F7]" />
-          </div>
+          <Play className="w-4 h-4 text-[#A855F7]" />
         )}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
-          <div className="w-10 h-10 rounded-full bg-[#7C3AED] flex items-center justify-center">
-            <Play className="w-5 h-5 text-white ml-0.5" />
-          </div>
-        </div>
       </div>
-      <p className="text-sm font-medium text-[#F0E6FF] group-hover:text-[#A855F7] transition-colors line-clamp-1">
-        {name}
-      </p>
-      <p className="text-xs text-[#7C3AED] mt-1">{t("watchTutorial")}</p>
+      {/* 제목 */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-[#F0E6FF] group-hover:text-[#A855F7] transition-colors truncate">
+          {name}
+        </p>
+        <p className="text-xs text-[#7C3AED] mt-0.5">{t("watchTutorial")}</p>
+      </div>
+      {/* 재생 아이콘 */}
+      <div className="w-8 h-8 shrink-0 rounded-full bg-[#7C3AED]/15 group-hover:bg-[#7C3AED] flex items-center justify-center transition-colors">
+        <Play className="w-4 h-4 text-[#A855F7] group-hover:text-white ml-0.5 transition-colors" />
+      </div>
     </Link>
   );
 }

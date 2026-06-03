@@ -32,6 +32,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
 
   // Paste Stream ID form
   const [addProductId, setAddProductId] = useState(products[0]?.id ?? "");
+  const [addSource, setAddSource] = useState<"cloudflare" | "vimeo">("cloudflare");
   const [addStreamId, setAddStreamId] = useState("");
   const [addTitle, setAddTitle] = useState("");
   const [adding, setAdding] = useState(false);
@@ -51,18 +52,25 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
 
   async function addByStreamId() {
     if (!addProductId || !addStreamId.trim()) {
-      setAddError("Product and Stream ID are required.");
+      setAddError("상품과 영상 ID를 입력해주세요.");
       return;
     }
     setAdding(true);
     setAddError(null);
+
+    // Vimeo는 URL/숫자에서 ID 추출 후 `vimeo:` 접두사로 저장 (Cloudflare는 UUID 그대로)
+    let storedId = addStreamId.trim();
+    if (addSource === "vimeo") {
+      const m = storedId.match(/(?:vimeo\.com\/(?:video\/)?)?(\d+)/);
+      storedId = `vimeo:${m ? m[1] : storedId}`;
+    }
 
     const res = await fetch("/api/admin/videos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         product_id: addProductId,
-        cloudflare_stream_id: addStreamId.trim(),
+        cloudflare_stream_id: storedId,
         title: addTitle.trim() || null,
       }),
     });
@@ -218,9 +226,25 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
             /* ── Paste Stream ID ── */
             <div className="space-y-4">
               <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                이미 Cloudflare Stream에 업로드된 영상이 있으신가요? 여기에 영상 ID를 붙여 넣어 상품과 연결하세요.
+                Cloudflare Stream 또는 Vimeo에 업로드된 해법 영상을 상품과 연결합니다. 소스를 선택하고 ID(또는 Vimeo URL)를 입력하세요.
               </p>
               {addError && <p className="text-sm" style={{ color: "#EF4444" }}>{addError}</p>}
+              {/* 영상 소스 선택 */}
+              <div className="flex gap-2">
+                {([["cloudflare", "Cloudflare Stream"], ["vimeo", "Vimeo"]] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setAddSource(val)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    style={addSource === val
+                      ? { background: "#7C3AED", color: "#fff" }
+                      : { background: "#0D0D1A", color: "#9CA3AF", border: "1px solid #2D2D4E" }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>상품</label>
@@ -231,11 +255,13 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Cloudflare Stream ID</label>
+                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>
+                    {addSource === "vimeo" ? "Vimeo 영상 ID 또는 URL" : "Cloudflare Stream ID"}
+                  </label>
                   <input
                     value={addStreamId}
                     onChange={(e) => setAddStreamId(e.target.value)}
-                    placeholder="예: 5d5bc37ffcf54c9b82e99682…"
+                    placeholder={addSource === "vimeo" ? "예: 123456789 또는 https://vimeo.com/123456789" : "예: 5d5bc37ffcf54c9b82e99682…"}
                     style={inputStyle}
                   />
                 </div>

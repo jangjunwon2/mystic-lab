@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { slug, category, price_usd, stock, is_active, is_featured, thumbnail_url, demo_video_cloudflare_id, image_urls, translations } = body;
+  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations } = body;
 
   if (!slug || !category || price_usd == null) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       stock: stock ?? 0,
       is_active: is_active ?? true,
       is_featured: is_featured ?? false,
+      is_digital: is_digital ?? false,
       thumbnail_url: thumbnail_url ?? null,
       demo_video_cloudflare_id: demo_video_cloudflare_id ?? null,
       image_urls: image_urls ?? [],

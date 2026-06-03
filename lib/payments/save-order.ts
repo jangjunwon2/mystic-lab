@@ -17,10 +17,28 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     // non-critical — order saves without user_id
   }
 
+  // 디지털 상품만으로 구성된 주문은 배송이 없으므로 결제 즉시 completed 처리 → 바로 리뷰 작성 가능
+  let allDigital = false;
+  try {
+    const ids = input.items.map((i) => i.id);
+    const { data: prods } = await supabase
+      .from("products")
+      .select("id, is_digital")
+      .in("id", ids);
+    const digitalMap = new Map<string, boolean>(
+      ((prods ?? []) as { id: string; is_digital: boolean }[]).map((p) => [p.id, !!p.is_digital])
+    );
+    allDigital = ids.length > 0 && ids.every((id) => digitalMap.get(id) === true);
+  } catch {
+    // non-critical — 조회 실패 시 기본(paid)
+  }
+  const nowIso = new Date().toISOString();
+
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
-      status: "paid",
+      status: allDigital ? "completed" : "paid",
+      ...(allDigital ? { completed_at: nowIso } : {}),
       total_usd: input.totalUsd,
       customer_email: input.customerEmail,
       ...(userId ? { user_id: userId } : {}),

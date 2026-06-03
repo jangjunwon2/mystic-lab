@@ -197,6 +197,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const leftTopHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
   const equalHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const equalHoldFiredRef = useRef(false);
   const isPressingKeyRef = useRef<string | null>(null);
 
   // OS 자동 감지 및 설정 세팅
@@ -349,12 +350,6 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   // 키패드 입력 핸들러 (touchend 릴리즈 감지)
   const handleKeyPress = (val: string) => {
-    // 9번 버튼 홀딩으로 인한 훔쳐보기 스킵 감지
-    if (isPressingKeyRef.current === "9" && val === "9") {
-      isPressingKeyRef.current = null;
-      return;
-    }
-
     setIsCalculated(false);
 
     if (val >= "0" && val <= "9") {
@@ -399,25 +394,39 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }
   };
 
-  // 9번 버튼 홀드 (2초) - Peeking 활성화
+  // 9번 버튼 홀드 (2초) - Peeking 활성화 / 짧게 누르면 숫자 9 입력
   const handle9Start = () => {
     isPressingKeyRef.current = "9";
     holdTimerRef.current = setTimeout(() => {
+      // 2초 도달 → Peeking 모드 ON. 홀드가 발동했음을 timer ref=null로 표시
       setIsPeekingActive(true);
       triggerDimmingFeedback();
+      holdTimerRef.current = null;
     }, 2000);
   };
 
   const handle9End = () => {
+    // 타이머가 아직 살아있으면(2초 미만) 짧은 탭으로 간주 → 숫자 9 입력
+    const wasShortTap = holdTimerRef.current !== null;
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
     }
-    // 2초 미만인 경우에만 9 입력 등록
-    if (isPressingKeyRef.current === "9") {
+    isPressingKeyRef.current = null;
+    if (wasShortTap) {
       handleKeyPress("9");
-      isPressingKeyRef.current = null;
     }
+  };
+
+  // % 버튼 - 일반 계산기 백분율 동작 (포스 마커는 별도 렌더, 그 외 마술 기능 없음)
+  const handlePercent = () => {
+    setIsCalculated(false);
+    const n = parseFloat(display);
+    if (isNaN(n)) return;
+    const r = String(n / 100);
+    setDisplay(r);
+    setEquation(r);
+    setCurrentInputNumber("");
   };
 
   // C 버튼 홀드 (3초) - 포스 모드 온오프
@@ -439,12 +448,14 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   // = 버튼 2초 홀드(로그 청소) 및 3초 홀드(영수증 출력)
   const handleEqualStart = () => {
+    equalHoldFiredRef.current = false;
     equalHoldTimerRef.current = setTimeout(() => {
-      // 2초 도달 시 로그 클리어
+      // 2초 도달 시 로그 클리어 (홀드 동작 발동 표시)
+      equalHoldFiredRef.current = true;
       setPeekLogs([]);
       triggerDimmingFeedback();
 
-      // 3초 도달용 2차 타이머
+      // 3초 도달용 2차 타이머 → 영수증 인쇄
       equalHoldTimerRef.current = setTimeout(() => {
         handlePrintReceipt();
       }, 1000);
@@ -456,7 +467,11 @@ export default function MagicCalculator({ locale, productId }: Props) {
       clearTimeout(equalHoldTimerRef.current);
       equalHoldTimerRef.current = null;
     }
-    // 홀딩되지 않은 경우 일반 결과 계산 실행
+    // 홀드 동작(로그 삭제/인쇄)이 이미 실행됐으면 일반 계산은 건너뜀
+    if (equalHoldFiredRef.current) {
+      equalHoldFiredRef.current = false;
+      return;
+    }
     handleEqualsClick();
   };
 
@@ -781,13 +796,13 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 {isEraseLeftActive ? "-/+" : "+/-"}
               </button>
               <button
-                onTouchStart={handle9Start}
-                onTouchEnd={handle9End}
+                onTouchStart={() => (isPressingKeyRef.current = "%")}
+                onTouchEnd={() => isPressingKeyRef.current === "%" && handlePercent()}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#A5A5A5] text-black active:bg-[#D9D9D9] transition-colors relative"
               >
                 %
                 {isForceActive && (
-                  <span className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-black rounded-full transform -translate-x-1/2 -translate-y-1/2" />
+                  <span className="absolute top-1/2 left-1/2 bg-black rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ width: "2px", height: "2px" }} />
                 )}
               </button>
               <button
@@ -932,13 +947,13 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 {isEraseLeftActive ? "-/+" : "+/-"}
               </button>
               <button
-                onTouchStart={handle9Start}
-                onTouchEnd={handle9End}
+                onTouchStart={() => (isPressingKeyRef.current = "%")}
+                onTouchEnd={() => isPressingKeyRef.current === "%" && handlePercent()}
                 className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl font-semibold bg-[#2D2D4E] text-[#A855F7] active:bg-[#3D3D6E] transition-colors relative"
               >
                 %
                 {isForceActive && (
-                  <span className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-[#A855F7] rounded-full transform -translate-x-1/2 -translate-y-1/2" />
+                  <span className="absolute top-1/2 left-1/2 bg-[#A855F7] rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ width: "2px", height: "2px" }} />
                 )}
               </button>
               <button

@@ -5,6 +5,7 @@ import { routing } from "@/i18n/routing";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AnnouncementBanner from "@/components/layout/AnnouncementBanner";
+import SiteChrome from "@/components/layout/SiteChrome";
 
 interface LocaleLayoutProps {
   children: React.ReactNode;
@@ -22,10 +23,13 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <AnnouncementBanner />
-      <Header />
-      <main className="flex-1">{children}</main>
-      <Footer />
+      <SiteChrome
+        banner={<AnnouncementBanner />}
+        header={<Header />}
+        footer={<Footer />}
+      >
+        {children}
+      </SiteChrome>
     </NextIntlClientProvider>
   );
 }

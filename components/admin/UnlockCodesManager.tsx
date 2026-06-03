@@ -12,12 +12,14 @@ interface Product {
 interface CodeRow {
   id: string;
   product_id: string;
+  product_slug: string;
   created_at: string;
   first_used_at: string | null;
   code_plain: string | null;
   is_activated: boolean;
   last_activated_at: string | null;
   is_member: boolean;
+  member_name: string | null;
   product_name: string;
 }
 
@@ -26,6 +28,8 @@ interface Props {
   codes: CodeRow[];
 }
 
+const MAGIC_SLUG = "magic-calculator";
+
 export default function UnlockCodesManager({ products, codes: initialCodes }: Props) {
   const [codes, setCodes] = useState(initialCodes);
   const [selectedProductId, setSelectedProductId] = useState(products[0]?.id ?? "");
@@ -33,6 +37,15 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  // 코드가 존재하는 상품만 탭으로 노출 (마술 계산기 앱처럼 회원 코드가 많은 상품을 분리 관리)
+  const tabProducts = products.filter((p) => codes.some((c) => c.product_id === p.id));
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const magic = tabProducts.find((p) => p.slug === MAGIC_SLUG);
+    return magic?.id ?? "all";
+  });
+
+  const visibleCodes = activeTab === "all" ? codes : codes.filter((c) => c.product_id === activeTab);
 
   async function generateCode() {
     if (!selectedProductId) return;
@@ -52,16 +65,19 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
         {
           id: data.id,
           product_id: selectedProductId,
+          product_slug: products.find((p) => p.id === selectedProductId)?.slug ?? "",
           created_at: new Date().toISOString(),
           first_used_at: null,
           code_plain: data.code,
           is_activated: false,
           last_activated_at: null,
           is_member: false,
+          member_name: null,
           product_name: productName,
         },
         ...prev,
       ]);
+      setActiveTab(selectedProductId); // 방금 발급한 코드가 보이도록 해당 상품 탭으로 전환
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "코드 생성에 실패했습니다.");
@@ -166,18 +182,47 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
         </p>
       </div>
 
+      {/* 상품별 탭 */}
+      {tabProducts.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {[{ id: "all", slug: "", name: `전체 (${codes.length})` }, ...tabProducts.map((p) => ({
+            id: p.id,
+            slug: p.slug,
+            name: `${p.name} (${codes.filter((c) => c.product_id === p.id).length})`,
+          }))].map((tab) => {
+            const isActive = activeTab === tab.id;
+            const isMagic = tab.slug === MAGIC_SLUG;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+                style={
+                  isActive
+                    ? { background: "#7C3AED", color: "#fff" }
+                    : { background: "#1A1A2E", color: "#9CA3AF", border: "1px solid #2D2D4E" }
+                }
+              >
+                {isMagic && "📱 "}
+                {tab.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* 코드 목록 */}
       <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <div className="px-6 py-4 border-b" style={{ borderColor: "#2D2D4E" }}>
           <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>
-            발급된 코드 ({codes.length})
+            발급된 코드 ({visibleCodes.length})
           </h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["상품", "코드", "발급 경로", "기기 등록", "마지막 활성화", "관리"].map((h) => (
+                {["상품", "코드", "발급 경로", "회원", "기기 등록", "마지막 활성화", "관리"].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
@@ -185,14 +230,14 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
               </tr>
             </thead>
             <tbody>
-              {codes.length === 0 ? (
+              {visibleCodes.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
+                  <td colSpan={7} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
                     발급된 코드가 없습니다.
                   </td>
                 </tr>
               ) : (
-                codes.map((code) => (
+                visibleCodes.map((code) => (
                   <tr key={code.id} className="border-b last:border-0" style={{ borderColor: "#2D2D4E", opacity: busyId === code.id ? 0.5 : 1 }}>
                     <td className="px-4 py-4 font-medium whitespace-nowrap" style={{ color: "#F0E6FF" }}>
                       {code.product_name}
@@ -222,6 +267,9 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
                         : { background: "#2D2D4E", color: "#9CA3AF" }}>
                         {code.is_member ? "회원 자동발급" : "수동 발급"}
                       </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs" style={{ color: code.member_name ? "#F0E6FF" : "#6B7280" }}>
+                      {code.member_name ?? "—"}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       {code.is_activated ? (

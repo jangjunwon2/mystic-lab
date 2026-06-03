@@ -22,6 +22,14 @@ export async function generateSignedUrl(
   streamId: string,
   expirySeconds = 3600
 ): Promise<string> {
+  // 외부 플랫폼(Vimeo / YouTube)은 서명 없이 임베드 URL로 변환
+  if (streamId.startsWith("vimeo:")) {
+    return `https://player.vimeo.com/video/${streamId.slice("vimeo:".length)}`;
+  }
+  if (streamId.startsWith("yt:")) {
+    return `https://www.youtube.com/embed/${streamId.slice("yt:".length)}`;
+  }
+
   const keyId = process.env.CLOUDFLARE_STREAM_KEY_ID;
   const rawPem = process.env.CLOUDFLARE_STREAM_PRIVATE_KEY;
 

@@ -16,6 +16,7 @@ interface RawProduct {
   stock: number;
   is_active: boolean;
   is_featured: boolean;
+  is_digital: boolean;
   thumbnail_url: string | null;
   demo_video_cloudflare_id: string | null;
   image_urls: string[];
@@ -30,7 +31,7 @@ export default async function EditProductPage({ params }: Props) {
   const { data: product } = await supabase
     .from("products")
     .select(`
-      id, slug, category, price_usd, stock, is_active, is_featured,
+      id, slug, category, price_usd, stock, is_active, is_featured, is_digital,
       thumbnail_url, demo_video_cloudflare_id, image_urls,
       product_translations(language, name, description, short_description)
     `)
@@ -48,6 +49,7 @@ export default async function EditProductPage({ params }: Props) {
     stock: p.stock,
     is_active: p.is_active,
     is_featured: p.is_featured,
+    is_digital: p.is_digital,
     thumbnail_url: p.thumbnail_url ?? "",
     demo_video_cloudflare_id: p.demo_video_cloudflare_id ?? "",
     image_urls: p.image_urls ?? [],

@@ -39,6 +39,7 @@ interface ProductFormProps {
     stock: number;
     is_active: boolean;
     is_featured: boolean;
+    is_digital?: boolean;
     thumbnail_url: string;
     demo_video_cloudflare_id: string;
     image_urls: string[];
@@ -107,6 +108,7 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
   const [stock, setStock] = useState(initial?.stock?.toString() ?? "0");
   const [isActive, setIsActive] = useState(initial?.is_active ?? true);
   const [isFeatured, setIsFeatured] = useState(initial?.is_featured ?? false);
+  const [isDigital, setIsDigital] = useState(initial?.is_digital ?? false);
   const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnail_url ?? "");
   const [imageUrls, setImageUrls] = useState<string[]>(initial?.image_urls ?? []);
   const [translations, setTranslations] = useState<Translation[]>(
@@ -227,6 +229,7 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
       stock: parseInt(stock, 10),
       is_active: isActive,
       is_featured: isFeatured,
+      is_digital: isDigital,
       thumbnail_url: thumbnailUrl.trim() || null,
       demo_video_cloudflare_id: (() => {
         const v = demoVideoInput.trim();
@@ -344,6 +347,10 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
             <label className="flex items-center gap-2 cursor-pointer" style={{ color: "#F0E6FF" }}>
               <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="w-4 h-4" />
               추천
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer" style={{ color: "#F0E6FF" }} title="체크 시 배송 없이 결제 즉시 배송완료 처리 → 구매 직후 리뷰 작성 가능 (앱·다운로드 등)">
+              <input type="checkbox" checked={isDigital} onChange={(e) => setIsDigital(e.target.checked)} className="w-4 h-4" />
+              디지털 상품
             </label>
           </div>
         </div>
