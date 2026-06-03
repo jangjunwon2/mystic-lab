@@ -338,5 +338,10 @@
     "signIn": "登录",
     "enterDeviceCode": "输入设备代码",
     "myLibrary": "我的资料库"
+  },
+  "calc": {
+    "blockTitle": "需要激活设备",
+    "blockBody": "此设备未激活，或因该代码已用于注册其他手机而授权已过期。请先在商品详情页底部完成设备注册。",
+    "goToProduct": "前往商品页面"
   }
 }

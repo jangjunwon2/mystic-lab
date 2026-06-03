@@ -338,5 +338,10 @@
     "signIn": "Sign In",
     "enterDeviceCode": "Enter Device Code",
     "myLibrary": "My Library"
+  },
+  "calc": {
+    "blockTitle": "Device Activation Required",
+    "blockBody": "This device is not activated, or its authorization has expired because the code was used to register another smartphone. Please register your device on the product detail page first.",
+    "goToProduct": "Go to Product Page"
   }
 }

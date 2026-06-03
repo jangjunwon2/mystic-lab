@@ -338,5 +338,10 @@
     "signIn": "Anmelden",
     "enterDeviceCode": "Gerätecode eingeben",
     "myLibrary": "Meine Bibliothek"
+  },
+  "calc": {
+    "blockTitle": "Geräteaktivierung erforderlich",
+    "blockBody": "Dieses Gerät ist nicht aktiviert oder seine Autorisierung ist abgelaufen, weil der Code zur Registrierung eines anderen Smartphones verwendet wurde. Bitte registrieren Sie Ihr Gerät zuerst auf der Produktdetailseite.",
+    "goToProduct": "Zur Produktseite"
   }
 }

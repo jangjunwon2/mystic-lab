@@ -338,5 +338,10 @@
     "signIn": "Iniciar sesión",
     "enterDeviceCode": "Introducir código",
     "myLibrary": "Mi biblioteca"
+  },
+  "calc": {
+    "blockTitle": "Activación de dispositivo requerida",
+    "blockBody": "Este dispositivo no está activado, o su autorización ha caducado porque el código se usó para registrar otro teléfono. Registra tu dispositivo en la página de detalles del producto primero.",
+    "goToProduct": "Ir a la página del producto"
   }
 }

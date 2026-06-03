@@ -338,5 +338,10 @@
     "signIn": "Se connecter",
     "enterDeviceCode": "Saisir le code",
     "myLibrary": "Ma bibliothèque"
+  },
+  "calc": {
+    "blockTitle": "Activation de l'appareil requise",
+    "blockBody": "Cet appareil n'est pas activé, ou son autorisation a expiré car le code a été utilisé pour enregistrer un autre téléphone. Veuillez d'abord enregistrer votre appareil sur la page du produit.",
+    "goToProduct": "Aller à la page du produit"
   }
 }
