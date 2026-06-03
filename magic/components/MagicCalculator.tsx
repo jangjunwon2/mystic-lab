@@ -413,11 +413,11 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const handle9Start = () => {
     isPressingKeyRef.current = "9";
     holdTimerRef.current = setTimeout(() => {
-      // 2초 도달 → Peeking 모드 ON. 홀드가 발동했음을 timer ref=null로 표시
+      // 1초 도달 → Peeking 모드 ON. 홀드가 발동했음을 timer ref=null로 표시
       setIsPeekingActive(true);
       triggerDimmingFeedback();
       holdTimerRef.current = null;
-    }, 2000);
+    }, 1000);
   };
 
   const handle9End = () => {
@@ -496,29 +496,17 @@ export default function MagicCalculator({ locale, productId }: Props) {
     triggerDimmingFeedback();
   };
 
-  // 좌측부터 숫자 지우기 (Impossible Erase) 스와이프 인터랙션 감지
+  // 앞자리 삭제 마술 (Impossible Erase) — -/+ 모드에서만, 왼쪽 드래그 시 앞자리부터 제거
   const handleDisplaySwipe = (direction: "left" | "right") => {
-    if (isEraseLeftActive) {
-      // -/+ 모드: 왼쪽으로 드래그하면 앞자리(왼쪽)부터 제거 — 별도 효과 없음
-      if (direction !== "left") return;
-      if (display.length > 1) {
-        const nextVal = display.substring(1);
-        setDisplay(nextVal);
-        setEquation(nextVal);
-      } else {
-        setDisplay("0");
-        setEquation("");
-      }
+    if (!isEraseLeftActive) return; // 평소(+/-)엔 스와이프 삭제 동작 안 함
+    if (direction !== "left") return;
+    if (display.length > 1) {
+      const nextVal = display.substring(1);
+      setDisplay(nextVal);
+      setEquation(nextVal);
     } else {
-      // 일반 계산기 스와이프 뒷자리 지우기
-      if (display.length > 1 && display !== "0") {
-        const nextVal = display.slice(0, -1);
-        setDisplay(nextVal);
-        setEquation(nextVal);
-      } else {
-        setDisplay("0");
-        setEquation("");
-      }
+      setDisplay("0");
+      setEquation("");
     }
   };
 
@@ -705,20 +693,15 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
       {/* ── 백그라운드 Peeking 뷰 (관객의 순수 숫자 히스토리) ── */}
       <div className="absolute inset-0 flex justify-end w-full h-full bg-[#000000] z-0">
-        <div className="w-[30vw] h-full p-4 flex flex-col justify-start border-l border-[#2D2D4E] pt-28">
-          <p className="text-[10px] text-gray-500 uppercase tracking-widest font-mono mb-2">History Log</p>
-          <div className="flex-1 overflow-y-auto space-y-2 select-text">
-            {peekLogs.length === 0 ? (
-              <p className="text-xs text-gray-600 font-mono italic">No input logs yet.</p>
-            ) : (
-              peekLogs.map((log, index) => (
-                <div key={index} className="text-xl font-bold text-white font-mono break-all leading-tight">
-                  {log}
-                </div>
-              ))
-            )}
+        <div className="w-full h-full px-6 pt-6 flex flex-col justify-start">
+          <div className="flex-1 overflow-y-auto space-y-3 select-text text-right">
+            {peekLogs.map((log, index) => (
+              <div key={index} className="text-3xl font-bold text-white font-mono whitespace-nowrap leading-tight">
+                {log}
+              </div>
+            ))}
             {currentInputNumber && (
-              <div className="text-xl font-bold text-white/50 font-mono break-all leading-tight italic">
+              <div className="text-3xl font-bold text-white/50 font-mono whitespace-nowrap leading-tight italic">
                 {currentInputNumber}
               </div>
             )}
@@ -774,11 +757,11 @@ export default function MagicCalculator({ locale, productId }: Props) {
           }}
         >
           <div
-            className="w-full text-right font-light tracking-tight text-white select-none transition-all"
+            className="w-full text-right font-light text-white select-none transition-all whitespace-nowrap overflow-hidden"
             style={{
               fontFamily: theme === "android" ? "Roboto, sans-serif" : "-apple-system, BlinkMacSystemFont, sans-serif",
-              fontSize: `${5.5 - (display.length > 6 ? (display.length - 6) * 0.55 : 0) < 2.5 ? 2.5 : 5.5 - (display.length > 6 ? (display.length - 6) * 0.55 : 0)}rem`,
-              lineHeight: "1.1",
+              fontSize: `${Math.max(2, 5.5 - (display.length > 6 ? (display.length - 6) * 0.5 : 0))}rem`,
+              lineHeight: "1.2",
             }}
           >
             {display}
@@ -808,12 +791,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "%")}
                 onTouchEnd={() => isPressingKeyRef.current === "%" && handlePercent()}
-                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#A5A5A5] text-black active:bg-[#D9D9D9] transition-colors relative"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#A5A5A5] text-black active:bg-[#D9D9D9] transition-colors"
               >
                 %
-                {isForceActive && (
-                  <span className="absolute top-1/2 left-1/2 bg-black rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ width: "2px", height: "2px" }} />
-                )}
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "÷")}
@@ -927,7 +907,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "." && handleKeyPress(".")}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
               >
-                .
+                {/* 포스 모드 ON이면 점이 가운데(·)로 올라와 동작 표시, 평소엔 일반 소수점(.) */}
+                {isForceActive ? "·" : "."}
               </button>
               <button
                 onTouchStart={handleEqualStart}
@@ -957,12 +938,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "%")}
                 onTouchEnd={() => isPressingKeyRef.current === "%" && handlePercent()}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl font-semibold bg-[#2D2D4E] text-[#A855F7] active:bg-[#3D3D6E] transition-colors relative"
+                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl font-semibold bg-[#2D2D4E] text-[#A855F7] active:bg-[#3D3D6E] transition-colors"
               >
                 %
-                {isForceActive && (
-                  <span className="absolute top-1/2 left-1/2 bg-[#A855F7] rounded-full transform -translate-x-1/2 -translate-y-1/2" style={{ width: "2px", height: "2px" }} />
-                )}
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "÷")}
@@ -1071,7 +1049,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "." && handleKeyPress(".")}
                 className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
               >
-                .
+                {/* 포스 모드 ON이면 점이 가운데(·)로 올라와 동작 표시, 평소엔 일반 소수점(.) */}
+                {isForceActive ? "·" : "."}
               </button>
               <button
                 onTouchStart={handleEqualStart}
