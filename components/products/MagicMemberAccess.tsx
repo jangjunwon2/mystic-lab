@@ -1,5 +1,5 @@
 "use client";
-
+// v2
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Zap, Copy, Check } from "lucide-react";
