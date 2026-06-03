@@ -27,31 +27,16 @@ interface Props {
 export default function ReviewsAdminTable({ reviews: initial }: Props) {
   const [reviews, setReviews] = useState(initial);
   // 게시-후-관리: 작성 즉시 게시되며 어드민은 미노출/게시/삭제로 사후 관리
-  const [filter, setFilter] = useState<"all" | "hidden" | "visible" | "reported">("all");
+  const [filter, setFilter] = useState<"all" | "hidden" | "visible">("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const filtered = reviews.filter((r) => {
     if (filter === "hidden") return !r.is_approved;
     if (filter === "visible") return r.is_approved;
-    if (filter === "reported") return r.is_reported;
     return true;
   });
 
   const hiddenCount = reviews.filter((r) => !r.is_approved).length;
-  const reportedCount = reviews.filter((r) => r.is_reported).length;
-
-  async function dismissReport(id: string) {
-    setLoadingId(id);
-    const res = await fetch(`/api/admin/reviews/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_reported: false }),
-    });
-    if (res.ok) {
-      setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, is_reported: false } : r)));
-    }
-    setLoadingId(null);
-  }
 
   async function toggleApprove(review: Review) {
     setLoadingId(review.id);
@@ -80,7 +65,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
     <div className="space-y-4">
       {/* Filter tabs */}
       <div className="flex items-center gap-2 flex-wrap">
-        {(["all", "visible", "hidden", "reported"] as const).map((f) => (
+        {(["all", "visible", "hidden"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -94,8 +79,6 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
           >
             {f === "hidden"
               ? `미노출 (${hiddenCount})`
-              : f === "reported"
-              ? `신고됨 (${reportedCount})`
               : f === "visible"
               ? "게시 중"
               : `전체 (${reviews.length})`}
@@ -146,14 +129,6 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                       >
                         {r.is_approved ? "게시 중" : "미노출"}
                       </span>
-                      {r.is_reported && (
-                        <span
-                          className="px-2 py-0.5 rounded-full text-xs font-medium"
-                          style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
-                        >
-                          🚩 신고됨
-                        </span>
-                      )}
                     </div>
                     {/* Stars */}
                     <div className="flex items-center gap-0.5 mb-2">
@@ -177,17 +152,6 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                    {r.is_reported && (
-                      <button
-                        onClick={() => dismissReport(r.id)}
-                        disabled={isLoading}
-                        title="신고 해제"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
-                        style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
-                      >
-                        <XCircle className="w-3.5 h-3.5" /> 신고 해제
-                      </button>
-                    )}
                     <button
                       onClick={() => toggleApprove(r)}
                       disabled={isLoading}

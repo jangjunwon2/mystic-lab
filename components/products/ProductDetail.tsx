@@ -406,46 +406,82 @@ function ReviewCard({ review }: { review: ReviewWithProfile }) {
 
 function ShareButtons({ name }: { name: string }) {
   const [copied, setCopied] = useState(false);
+  const shareText = `Check out "${name}" on Mystic Lab ✨`;
+  const getUrl = () => (typeof window !== "undefined" ? window.location.href : "");
+
+  // 네이티브 공유 시트 — 인스타그램·카카오톡·위챗·메신저 등 설치된 앱 전체 지원(주로 모바일)
+  async function nativeShare() {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: name, text: shareText, url: getUrl() });
+      } catch { /* 사용자가 취소 */ }
+    } else {
+      copyLink();
+    }
+  }
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(getUrl());
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch { /* ignore */ }
   }
 
-  function shareTwitter() {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent(`Check out "${name}" on Mystic Lab ✨`);
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank", "noopener");
+  function openShare(make: (u: string, t: string) => string) {
+    const u = encodeURIComponent(getUrl());
+    const t = encodeURIComponent(shareText);
+    window.open(make(u, t), "_blank", "noopener,noreferrer");
   }
 
+  const targets: { key: string; label: string; bg: string; make: (u: string, t: string) => string }[] = [
+    { key: "facebook", label: "Facebook", bg: "#1877F2", make: (u) => `https://www.facebook.com/sharer/sharer.php?u=${u}` },
+    { key: "x", label: "X", bg: "#000000", make: (u, t) => `https://twitter.com/intent/tweet?text=${t}&url=${u}` },
+    { key: "whatsapp", label: "WhatsApp", bg: "#25D366", make: (u, t) => `https://api.whatsapp.com/send?text=${t}%20${u}` },
+    { key: "telegram", label: "Telegram", bg: "#229ED9", make: (u, t) => `https://t.me/share/url?url=${u}&text=${t}` },
+    { key: "line", label: "LINE", bg: "#06C755", make: (u) => `https://social-plugins.line.me/lineit/share?url=${u}` },
+  ];
+
   return (
-    <div className="flex items-center gap-3 pt-5 border-t border-[#2D2D4E]">
-      <span className="flex items-center gap-1.5 text-xs text-[#6B7280]">
-        <Share2 className="w-3.5 h-3.5" />
-        공유하기
-      </span>
-      <button
-        onClick={copyLink}
-        aria-label="링크 복사"
-        className={`flex items-center justify-center w-9 h-9 rounded-full border transition-all ${
-          copied
-            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
-            : "bg-[#1A1A2E] border-[#2D2D4E] text-[#9CA3AF] hover:border-[#7C3AED]/60 hover:text-[#A855F7]"
-        }`}
-      >
-        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-      </button>
-      <button
-        onClick={shareTwitter}
-        aria-label="X(트위터) 공유"
-        className="flex items-center justify-center w-9 h-9 rounded-full bg-[#1A1A2E] border border-[#2D2D4E] text-[#9CA3AF] hover:border-[#7C3AED]/60 hover:text-[#F0E6FF] transition-all text-sm font-semibold"
-      >
-        𝕏
-      </button>
-      {copied && <span className="text-xs text-emerald-400">복사됨!</span>}
+    <div className="flex flex-col gap-3 pt-5 border-t border-[#2D2D4E]">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="flex items-center gap-1.5 text-xs text-[#6B7280] mr-1">
+          <Share2 className="w-3.5 h-3.5" />
+          공유
+        </span>
+        <button
+          onClick={nativeShare}
+          className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:opacity-90 transition-opacity"
+        >
+          공유하기
+        </button>
+        {targets.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => openShare(s.make)}
+            aria-label={`${s.label} 공유`}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+            style={{ background: s.bg }}
+          >
+            {s.label}
+          </button>
+        ))}
+        <button
+          onClick={copyLink}
+          aria-label="링크 복사"
+          className={`flex items-center justify-center w-8 h-8 rounded-full border transition-all ${
+            copied
+              ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+              : "bg-[#1A1A2E] border-[#2D2D4E] text-[#9CA3AF] hover:border-[#7C3AED]/60 hover:text-[#A855F7]"
+          }`}
+        >
+          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        </button>
+        {copied && <span className="text-xs text-emerald-400">복사됨!</span>}
+      </div>
+      <p className="text-[11px] text-[#6B7280]">
+        인스타그램·카카오톡·위챗·메신저 등은 <b className="text-[#9CA3AF]">공유하기</b> 버튼(모바일)에서 선택할 수 있어요.
+      </p>
     </div>
   );
 }

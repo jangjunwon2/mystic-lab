@@ -90,6 +90,16 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
     }
   }
 
+  async function deleteRequest(id: string) {
+    if (!window.confirm("이 의뢰를 영구 삭제할까요? 되돌릴 수 없습니다.")) return;
+    setLoadingId(id);
+    const res = await fetch(`/api/admin/custom-orders/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setRequests((prev) => prev.filter((r) => r.id !== id));
+    }
+    setLoadingId(null);
+  }
+
   const inputStyle = {
     background: "#0D0D1A",
     border: "1px solid #2D2D4E",
@@ -273,6 +283,18 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
                               </span>
                             )}
                           </div>
+                        </div>
+
+                        {/* 의뢰 삭제 */}
+                        <div className="mt-4 pt-4 flex justify-end" style={{ borderTop: "1px solid #2D2D4E" }}>
+                          <button
+                            onClick={() => deleteRequest(req.id)}
+                            disabled={loadingId === req.id}
+                            className="px-3 py-1.5 rounded text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+                            style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)" }}
+                          >
+                            의뢰 삭제
+                          </button>
                         </div>
                       </td>
                     </tr>

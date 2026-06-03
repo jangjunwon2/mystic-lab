@@ -46,23 +46,12 @@ export default async function AdminReviewsPage() {
     profiles: profMap.get(r.user_id) ?? null,
   }));
 
-  // 게시-후-관리: 리뷰는 작성 즉시 게시됨. 신고된 건만 우선 확인 대상으로 표시
-  const reported = reviews.filter((r: { is_reported: boolean }) => r.is_reported).length;
-
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>
             리뷰 관리
-            {reported > 0 && (
-              <span
-                className="ml-3 px-2 py-0.5 rounded-full text-sm font-medium"
-                style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444" }}
-              >
-                🚩 {reported}건 신고
-              </span>
-            )}
           </h1>
           <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>
             리뷰는 작성 즉시 게시됩니다. 부적절한 리뷰는 미노출 처리하거나 삭제하세요.
