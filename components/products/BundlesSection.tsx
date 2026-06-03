@@ -16,6 +16,7 @@ interface CartItem {
   name: string;
   price_usd: number;
   quantity: number;
+  bundle_id?: string;
 }
 
 export default function BundlesSection({ bundles, locale }: Props) {
@@ -29,12 +30,12 @@ export default function BundlesSection({ bundles, locale }: Props) {
       const cart: CartItem[] = JSON.parse(localStorage.getItem("ml_cart") ?? "[]");
       for (const it of bundle.items) {
         const unit = Math.round(it.price_usd * factor * 100) / 100;
-        const existing = cart.find((c) => c.id === it.id);
+        const existing = cart.find((c) => c.id === it.id && c.bundle_id === bundle.id);
         if (existing) {
           existing.quantity += it.quantity;
           existing.price_usd = unit; // 세트 할인가 적용
         } else {
-          cart.push({ id: it.id, slug: it.slug, name: it.name, price_usd: unit, quantity: it.quantity });
+          cart.push({ id: it.id, slug: it.slug, name: it.name, price_usd: unit, quantity: it.quantity, bundle_id: bundle.id });
         }
       }
       localStorage.setItem("ml_cart", JSON.stringify(cart));

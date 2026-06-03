@@ -848,6 +848,8 @@ export default function CheckoutPage({ params }: Props) {
                       items={items}
                       totalUsd={totalUsd}
                       pointsUsed={pointsUsed}
+                      couponDiscount={couponDiscountUsd}
+                      shippingUsd={shippingCostUsd}
                       shippingAddress={shippingName ? {
                         name: shippingName,
                         phone: shippingPhone,

@@ -96,6 +96,8 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           orderId: string;
           shippingAddress?: unknown;
           pointsUsed?: number;
+          couponDiscount?: number;
+          shippingUsd?: number;
         } | null = null;
         try {
           const raw = sessionStorage.getItem("toss_pending");
@@ -116,6 +118,8 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
             totalUsd: pending?.totalUsd ?? 0,
             shippingAddress: pending?.shippingAddress,
             pointsUsed: pending?.pointsUsed ?? 0,
+            couponDiscount: pending?.couponDiscount ?? 0,
+            shippingUsd: pending?.shippingUsd ?? 0,
           }),
         });
 

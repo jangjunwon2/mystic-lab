@@ -4,6 +4,7 @@ export interface CartItem {
   name: string;
   price_usd: number;
   quantity: number;
+  bundle_id?: string; // 세트 구성품일 경우 해당 세트 ID (서버 가격 재계산용)
 }
 
 export interface OrderPayload {

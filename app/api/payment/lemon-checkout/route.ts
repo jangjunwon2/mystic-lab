@@ -3,6 +3,7 @@ import { createLemonCheckout } from "@/lib/payments/lemon";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getPointsBalance, pointsToUsd } from "@/lib/points";
+import { computeServerSubtotalUsd } from "@/lib/payments/order-pricing";
 import type { OrderPayload } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
@@ -23,8 +24,10 @@ export async function POST(request: NextRequest) {
 
     const SHIPPING_COSTS: Record<string, number> = { standard: 0, express: 15 };
     const shippingUsd = shippingMethod ? (SHIPPING_COSTS[shippingMethod] ?? 0) : 0;
-    const subtotalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
-    const couponDiscount = discountAmount ?? 0;
+    // 클라이언트 단가를 신뢰하지 않고 DB 가격(+세트 할인)으로 서버 재계산
+    const subtotalUsd = await computeServerSubtotalUsd(items);
+    // 쿠폰 할인은 소계를 초과할 수 없음
+    const couponDiscount = Math.max(0, Math.min(discountAmount ?? 0, subtotalUsd));
 
     // 마일리지 사용 — 로그인 회원의 실제 잔액으로 서버 검증 후 차감액 결정
     let pointsSpent = 0;
