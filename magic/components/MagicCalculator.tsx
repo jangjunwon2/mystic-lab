@@ -294,11 +294,18 @@ export default function MagicCalculator({ locale, productId }: Props) {
       }
 
       expr = expr.replace(/×/g, "*").replace(/÷/g, "/");
-      
-      // 보안상 eval 대안용 샌드박스형 계산 (간단한 수식만 지원하므로 파서 구축)
+      // 끝에 남은 연산자/소수점 제거 (예: "5+" → "5") — 일반 계산 ERROR 방지
+      expr = expr.replace(/[+\-*/.]+$/, "");
+      if (!expr) {
+        setEquation("");
+        setIsCalculated(true);
+        return;
+      }
+
+      // 간단한 사칙연산 수식만 평가 (자기 입력 한정)
       // eslint-disable-next-line no-eval
       const res = eval(expr);
-      if (isNaN(res) || !isFinite(res)) {
+      if (typeof res !== "number" || isNaN(res) || !isFinite(res)) {
         setDisplay("Error");
       } else {
         const resStr = String(res);
@@ -367,16 +374,24 @@ export default function MagicCalculator({ locale, productId }: Props) {
         appendToPeekLog(currentInputNumber);
         setCurrentInputNumber("");
       }
-      setEquation((prev) => (prev === "" ? display + val : prev + val));
+      setEquation((prev) => {
+        const base = prev === "" ? display : prev;
+        // 마지막에 눌린 연산자만 인식 — 직전 문자가 연산자면 교체
+        if (/[+\-×÷]$/.test(base)) return base.slice(0, -1) + val;
+        return base + val;
+      });
       setDisplay("0");
     } else if (val === "C" || val === "AC") {
-      // AC상태에서 = 누르면 직전 결과 복구
+      // 이미 비워진 상태에서 AC: 아무것도 안 함 → 마지막 결과(lastResult) 유지하여 '=' 복원 가능
       if (val === "AC" && display === "0") {
-        // 상단에서 별도로 복구 처리하므로 무시
-      } else {
-        setDisplay("0");
-        setEquation("");
-        setCurrentInputNumber("");
+        return;
+      }
+      setDisplay("0");
+      setEquation("");
+      setCurrentInputNumber("");
+      // 복원된 결과 표시 상태에서 C → 완전 초기화 (마지막 결과까지 삭제, 복원 1회성)
+      if (val === "C") {
+        setLastResult("");
       }
     } else if (val === "=") {
       calculateResult();
@@ -483,8 +498,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   // 좌측부터 숫자 지우기 (Impossible Erase) 스와이프 인터랙션 감지
   const handleDisplaySwipe = (direction: "left" | "right") => {
-    if (isEraseLeftActive && direction === "right") {
-      // 앞자리부터 제거
+    if (isEraseLeftActive) {
+      // -/+ 모드: 왼쪽으로 드래그하면 앞자리(왼쪽)부터 제거 — 별도 효과 없음
+      if (direction !== "left") return;
       if (display.length > 1) {
         const nextVal = display.substring(1);
         setDisplay(nextVal);
@@ -493,8 +509,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
         setDisplay("0");
         setEquation("");
       }
-      triggerDimmingFeedback();
-    } else if (!isEraseLeftActive) {
+    } else {
       // 일반 계산기 스와이프 뒷자리 지우기
       if (display.length > 1 && display !== "0") {
         const nextVal = display.slice(0, -1);
@@ -509,15 +524,14 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   // 드래그 Peeking 터치 제어
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isPeekingActive) return;
-    const touch = e.touches[0];
-    (window as any).startX = touch.clientX;
+    // 피킹은 9번 2초 홀드 '도중'에 켜지므로 시작 좌표는 항상 기록해 둔다
+    (window as any).startX = e.touches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isPeekingActive) return;
     const touch = e.touches[0];
-    const diffX = touch.clientX - ((window as any).startX || touch.clientX);
+    const diffX = touch.clientX - ((window as any).startX ?? touch.clientX);
     if (diffX < 0) {
       setDragOffset(diffX);
     }
@@ -677,10 +691,11 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   return (
     <div
-      className="relative flex flex-col justify-end w-full h-screen select-none overflow-hidden"
+      className="fixed inset-0 flex flex-col justify-end w-full select-none overflow-hidden"
       style={{
         background: "#000000",
-        overscrollBehaviorY: "contain",
+        overscrollBehavior: "none",
+        touchAction: "none", // 9번 피킹 스와이프 외 화면 스크롤/이동 방지
       }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -758,9 +773,6 @@ export default function MagicCalculator({ locale, productId }: Props) {
             }
           }}
         >
-          <div className="w-full text-right text-gray-500 text-sm font-mono break-all line-clamp-1 h-6">
-            {equation}
-          </div>
           <div
             className="w-full text-right font-light tracking-tight text-white select-none transition-all"
             style={{
@@ -789,9 +801,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "+/-")}
                 onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
-                className={`w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium transition-colors ${
-                  isEraseLeftActive ? "bg-white text-black" : "bg-[#A5A5A5] text-black active:bg-[#D9D9D9]"
-                }`}
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium transition-colors bg-[#A5A5A5] text-black active:bg-[#D9D9D9]"
               >
                 {isEraseLeftActive ? "-/+" : "+/-"}
               </button>
@@ -940,9 +950,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "+/-")}
                 onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
-                className={`w-full aspect-square rounded-2xl flex items-center justify-center text-2xl font-semibold transition-colors ${
-                  isEraseLeftActive ? "bg-[#A855F7] text-white" : "bg-[#2D2D4E] text-[#A855F7] active:bg-[#3D3D6E]"
-                }`}
+                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl font-semibold transition-colors bg-[#2D2D4E] text-[#A855F7] active:bg-[#3D3D6E]"
               >
                 {isEraseLeftActive ? "-/+" : "+/-"}
               </button>
