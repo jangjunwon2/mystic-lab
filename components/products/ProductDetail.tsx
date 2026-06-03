@@ -265,7 +265,7 @@ export default function ProductDetail({
 
             {/* Share */}
             <div className="mt-6">
-              <ShareButtons name={translation?.name ?? product.slug} />
+              <ShareButtons name={translation?.name ?? product.slug} productId={product.id} />
             </div>
           </motion.div>
         </div>
@@ -404,16 +404,27 @@ function ReviewCard({ review }: { review: ReviewWithProfile }) {
   );
 }
 
-function ShareButtons({ name }: { name: string }) {
+function ShareButtons({ name, productId }: { name: string; productId: string }) {
   const [copied, setCopied] = useState(false);
   const shareText = `Check out "${name}" on Mystic Lab ✨`;
   const getUrl = () => (typeof window !== "undefined" ? window.location.href : "");
+
+  // 공유 트래킹 (통계용) — 실패해도 조용히 무시
+  function track(channel: string) {
+    fetch("/api/share/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ product_id: productId, channel }),
+      keepalive: true,
+    }).catch(() => { /* ignore */ });
+  }
 
   // 네이티브 공유 시트 — 인스타그램·카카오톡·위챗·메신저 등 설치된 앱 전체 지원(주로 모바일)
   async function nativeShare() {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: name, text: shareText, url: getUrl() });
+        track("native");
       } catch { /* 사용자가 취소 */ }
     } else {
       copyLink();
@@ -424,13 +435,15 @@ function ShareButtons({ name }: { name: string }) {
     try {
       await navigator.clipboard.writeText(getUrl());
       setCopied(true);
+      track("copy");
       setTimeout(() => setCopied(false), 2000);
     } catch { /* ignore */ }
   }
 
-  function openShare(make: (u: string, t: string) => string) {
+  function openShare(channel: string, make: (u: string, t: string) => string) {
     const u = encodeURIComponent(getUrl());
     const t = encodeURIComponent(shareText);
+    track(channel);
     window.open(make(u, t), "_blank", "noopener,noreferrer");
   }
 
@@ -458,7 +471,7 @@ function ShareButtons({ name }: { name: string }) {
         {targets.map((s) => (
           <button
             key={s.key}
-            onClick={() => openShare(s.make)}
+            onClick={() => openShare(s.key, s.make)}
             aria-label={`${s.label} 공유`}
             className="px-3 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
             style={{ background: s.bg }}
