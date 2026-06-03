@@ -104,7 +104,10 @@
       "images": "Imágenes de Referencia (opcional)",
       "submit": "Enviar Consulta",
       "success": "¡Consulta enviada! Te responderemos en 48 horas.",
-      "error": "Algo salió mal. Por favor, inténtalo de nuevo."
+      "error": "Algo salió mal. Por favor, inténtalo de nuevo.",
+      "namePlaceholder": "Tu nombre completo",
+      "selectRange": "Selecciona un rango",
+      "optional": "opcional"
     }
   },
   "checkout": {

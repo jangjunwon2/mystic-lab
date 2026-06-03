@@ -87,7 +87,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   const isRefunded = order.status === "refunded";
   const currentStepIndex = isRefunded ? -1 : STATUS_STEPS.indexOf(order.status as typeof STATUS_STEPS[number]);
-  const date = new Date(order.created_at).toLocaleDateString("en-US", {
+  const date = new Date(order.created_at).toLocaleDateString(locale, {
     year: "numeric", month: "long", day: "numeric",
   });
 

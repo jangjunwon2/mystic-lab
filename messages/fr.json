@@ -104,7 +104,10 @@
       "images": "Images de Référence (facultatif)",
       "submit": "Envoyer la Demande",
       "success": "Demande envoyée ! Nous vous répondrons dans les 48 heures.",
-      "error": "Une erreur s'est produite. Veuillez réessayer."
+      "error": "Une erreur s'est produite. Veuillez réessayer.",
+      "namePlaceholder": "Votre nom complet",
+      "selectRange": "Sélectionner une fourchette",
+      "optional": "facultatif"
     }
   },
   "checkout": {

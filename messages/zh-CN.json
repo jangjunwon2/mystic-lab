@@ -104,7 +104,10 @@
       "images": "参考图片（选填）",
       "submit": "发送咨询",
       "success": "咨询已发送！我们将在 48 小时内回复您。",
-      "error": "出现错误，请重试。"
+      "error": "出现错误，请重试。",
+      "namePlaceholder": "请输入您的姓名",
+      "selectRange": "选择范围",
+      "optional": "可选"
     }
   },
   "checkout": {

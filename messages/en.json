@@ -104,7 +104,10 @@
       "images": "Reference Images (optional)",
       "submit": "Send Inquiry",
       "success": "Inquiry sent! We'll get back to you within 48 hours.",
-      "error": "Something went wrong. Please try again."
+      "error": "Something went wrong. Please try again.",
+      "namePlaceholder": "Your full name",
+      "selectRange": "Select range",
+      "optional": "optional"
     }
   },
   "checkout": {

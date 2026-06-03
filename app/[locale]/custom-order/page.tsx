@@ -133,7 +133,7 @@ export default function CustomOrderPage({ params }: Props) {
                   onChange={update("name")}
                   required
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl px-4 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
-                  placeholder="Your full name"
+                  placeholder={t("form.namePlaceholder")}
                 />
               </div>
               <div>
@@ -176,7 +176,7 @@ export default function CustomOrderPage({ params }: Props) {
                   required
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl px-4 py-3 text-sm text-[#F0E6FF] focus:outline-none focus:border-[#7C3AED] transition-colors appearance-none cursor-pointer"
                 >
-                  <option value="" disabled>Select range</option>
+                  <option value="" disabled>{t("form.selectRange")}</option>
                   <option value="under_500">{t("form.budgetOptions.under500")}</option>
                   <option value="500_1000">{t("form.budgetOptions.500to1000")}</option>
                   <option value="1000_3000">{t("form.budgetOptions.1000to3000")}</option>
@@ -186,7 +186,7 @@ export default function CustomOrderPage({ params }: Props) {
 
               <div>
                 <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                  {t("form.deadline")} <span className="text-[#6B7280] normal-case">(optional)</span>
+                  {t("form.deadline")} <span className="text-[#6B7280] normal-case">({t("form.optional")})</span>
                 </label>
                 <input
                   type="date"

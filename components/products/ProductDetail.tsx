@@ -316,7 +316,7 @@ export default function ProductDetail({
           ) : (
             <div className="space-y-4">
               {reviews.map((review) => (
-                <ReviewCard key={review.id} review={review} />
+                <ReviewCard key={review.id} review={review} locale={locale} />
               ))}
             </div>
           )}
@@ -371,8 +371,8 @@ function StarRating({ rating, interactive = false }: { rating: number; interacti
   );
 }
 
-function ReviewCard({ review }: { review: ReviewWithProfile }) {
-  const date = new Date(review.created_at).toLocaleDateString("en-US", {
+function ReviewCard({ review, locale }: { review: ReviewWithProfile; locale: string }) {
+  const date = new Date(review.created_at).toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",

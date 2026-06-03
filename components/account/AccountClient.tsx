@@ -602,7 +602,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
   const [showAddress, setShowAddress] = useState(false);
 
-  const date = new Date(order.created_at).toLocaleDateString("en-US", {
+  const date = new Date(order.created_at).toLocaleDateString(locale, {
     year: "numeric", month: "short", day: "numeric",
   });
   // 리뷰는 배송완료(completed) 주문만 작성 가능

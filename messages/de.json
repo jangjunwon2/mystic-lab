@@ -104,7 +104,10 @@
       "images": "Referenzbilder (optional)",
       "submit": "Anfrage Senden",
       "success": "Anfrage gesendet! Wir melden uns innerhalb von 48 Stunden.",
-      "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+      "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "namePlaceholder": "Ihr vollständiger Name",
+      "selectRange": "Bereich auswählen",
+      "optional": "optional"
     }
   },
   "checkout": {
