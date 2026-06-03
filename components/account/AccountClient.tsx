@@ -155,7 +155,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
     setSavingName(false);
   }
 
-  const displayName = currentName || "Member";
+  const displayName = currentName || t("member");
   const initials = displayName
     .split(" ")
     .map((n) => n[0])
@@ -234,7 +234,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
             className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#9CA3AF] transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            Sign Out
+            {t("signOut")}
           </button>
         </motion.div>
 
@@ -244,7 +244,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
             href="/admin"
             className="flex items-center justify-between bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-4 py-3 mb-6 hover:bg-[#F59E0B]/15 transition-colors"
           >
-            <span className="text-sm font-medium text-[#F59E0B]">Admin Dashboard</span>
+            <span className="text-sm font-medium text-[#F59E0B]">{t("adminDashboard")}</span>
             <ChevronRight className="w-4 h-4 text-[#F59E0B]" />
           </Link>
         )}
@@ -285,7 +285,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                 : tab === "addresses" ? <MapPin className="w-3.5 h-3.5" />
                 : <Coins className="w-3.5 h-3.5" />}
               {tab === "points"
-                ? (locale === "ko" ? "마일리지" : locale === "ja" ? "ポイント" : locale === "zh-CN" ? "积分" : "Points")
+                ? t("pointsTab")
                 : t(tab)}
             </button>
           ))}
@@ -305,7 +305,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                   href={`/${locale}/products`}
                   className="inline-block mt-4 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
                 >
-                  Browse Products
+                  {t("browseProducts")}
                 </Link>
               </div>
             ) : (
@@ -327,12 +327,12 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
             {purchasedOrders.length === 0 ? (
               <div className="text-center py-16 text-[#9CA3AF]">
                 <Play className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">No tutorials yet. Purchase a product to unlock tutorials.</p>
+                <p className="text-sm">{t("noTutorials")}</p>
                 <Link
                   href={`/${locale}/products`}
                   className="inline-block mt-4 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
                 >
-                  Browse Products
+                  {t("browseProducts")}
                 </Link>
               </div>
             ) : (
@@ -356,7 +356,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                   href={`/${locale}/products`}
                   className="inline-block mt-4 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
                 >
-                  Browse Products
+                  {t("browseProducts")}
                 </Link>
               </div>
             ) : (
@@ -400,7 +400,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                           className="w-full flex items-center justify-center gap-1.5 text-xs text-[#EF4444] hover:text-red-300 border border-[#EF4444]/30 hover:border-[#EF4444]/60 rounded-lg py-1.5 transition-colors"
                         >
                           <Heart className="w-3.5 h-3.5 fill-[#EF4444]" />
-                          Remove
+                          {t("remove")}
                         </button>
                       </div>
                     </div>
@@ -423,7 +423,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                 {(addresses ?? []).length === 0 && !showNewAddrForm && (
                   <div className="text-center py-16 text-[#9CA3AF]">
                     <MapPin className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                    <p className="text-sm">저장된 배송지가 없습니다.</p>
+                    <p className="text-sm">{t("noSavedAddresses")}</p>
                   </div>
                 )}
 
@@ -433,7 +433,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-semibold text-[#F0E6FF]">{addr.name}</span>
                         {addr.is_default && (
-                          <span className="text-[10px] bg-[#7C3AED]/20 text-[#A855F7] px-1.5 py-0.5 rounded-full border border-[#7C3AED]/30">기본</span>
+                          <span className="text-[10px] bg-[#7C3AED]/20 text-[#A855F7] px-1.5 py-0.5 rounded-full border border-[#7C3AED]/30">{t("defaultBadge")}</span>
                         )}
                       </div>
                       {addr.phone && <p className="text-xs text-[#9CA3AF]">{addr.phone}</p>}
@@ -443,7 +443,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                     <div className="flex items-center gap-1.5 shrink-0">
                       {!addr.is_default && (
                         <button
-                          title="기본 배송지로 설정"
+                          title={t("setDefault")}
                           onClick={async () => {
                             await fetch(`/api/shipping-addresses/${addr.id}`, { method: "PATCH" });
                             setAddresses((prev) => prev?.map((a) => ({ ...a, is_default: a.id === addr.id })) ?? null);
@@ -454,7 +454,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                         </button>
                       )}
                       <button
-                        title="삭제"
+                        title={t("deleteLabel")}
                         onClick={async () => {
                           await fetch(`/api/shipping-addresses/${addr.id}`, { method: "DELETE" });
                           setAddresses((prev) => prev?.filter((a) => a.id !== addr.id) ?? null);
@@ -473,19 +473,19 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                   className="flex items-center gap-2 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
                 >
                   {showNewAddrForm ? <ChevronDown className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  {showNewAddrForm ? "닫기" : "새 배송지 추가"}
+                  {showNewAddrForm ? t("close") : t("addNewAddress")}
                 </button>
 
                 {showNewAddrForm && (
                   <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-4 space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { key: "name", placeholder: "받는 분 성함 *", span: 2 },
-                        { key: "phone", placeholder: "연락처", span: 2 },
-                        { key: "line1", placeholder: "주소 *", span: 2 },
-                        { key: "line2", placeholder: "상세 주소", span: 2 },
-                        { key: "city", placeholder: "도시", span: 1 },
-                        { key: "postal", placeholder: "우편번호", span: 1 },
+                        { key: "name", placeholder: t("afName"), span: 2 },
+                        { key: "phone", placeholder: t("afPhone"), span: 2 },
+                        { key: "line1", placeholder: t("afLine1"), span: 2 },
+                        { key: "line2", placeholder: t("afLine2"), span: 2 },
+                        { key: "city", placeholder: t("afCity"), span: 1 },
+                        { key: "postal", placeholder: t("afPostal"), span: 1 },
                       ].map(({ key, placeholder, span }) => (
                         <input
                           key={key}
@@ -500,7 +500,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                         onChange={(e) => setNewAddr((p) => ({ ...p, country: e.target.value }))}
                         className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] focus:outline-none focus:border-[#7C3AED]/60"
                       >
-                        <option value="">국가 선택 *</option>
+                        <option value="">{t("afCountry")}</option>
                         {COUNTRIES.map((c) => (
                           <option key={c.code} value={c.code}>{c.name}</option>
                         ))}
@@ -527,7 +527,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                       }}
                       className="w-full bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white text-sm font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity"
                     >
-                      저장
+                      {t("save")}
                     </button>
                   </div>
                 )}
@@ -547,7 +547,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
               <>
                 {/* 잔액 카드 */}
                 <div className="bg-gradient-to-br from-[#7C3AED]/20 to-[#1A1A2E] rounded-xl border border-[#7C3AED]/40 p-6">
-                  <p className="text-xs text-[#9CA3AF] mb-1">{locale === "ko" ? "보유 마일리지" : "Your Points"}</p>
+                  <p className="text-xs text-[#9CA3AF] mb-1">{t("pointsBalanceLabel")}</p>
                   <p className="text-3xl font-bold text-[#F0E6FF]">
                     {(points?.balance ?? 0).toLocaleString()} <span className="text-lg text-[#A855F7]">P</span>
                   </p>
@@ -558,7 +558,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                 {(points?.history.length ?? 0) === 0 ? (
                   <div className="text-center py-12 text-[#9CA3AF]">
                     <Coins className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                    <p className="text-sm">{locale === "ko" ? "적립/사용 내역이 없습니다." : "No point history yet."}</p>
+                    <p className="text-sm">{t("noPointHistory")}</p>
                   </div>
                 ) : (
                   <div className="rounded-xl border border-[#2D2D4E] overflow-hidden divide-y divide-[#2D2D4E]">
@@ -597,6 +597,7 @@ const CARRIER_URLS: Record<string, string> = {
 };
 
 function OrderCard({ order, locale }: { order: Order; locale: string }) {
+  const t = useTranslations("account");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
   const [showAddress, setShowAddress] = useState(false);
@@ -617,7 +618,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
     <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="text-xs text-[#6B7280] mb-0.5">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+          <p className="text-xs text-[#6B7280] mb-0.5">{t("orderLabel")} #{order.id.slice(0, 8).toUpperCase()}</p>
           <p className="text-xs text-[#6B7280]">{date}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -632,7 +633,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
             className="flex items-center gap-1 text-[11px] font-medium text-[#A855F7] hover:text-[#C084FC] border border-[#7C3AED]/40 hover:border-[#A855F7]/60 rounded-full px-2.5 py-1 transition-colors"
           >
             <ExternalLink className="w-3 h-3" />
-            {locale === "ko" ? "주문 상세" : locale === "ja" ? "注文詳細" : locale === "zh-CN" ? "订单详情" : "Order Details"}
+            {t("orderDetails")}
           </Link>
         </div>
       </div>
@@ -641,7 +642,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
       {order.tracking_number && (
         <div className="mb-3 bg-[#13131F] rounded-lg px-3 py-2.5 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] text-[#6B7280] mb-0.5 uppercase tracking-wide">배송 추적</p>
+            <p className="text-[10px] text-[#6B7280] mb-0.5 uppercase tracking-wide">{t("trackingLabel")}</p>
             <p className="text-xs font-mono text-[#F59E0B]">{order.tracking_number}
               {order.tracking_carrier && <span className="text-[#9CA3AF] ml-1">· {order.tracking_carrier}</span>}
             </p>
@@ -649,7 +650,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
           {trackingUrl && (
             <a href={`${trackingUrl}${order.tracking_number}`} target="_blank" rel="noopener noreferrer"
               className="text-[10px] text-[#7C3AED] hover:text-[#A855F7] border border-[#7C3AED]/40 rounded-full px-2 py-0.5 shrink-0 transition-colors">
-              추적하기 →
+              {t("trackBtn")}
             </a>
           )}
         </div>
@@ -659,7 +660,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
       {order.shipping_address && (
         <button onClick={() => setShowAddress(!showAddress)}
           className="text-[10px] text-[#6B7280] hover:text-[#9CA3AF] transition-colors mb-2 flex items-center gap-1">
-          배송지 {showAddress ? "▲" : "▼"}
+          {t("addressToggle")} {showAddress ? "▲" : "▼"}
         </button>
       )}
       {showAddress && order.shipping_address && (
@@ -692,12 +693,12 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
                       className="flex items-center gap-1 text-[10px] text-[#7C3AED] hover:text-[#A855F7] transition-colors border border-[#7C3AED]/40 hover:border-[#A855F7]/60 rounded-full px-2 py-0.5"
                     >
                       <MessageSquare className="w-2.5 h-2.5" />
-                      {locale === "ko" ? "리뷰 쓰기" : locale === "ja" ? "レビュー" : locale === "zh-CN" ? "写评价" : "Review"}
+                      {t("reviewWrite")}
                     </button>
                   )}
                   {alreadyReviewed && (
                     <span className="text-[10px] text-emerald-400">
-                      {locale === "ko" ? "✓ 리뷰 완료" : "✓ Reviewed"}
+                      {t("reviewed")}
                     </span>
                   )}
                 </div>
@@ -737,18 +738,19 @@ function ReviewInlineForm({
   onDone: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("account");
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error" | "duplicate">("idle");
 
   const label = {
-    placeholder: locale === "ko" ? "솔직한 리뷰를 남겨주세요... (선택)" : locale === "ja" ? "レビューを書く（任意）" : locale === "zh-CN" ? "写下您的评价（可选）" : "Share your thoughts... (optional)",
-    submit: locale === "ko" ? "리뷰 제출" : locale === "ja" ? "送信" : locale === "zh-CN" ? "提交" : "Submit",
-    cancel: locale === "ko" ? "취소" : locale === "ja" ? "キャンセル" : locale === "zh-CN" ? "取消" : "Cancel",
-    duplicate: locale === "ko" ? "이미 리뷰를 작성하셨습니다." : "You've already reviewed this product.",
-    error: locale === "ko" ? "제출에 실패했습니다." : "Submission failed. Try again.",
-    success: locale === "ko" ? "리뷰가 등록되었습니다! 감사합니다." : "Review posted! Thank you.",
+    placeholder: t("rfPlaceholder"),
+    submit: t("rfSubmit"),
+    cancel: t("rfCancel"),
+    duplicate: t("rfDuplicate"),
+    error: t("rfError"),
+    success: t("rfSuccess"),
   };
 
   async function handleSubmit() {
