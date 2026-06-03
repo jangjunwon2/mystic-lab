@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { createHash, randomBytes } from "crypto";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // 1. 해당 코드 존재 여부 및 productId와 일치하는지 조회
     const { data: unlockCode, error: queryError } = await supabase
       .from("product_unlock_codes")
-      .select("id, product_id")
+      .select("id, product_id, user_id")
       .eq("code_hash", codeHash)
       .eq("product_id", productId)
       .maybeSingle();
@@ -47,16 +47,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "유효하지 않은 코드이거나 이 상품의 코드가 아닙니다." }, { status: 404 });
     }
 
+    // 1-2. 로그인 상태이고 코드가 아직 회원에 미할당(수동 발급)이면 현재 로그인 회원에게 자동 귀속
+    let assignUserId: string | null = null;
+    try {
+      const ssr = await createClient();
+      const { data: { user } } = await ssr.auth.getUser();
+      if (user && !unlockCode.user_id) {
+        assignUserId = user.id;
+      }
+    } catch {
+      // 비로그인/세션 오류 — 귀속 없이 진행
+    }
+
     // 2. 단일 활성 디바이스용 새 고유 토큰 생성
     const newDeviceToken = randomBytes(32).toString("hex");
     const newDeviceTokenHash = createHash("sha256").update(newDeviceToken).digest("hex");
 
-    // DB에 활성 토큰 해시 및 마지막 활성화 시각 업데이트
+    // DB에 활성 토큰 해시 및 마지막 활성화 시각 업데이트 (+ 미할당 코드면 로그인 회원에 귀속)
     const { error: updateError } = await supabase
       .from("product_unlock_codes")
       .update({
         active_token_hash: newDeviceTokenHash,
         last_activated_at: new Date().toISOString(),
+        ...(assignUserId ? { user_id: assignUserId } : {}),
       })
       .eq("id", unlockCode.id);
 

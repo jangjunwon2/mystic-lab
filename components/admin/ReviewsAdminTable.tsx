@@ -26,17 +26,18 @@ interface Props {
 
 export default function ReviewsAdminTable({ reviews: initial }: Props) {
   const [reviews, setReviews] = useState(initial);
-  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "reported">("pending");
+  // 게시-후-관리: 작성 즉시 게시되며 어드민은 미노출/게시/삭제로 사후 관리
+  const [filter, setFilter] = useState<"all" | "hidden" | "visible" | "reported">("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const filtered = reviews.filter((r) => {
-    if (filter === "pending") return !r.is_approved;
-    if (filter === "approved") return r.is_approved;
+    if (filter === "hidden") return !r.is_approved;
+    if (filter === "visible") return r.is_approved;
     if (filter === "reported") return r.is_reported;
     return true;
   });
 
-  const pendingCount = reviews.filter((r) => !r.is_approved).length;
+  const hiddenCount = reviews.filter((r) => !r.is_approved).length;
   const reportedCount = reviews.filter((r) => r.is_reported).length;
 
   async function dismissReport(id: string) {
@@ -79,7 +80,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
     <div className="space-y-4">
       {/* Filter tabs */}
       <div className="flex items-center gap-2 flex-wrap">
-        {(["pending", "approved", "reported", "all"] as const).map((f) => (
+        {(["all", "visible", "hidden", "reported"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -91,12 +92,12 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
               borderColor: filter === f ? "#7C3AED" : "#2D2D4E",
             }}
           >
-            {f === "pending"
-              ? `대기 중 (${pendingCount})`
+            {f === "hidden"
+              ? `미노출 (${hiddenCount})`
               : f === "reported"
               ? `신고됨 (${reportedCount})`
-              : f === "approved"
-              ? "승인됨"
+              : f === "visible"
+              ? "게시 중"
               : `전체 (${reviews.length})`}
           </button>
         ))}
@@ -143,7 +144,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                             : { background: "rgba(245,158,11,0.12)", color: "#F59E0B" }
                         }
                       >
-                        {r.is_approved ? "승인됨" : "대기 중"}
+                        {r.is_approved ? "게시 중" : "미노출"}
                       </span>
                       {r.is_reported && (
                         <span
@@ -190,7 +191,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                     <button
                       onClick={() => toggleApprove(r)}
                       disabled={isLoading}
-                      title={r.is_approved ? "승인 취소" : "승인"}
+                      title={r.is_approved ? "미노출 처리" : "게시"}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
                       style={
                         r.is_approved
@@ -199,9 +200,9 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                       }
                     >
                       {r.is_approved ? (
-                        <><XCircle className="w-3.5 h-3.5" /> 승인 취소</>
+                        <><XCircle className="w-3.5 h-3.5" /> 미노출</>
                       ) : (
-                        <><CheckCircle2 className="w-3.5 h-3.5" /> 승인</>
+                        <><CheckCircle2 className="w-3.5 h-3.5" /> 게시</>
                       )}
                     </button>
                     <button

@@ -6,22 +6,31 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// PATCH: 승인 토글
+// PATCH: 게시/미노출(is_approved) 토글 및 신고 해제(is_reported)
 export async function PATCH(request: Request, ctx: RouteContext) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await ctx.params;
-  const { is_approved } = await request.json() as { is_approved: boolean };
+  const body = await request.json() as { is_approved?: boolean; is_reported?: boolean };
+
+  // 허용 필드 화이트리스트
+  const updatePayload: Record<string, boolean> = {};
+  if (typeof body.is_approved === "boolean") updatePayload.is_approved = body.is_approved;
+  if (typeof body.is_reported === "boolean") updatePayload.is_reported = body.is_reported;
+
+  if (Object.keys(updatePayload).length === 0) {
+    return NextResponse.json({ error: "변경할 항목이 없습니다." }, { status: 400 });
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
   const { error } = await supabase
     .from("reviews")
-    .update({ is_approved })
+    .update(updatePayload)
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "리뷰 업데이트에 실패했습니다." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
