@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, AlertCircle, BookOpen, ShoppingBag } from "lucide-react";
+import type { CartItem } from "@/lib/payments/types";
 
 function fireAnalyticsPurchase({ value, currency }: { value: number; currency: string }) {
   try {
@@ -44,6 +45,40 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
 
       let analyticsValue = 0;
 
+      if (gateway === "lemon") {
+        // Read pending data saved before overlay opened
+        let pending: {
+          items: CartItem[];
+          customerEmail: string;
+          totalUsd: number;
+          shippingMethod?: string;
+          shippingAddress?: Record<string, string>;
+          discountCode?: string | null;
+        } | null = null;
+        try {
+          const raw = sessionStorage.getItem("lemon_pending");
+          if (raw) pending = JSON.parse(raw);
+        } catch { /* ignore */ }
+
+        if (pending?.customerEmail && pending?.items?.length) {
+          analyticsValue = pending.totalUsd ?? 0;
+          await fetch("/api/payment/lemon-confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              items: pending.items,
+              customerEmail: pending.customerEmail,
+              totalUsd: pending.totalUsd,
+              shippingMethod: pending.shippingMethod,
+              shippingAddress: pending.shippingAddress,
+              discountCode: pending.discountCode,
+            }),
+          }).catch((err) => console.error("[success/lemon]", err));
+
+          sessionStorage.removeItem("lemon_pending");
+        }
+      }
+
       if (gateway === "toss") {
         // Confirm Toss payment server-side
         const { paymentKey, orderId, amount } = sp;
@@ -59,6 +94,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           customerEmail: string;
           totalUsd: number;
           orderId: string;
+          shippingAddress?: unknown;
         } | null = null;
         try {
           const raw = sessionStorage.getItem("toss_pending");
@@ -77,6 +113,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
             items: pending?.items ?? [],
             customerEmail: pending?.customerEmail ?? "",
             totalUsd: pending?.totalUsd ?? 0,
+            shippingAddress: pending?.shippingAddress,
           }),
         });
 

@@ -136,8 +136,8 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as "percent" | "fixed" })}
               >
-                <option value="percent">정률 할인 (%)</option>
-                <option value="fixed">정액 할인 ($)</option>
+                <option value="percent">정률 (%)</option>
+                <option value="fixed">정액 ($)</option>
               </select>
             </label>
 
@@ -235,7 +235,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
                       </td>
                       <td className="px-5 py-3" style={{ color: expired ? "#EF4444" : "#9CA3AF" }}>
                         {code.expires_at
-                          ? new Date(code.expires_at).toLocaleDateString("ko-KR")
+                          ? new Date(code.expires_at).toLocaleDateString()
                           : "—"}
                       </td>
                       <td className="px-5 py-3">
@@ -264,7 +264,7 @@ export default function DiscountsAdminClient({ initialCodes }: Props) {
                           <button
                             onClick={() => deleteCode(code.id)}
                             disabled={loadingId === code.id}
-                            title="삭제"
+                            title="Delete"
                             style={{ color: "#EF4444" }}
                           >
                             <Trash2 className="w-4 h-4" />

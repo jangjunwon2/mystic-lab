@@ -5,28 +5,16 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Package, Play, LogOut, ChevronRight, Truck, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Package, Play, Heart, LogOut, ChevronRight, Pencil, Check, X, Star, MessageSquare, ExternalLink, MapPin, Trash2, BookmarkCheck, Plus, ChevronDown } from "lucide-react";
+import { COUNTRIES } from "@/lib/constants/countries";
 import { createClient } from "@/lib/supabase/client";
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:   "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-  paid:      "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  shipped:   "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  pending: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+  paid: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  shipped: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
   completed: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  refunded:  "bg-red-500/15 text-red-400 border-red-500/30",
-};
-
-// 배송사별 운송장 추적 URL
-const TRACKING_URLS: Record<string, (n: string) => string> = {
-  cj:      (n) => `https://www.cjlogistics.com/ko/tool/parcel/tracking?paramInvcNo=${n}`,
-  hanjin:  (n) => `https://www.hanjin.com/kor/CMS/DeliveryMgr/WaybillResult.do?mCode=MN038&wblnumList=${n}`,
-  lotte:   (n) => `https://www.lotteglogis.com/home/reservation/tracking/index?InvNo=${n}`,
-  epost:   (n) => `https://service.epost.go.kr/trace.RetrieveEmsRigiTraceList.comm?POST_CODE=${n}`,
-  logen:   (n) => `https://www.ilogen.com/m/personal/trace/${n}`,
-  dhl:     (n) => `https://www.dhl.com/kr-ko/home/tracking/tracking-parcel.html?submit=1&tracking-id=${n}`,
-  fedex:   (n) => `https://www.fedex.com/fedextrack/?trknbr=${n}`,
-  ups:     (n) => `https://www.ups.com/track?track=yes&trackNums=${n}`,
-  ems:     (n) => `https://service.epost.go.kr/trace.RetrieveEmsRigiTraceList.comm?POST_CODE=${n}`,
+  refunded: "bg-red-500/15 text-red-400 border-red-500/30",
 };
 
 interface Order {
@@ -37,7 +25,9 @@ interface Order {
   customer_email: string;
   tracking_number: string | null;
   tracking_carrier: string | null;
+  shipping_address: Record<string, string> | null;
   shipping_method: string | null;
+  stripe_payment_intent_id: string | null;
   order_items: {
     id: string;
     quantity: number;
@@ -51,17 +41,51 @@ interface Order {
   }[];
 }
 
+interface WishlistItem {
+  id: string;
+  product_id: string;
+  products: {
+    id: string;
+    slug: string;
+    thumbnail_url: string | null;
+    price_usd: number;
+    product_translations: { name: string; language: string }[];
+  } | null;
+}
+
+interface SavedAddress {
+  id: string;
+  name: string;
+  phone: string | null;
+  line1: string;
+  line2: string | null;
+  city: string | null;
+  postal: string | null;
+  country: string;
+  is_default: boolean;
+}
+
 interface Props {
   locale: string;
   profile: { display_name: string | null; avatar_url: string | null; role: string } | null;
   orders: unknown[];
+  wishlist: WishlistItem[];
 }
 
-export default function AccountClient({ locale, profile, orders }: Props) {
+export default function AccountClient({ locale, profile, orders, wishlist }: Props) {
   const t = useTranslations("account");
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"orders" | "tutorials">("orders");
+  const [activeTab, setActiveTab] = useState<"orders" | "tutorials" | "wishlist" | "addresses">("orders");
+  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(wishlist);
+  const [addresses, setAddresses] = useState<SavedAddress[] | null>(null);
+  const [addrLoading, setAddrLoading] = useState(false);
+  const [showNewAddrForm, setShowNewAddrForm] = useState(false);
+  const [newAddr, setNewAddr] = useState({ name: "", phone: "", line1: "", line2: "", city: "", postal: "", country: "" });
   const [signingOut, setSigningOut] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(profile?.display_name ?? "");
+  const [savingName, setSavingName] = useState(false);
+  const [currentName, setCurrentName] = useState(profile?.display_name ?? "");
 
   const typedOrders = orders as Order[];
   const purchasedOrders = typedOrders.filter((o) =>
@@ -72,11 +96,28 @@ export default function AccountClient({ locale, profile, orders }: Props) {
     setSigningOut(true);
     const supabase = createClient();
     await supabase.auth.signOut();
+    localStorage.removeItem("ml_cart");
+    window.dispatchEvent(new Event("storage"));
     router.push(`/${locale}`);
     router.refresh();
   };
 
-  const displayName = profile?.display_name ?? "Member";
+  async function saveName() {
+    if (!nameInput.trim()) return;
+    setSavingName(true);
+    const res = await fetch("/api/account/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ display_name: nameInput.trim() }),
+    });
+    if (res.ok) {
+      setCurrentName(nameInput.trim());
+      setEditingName(false);
+    }
+    setSavingName(false);
+  }
+
+  const displayName = currentName || "Member";
   const initials = displayName
     .split(" ")
     .map((n) => n[0])
@@ -98,12 +139,50 @@ export default function AccountClient({ locale, profile, orders }: Props) {
               {initials}
             </div>
             <div>
-              <h1
-                className="text-xl font-bold text-[#F0E6FF]"
-                style={{ fontFamily: "var(--font-cinzel), serif" }}
-              >
-                {displayName}
-              </h1>
+              {editingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    className="bg-[#1A1A2E] border border-[#7C3AED]/50 rounded-lg px-3 py-1 text-[#F0E6FF] text-base font-bold focus:outline-none focus:border-[#7C3AED]"
+                    style={{ fontFamily: "var(--font-cinzel), serif" }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveName();
+                      if (e.key === "Escape") setEditingName(false);
+                    }}
+                    autoFocus
+                    maxLength={50}
+                  />
+                  <button
+                    onClick={saveName}
+                    disabled={savingName}
+                    className="p-1 text-[#10B981] hover:opacity-80 transition-opacity disabled:opacity-40"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setEditingName(false)}
+                    className="p-1 text-[#6B7280] hover:opacity-80 transition-opacity"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <h1
+                    className="text-xl font-bold text-[#F0E6FF]"
+                    style={{ fontFamily: "var(--font-cinzel), serif" }}
+                  >
+                    {displayName}
+                  </h1>
+                  <button
+                    onClick={() => { setNameInput(currentName); setEditingName(true); }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-[#6B7280] hover:text-[#A855F7]"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
               {profile?.role === "admin" && (
                 <span className="text-[10px] text-[#F59E0B] uppercase tracking-wider font-medium">
                   Admin
@@ -117,7 +196,7 @@ export default function AccountClient({ locale, profile, orders }: Props) {
             className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#9CA3AF] transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            {t("signOut")}
+            Sign Out
           </button>
         </motion.div>
 
@@ -127,25 +206,38 @@ export default function AccountClient({ locale, profile, orders }: Props) {
             href="/admin"
             className="flex items-center justify-between bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-4 py-3 mb-6 hover:bg-[#F59E0B]/15 transition-colors"
           >
-            <span className="text-sm font-medium text-[#F59E0B]">{t("adminDashboard")}</span>
+            <span className="text-sm font-medium text-[#F59E0B]">Admin Dashboard</span>
             <ChevronRight className="w-4 h-4 text-[#F59E0B]" />
           </Link>
         )}
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-[#1A1A2E] rounded-xl p-1 border border-[#2D2D4E] mb-6 w-fit">
-          {(["orders", "tutorials"] as const).map((tab) => (
+        <div className="flex gap-1 bg-[#1A1A2E] rounded-xl p-1 border border-[#2D2D4E] mb-6 w-fit flex-wrap">
+          {(["orders", "tutorials", "wishlist", "addresses"] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab);
+                if (tab === "addresses" && addresses === null) {
+                  setAddrLoading(true);
+                  fetch("/api/shipping-addresses")
+                    .then((r) => r.json())
+                    .then((data: SavedAddress[]) => setAddresses(Array.isArray(data) ? data : []))
+                    .catch(() => setAddresses([]))
+                    .finally(() => setAddrLoading(false));
+                }
+              }}
               className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeTab === tab
                   ? "bg-[#7C3AED] text-white"
                   : "text-[#9CA3AF] hover:text-[#F0E6FF]"
               }`}
             >
-              {tab === "orders" ? <Package className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              {t(tab)}
+              {tab === "orders" ? <Package className="w-3.5 h-3.5" />
+                : tab === "tutorials" ? <Play className="w-3.5 h-3.5" />
+                : tab === "wishlist" ? <Heart className="w-3.5 h-3.5" />
+                : <MapPin className="w-3.5 h-3.5" />}
+              {tab === "addresses" ? "배송지" : t(tab)}
             </button>
           ))}
         </div>
@@ -164,13 +256,13 @@ export default function AccountClient({ locale, profile, orders }: Props) {
                   href={`/${locale}/products`}
                   className="inline-block mt-4 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
                 >
-                  {t("browseProducts")}
+                  Browse Products
                 </Link>
               </div>
             ) : (
               <div className="space-y-4">
                 {typedOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} locale={locale} t={t} />
+                  <OrderCard key={order.id} order={order} locale={locale} />
                 ))}
               </div>
             )}
@@ -186,12 +278,12 @@ export default function AccountClient({ locale, profile, orders }: Props) {
             {purchasedOrders.length === 0 ? (
               <div className="text-center py-16 text-[#9CA3AF]">
                 <Play className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">{t("noTutorials")}</p>
+                <p className="text-sm">No tutorials yet. Purchase a product to unlock tutorials.</p>
                 <Link
                   href={`/${locale}/products`}
                   className="inline-block mt-4 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
                 >
-                  {t("browseProducts")}
+                  Browse Products
                 </Link>
               </div>
             ) : (
@@ -207,123 +299,453 @@ export default function AccountClient({ locale, profile, orders }: Props) {
             )}
           </motion.div>
         )}
+
+        {/* Wishlist Tab */}
+        {activeTab === "wishlist" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            {wishlistItems.length === 0 ? (
+              <div className="text-center py-16 text-[#9CA3AF]">
+                <Heart className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="text-sm">{t("noWishlist")}</p>
+                <Link
+                  href={`/${locale}/products`}
+                  className="inline-block mt-4 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
+                >
+                  Browse Products
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {wishlistItems.map((item) => {
+                  if (!item.products) return null;
+                  const prod = item.products;
+                  const name =
+                    prod.product_translations.find((tr) => tr.language === locale)?.name ??
+                    prod.product_translations.find((tr) => tr.language === "en")?.name ??
+                    prod.product_translations[0]?.name ??
+                    prod.slug;
+                  return (
+                    <div key={item.id} className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] overflow-hidden hover:border-[#7C3AED]/60 transition-colors">
+                      <Link href={`/${locale}/products/${prod.slug}`}>
+                        <div className="aspect-[4/3] bg-[#13131F]">
+                          {prod.thumbnail_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={prod.thumbnail_url} alt={name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <div className="w-12 h-12 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/40" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <p className="text-sm font-semibold text-[#F0E6FF] mb-1 line-clamp-1">{name}</p>
+                          <p className="text-[#F59E0B] font-bold text-sm">${prod.price_usd}</p>
+                        </div>
+                      </Link>
+                      <div className="px-4 pb-4">
+                        <button
+                          onClick={async () => {
+                            await fetch("/api/wishlist", {
+                              method: "DELETE",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ product_id: prod.id }),
+                            });
+                            setWishlistItems((prev) => prev.filter((w) => w.id !== item.id));
+                          }}
+                          className="w-full flex items-center justify-center gap-1.5 text-xs text-[#EF4444] hover:text-red-300 border border-[#EF4444]/30 hover:border-[#EF4444]/60 rounded-lg py-1.5 transition-colors"
+                        >
+                          <Heart className="w-3.5 h-3.5 fill-[#EF4444]" />
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Addresses Tab */}
+        {activeTab === "addresses" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            {addrLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-6 h-6 border-2 border-[#7C3AED]/30 border-t-[#7C3AED] rounded-full animate-spin" />
+              </div>
+            ) : (
+              <>
+                {(addresses ?? []).length === 0 && !showNewAddrForm && (
+                  <div className="text-center py-16 text-[#9CA3AF]">
+                    <MapPin className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm">저장된 배송지가 없습니다.</p>
+                  </div>
+                )}
+
+                {(addresses ?? []).map((addr) => (
+                  <div key={addr.id} className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-4 flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-semibold text-[#F0E6FF]">{addr.name}</span>
+                        {addr.is_default && (
+                          <span className="text-[10px] bg-[#7C3AED]/20 text-[#A855F7] px-1.5 py-0.5 rounded-full border border-[#7C3AED]/30">기본</span>
+                        )}
+                      </div>
+                      {addr.phone && <p className="text-xs text-[#9CA3AF]">{addr.phone}</p>}
+                      <p className="text-xs text-[#9CA3AF] mt-0.5">{addr.line1}{addr.line2 ? ` ${addr.line2}` : ""}</p>
+                      <p className="text-xs text-[#9CA3AF]">{addr.city ? `${addr.city} ` : ""}{addr.postal ?? ""} · {COUNTRIES.find((c) => c.code === addr.country)?.name ?? addr.country}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {!addr.is_default && (
+                        <button
+                          title="기본 배송지로 설정"
+                          onClick={async () => {
+                            await fetch(`/api/shipping-addresses/${addr.id}`, { method: "PATCH" });
+                            setAddresses((prev) => prev?.map((a) => ({ ...a, is_default: a.id === addr.id })) ?? null);
+                          }}
+                          className="p-1.5 text-[#6B7280] hover:text-[#A855F7] transition-colors"
+                        >
+                          <BookmarkCheck className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        title="삭제"
+                        onClick={async () => {
+                          await fetch(`/api/shipping-addresses/${addr.id}`, { method: "DELETE" });
+                          setAddresses((prev) => prev?.filter((a) => a.id !== addr.id) ?? null);
+                        }}
+                        className="p-1.5 text-[#6B7280] hover:text-[#EF4444] transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add new address */}
+                <button
+                  onClick={() => setShowNewAddrForm(!showNewAddrForm)}
+                  className="flex items-center gap-2 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
+                >
+                  {showNewAddrForm ? <ChevronDown className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  {showNewAddrForm ? "닫기" : "새 배송지 추가"}
+                </button>
+
+                {showNewAddrForm && (
+                  <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-4 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: "name", placeholder: "받는 분 성함 *", span: 2 },
+                        { key: "phone", placeholder: "연락처", span: 2 },
+                        { key: "line1", placeholder: "주소 *", span: 2 },
+                        { key: "line2", placeholder: "상세 주소", span: 2 },
+                        { key: "city", placeholder: "도시", span: 1 },
+                        { key: "postal", placeholder: "우편번호", span: 1 },
+                      ].map(({ key, placeholder, span }) => (
+                        <input
+                          key={key}
+                          placeholder={placeholder}
+                          value={newAddr[key as keyof typeof newAddr]}
+                          onChange={(e) => setNewAddr((p) => ({ ...p, [key]: e.target.value }))}
+                          className={`${span === 2 ? "col-span-2" : ""} bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60`}
+                        />
+                      ))}
+                      <select
+                        value={newAddr.country}
+                        onChange={(e) => setNewAddr((p) => ({ ...p, country: e.target.value }))}
+                        className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] focus:outline-none focus:border-[#7C3AED]/60"
+                      >
+                        <option value="">국가 선택 *</option>
+                        {COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!newAddr.name.trim() || !newAddr.line1.trim() || !newAddr.country) return;
+                        const res = await fetch("/api/shipping-addresses", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ ...newAddr, set_default: (addresses ?? []).length === 0 }),
+                        });
+                        if (res.ok) {
+                          const created: SavedAddress = await res.json();
+                          setAddresses((prev) => {
+                            const base = prev ?? [];
+                            if (created.is_default) return [created, ...base.map((a) => ({ ...a, is_default: false }))];
+                            return [...base, created];
+                          });
+                          setNewAddr({ name: "", phone: "", line1: "", line2: "", city: "", postal: "", country: "" });
+                          setShowNewAddrForm(false);
+                        }
+                      }}
+                      className="w-full bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white text-sm font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      저장
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </motion.div>
+        )}
       </div>
     </div>
   );
 }
 
-// 배송 진행 단계
-const STEPS = ["paid", "shipped", "completed"] as const;
+const CARRIER_URLS: Record<string, string> = {
+  "CJ대한통운": "https://www.cjlogistics.com/ko/tool/parcel/tracking?gnbInvcNo=",
+  "한진택배":   "https://www.hanjin.com/kor/CMS/DeliveryMgr/WaybillResult.do?mCode=MN038&schLang=KOR&wblnumList=",
+  "롯데택배":   "https://www.lotteglogis.com/home/reservation/tracking/index?InvNo=",
+  "우체국":     "https://service.epost.go.kr/trace.RetrieveEmsRigiTraceList.comm?POST_CODE=",
+  "로젠":       "https://www.ilogen.com/iLogen/general/tTrace.jsp?slipno=",
+  DHL:          "https://www.dhl.com/global-en/home/tracking.html?tracking-id=",
+  FedEx:        "https://www.fedex.com/fedextrack/?trknbr=",
+  UPS:          "https://www.ups.com/track?tracknum=",
+  EMS:          "https://service.epost.go.kr/trace.RetrieveEmsRigiTraceList.comm?POST_CODE=",
+};
 
-function OrderCard({
-  order,
-  locale,
-  t,
-}: {
-  order: Order;
-  locale: string;
-  t: ReturnType<typeof useTranslations>;
-}) {
-  const date = new Date(order.created_at).toLocaleDateString(locale, {
+function getGatewayLabel(ref: string | null) {
+  if (!ref) return null;
+  if (ref.startsWith("toss_")) return { label: "Toss", color: "#3B82F6" };
+  if (ref.startsWith("lemon_")) return { label: "Lemon", color: "#84CC16" };
+  return null;
+}
+
+function OrderCard({ order, locale }: { order: Order; locale: string }) {
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
+  const [showAddress, setShowAddress] = useState(false);
+
+  const date = new Date(order.created_at).toLocaleDateString("en-US", {
     year: "numeric", month: "short", day: "numeric",
   });
-
-  const trackingUrl = order.tracking_number && order.tracking_carrier
-    ? TRACKING_URLS[order.tracking_carrier.toLowerCase()]?.(order.tracking_number)
+  const eligible = ["paid", "shipped", "completed"].includes(order.status);
+  const gateway = getGatewayLabel(order.stripe_payment_intent_id);
+  const trackingUrl = order.tracking_carrier && order.tracking_number
+    ? (CARRIER_URLS[order.tracking_carrier] ?? null)
     : null;
 
-  const currentStep = STEPS.indexOf(order.status as typeof STEPS[number]);
-  const isInTransit = ["paid", "shipped", "completed"].includes(order.status);
-
   return (
-    <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5 space-y-4">
-      {/* 헤더 */}
-      <div className="flex items-start justify-between">
+    <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
+      <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="text-xs text-[#6B7280] mb-0.5">{t("orderNumber")} #{order.id.slice(0, 8).toUpperCase()}</p>
+          <p className="text-xs text-[#6B7280] mb-0.5">Order #{order.id.slice(0, 8).toUpperCase()}</p>
           <p className="text-xs text-[#6B7280]">{date}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {gateway && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+              style={{ background: `${gateway.color}22`, color: gateway.color, border: `1px solid ${gateway.color}44` }}>
+              {gateway.label}
+            </span>
+          )}
           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border uppercase tracking-wide ${STATUS_COLORS[order.status] ?? ""}`}>
-            {t(`status.${order.status}`)}
+            {order.status}
           </span>
           <span className="text-sm font-semibold text-[#F59E0B]">
             ${order.total_usd.toFixed(2)}
           </span>
+          <Link
+            href={`/${locale}/orders/${order.id}`}
+            className="flex items-center gap-1 text-[10px] text-[#6B7280] hover:text-[#A855F7] transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+          </Link>
         </div>
       </div>
 
-      {/* 배송 진행 단계 */}
-      {isInTransit && (
-        <div className="flex items-center gap-0">
-          {STEPS.map((step, i) => {
-            const done = currentStep >= i;
-            const active = currentStep === i;
-            return (
-              <div key={step} className="flex items-center flex-1">
-                <div className="flex flex-col items-center">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                    done ? "bg-[#7C3AED]" : "bg-[#2D2D4E]"
-                  } ${active ? "ring-2 ring-[#A855F7] ring-offset-1 ring-offset-[#1A1A2E]" : ""}`}>
-                    {done
-                      ? <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                      : <span className="w-1.5 h-1.5 rounded-full bg-[#4B5563]" />}
-                  </div>
-                  <span className={`text-[9px] mt-1 whitespace-nowrap ${done ? "text-[#A855F7]" : "text-[#4B5563]"}`}>
-                    {t(`steps.${step}`)}
-                  </span>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mb-3 mx-1 ${currentStep > i ? "bg-[#7C3AED]" : "bg-[#2D2D4E]"}`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* 배송 추적 */}
-      {order.status === "shipped" && (
-        <div className="flex items-center justify-between bg-[#13131F] rounded-lg px-3 py-2.5">
-          <div className="flex items-center gap-2">
-            <Truck className="w-4 h-4 text-[#7C3AED] shrink-0" />
-            <div>
-              {order.tracking_carrier && (
-                <p className="text-xs text-[#9CA3AF] capitalize">{order.tracking_carrier.toUpperCase()}</p>
-              )}
-              {order.tracking_number ? (
-                <p className="text-xs font-mono text-[#F0E6FF]">{order.tracking_number}</p>
-              ) : (
-                <p className="text-xs text-[#6B7280]">{t("trackingPending")}</p>
-              )}
-            </div>
+      {/* Tracking info */}
+      {order.tracking_number && (
+        <div className="mb-3 bg-[#13131F] rounded-lg px-3 py-2.5 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] text-[#6B7280] mb-0.5 uppercase tracking-wide">배송 추적</p>
+            <p className="text-xs font-mono text-[#F59E0B]">{order.tracking_number}
+              {order.tracking_carrier && <span className="text-[#9CA3AF] ml-1">· {order.tracking_carrier}</span>}
+            </p>
           </div>
           {trackingUrl && (
-            <a
-              href={trackingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-[#A855F7] hover:text-[#C084FC] transition-colors"
-            >
-              {t("trackShipment")} <ExternalLink className="w-3 h-3" />
+            <a href={`${trackingUrl}${order.tracking_number}`} target="_blank" rel="noopener noreferrer"
+              className="text-[10px] text-[#7C3AED] hover:text-[#A855F7] border border-[#7C3AED]/40 rounded-full px-2 py-0.5 shrink-0 transition-colors">
+              추적하기 →
             </a>
           )}
         </div>
       )}
 
-      {/* 상품 목록 */}
-      <div className="space-y-2 border-t border-[#2D2D4E] pt-3">
+      {/* Shipping address toggle */}
+      {order.shipping_address && (
+        <button onClick={() => setShowAddress(!showAddress)}
+          className="text-[10px] text-[#6B7280] hover:text-[#9CA3AF] transition-colors mb-2 flex items-center gap-1">
+          배송지 {showAddress ? "▲" : "▼"}
+        </button>
+      )}
+      {showAddress && order.shipping_address && (
+        <div className="mb-3 bg-[#13131F] rounded-lg px-3 py-2 text-xs text-[#9CA3AF] space-y-0.5">
+          {order.shipping_address.name && <p>{order.shipping_address.name}</p>}
+          {order.shipping_address.phone && <p>{order.shipping_address.phone}</p>}
+          {order.shipping_address.line1 && <p>{order.shipping_address.line1} {order.shipping_address.line2}</p>}
+          {order.shipping_address.city && <p>{order.shipping_address.city} {order.shipping_address.postal} {order.shipping_address.country}</p>}
+          {order.shipping_address.address && <p>{order.shipping_address.address}</p>}
+        </div>
+      )}
+
+      <div className="space-y-3">
         {order.order_items.map((item) => {
           const name = item.products?.product_translations.find(
             (t) => t.language === locale
           )?.name ?? item.products?.product_translations[0]?.name ?? "Product";
+          const productId = item.products?.id;
+          const alreadyReviewed = productId ? reviewedIds.has(productId) : false;
+
           return (
-            <div key={item.id} className="flex items-center justify-between text-sm">
-              <span className="text-[#9CA3AF]">{name} × {item.quantity}</span>
-              <span className="text-[#6B7280]">${(item.price_usd * item.quantity).toFixed(2)}</span>
+            <div key={item.id}>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#9CA3AF]">{name} × {item.quantity}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[#6B7280]">${(item.price_usd * item.quantity).toFixed(2)}</span>
+                  {eligible && productId && !alreadyReviewed && reviewingId !== productId && (
+                    <button
+                      onClick={() => setReviewingId(productId)}
+                      className="flex items-center gap-1 text-[10px] text-[#7C3AED] hover:text-[#A855F7] transition-colors border border-[#7C3AED]/40 hover:border-[#A855F7]/60 rounded-full px-2 py-0.5"
+                    >
+                      <MessageSquare className="w-2.5 h-2.5" />
+                      {locale === "ko" ? "리뷰 쓰기" : locale === "ja" ? "レビュー" : locale === "zh-CN" ? "写评价" : "Review"}
+                    </button>
+                  )}
+                  {alreadyReviewed && (
+                    <span className="text-[10px] text-emerald-400">
+                      {locale === "ko" ? "✓ 리뷰 완료" : "✓ Reviewed"}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {reviewingId === productId && productId && (
+                <ReviewInlineForm
+                  productId={productId}
+                  locale={locale}
+                  onDone={() => {
+                    setReviewedIds((prev) => new Set([...prev, productId]));
+                    setReviewingId(null);
+                  }}
+                  onCancel={() => setReviewingId(null)}
+                />
+              )}
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function ReviewInlineForm({
+  productId,
+  locale,
+  onDone,
+  onCancel,
+}: {
+  productId: string;
+  locale: string;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [rating, setRating] = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error" | "duplicate">("idle");
+
+  const label = {
+    placeholder: locale === "ko" ? "솔직한 리뷰를 남겨주세요... (선택)" : locale === "ja" ? "レビューを書く（任意）" : locale === "zh-CN" ? "写下您的评价（可选）" : "Share your thoughts... (optional)",
+    submit: locale === "ko" ? "리뷰 제출" : locale === "ja" ? "送信" : locale === "zh-CN" ? "提交" : "Submit",
+    cancel: locale === "ko" ? "취소" : locale === "ja" ? "キャンセル" : locale === "zh-CN" ? "取消" : "Cancel",
+    duplicate: locale === "ko" ? "이미 리뷰를 작성하셨습니다." : "You've already reviewed this product.",
+    error: locale === "ko" ? "제출에 실패했습니다." : "Submission failed. Try again.",
+    success: locale === "ko" ? "리뷰가 제출되었습니다! 검토 후 게시됩니다." : "Review submitted! It will appear after approval.",
+  };
+
+  async function handleSubmit() {
+    if (rating === 0) return;
+    setStatus("submitting");
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: productId, rating, comment: comment.trim() || undefined }),
+      });
+      if (res.status === 409) { setStatus("duplicate"); return; }
+      if (!res.ok) { setStatus("error"); return; }
+      setStatus("done");
+      setTimeout(onDone, 1500);
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  if (status === "done") {
+    return (
+      <div className="mt-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400">
+        {label.success}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl p-4 space-y-3">
+      {/* Stars */}
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            onMouseEnter={() => setHovered(n)}
+            onMouseLeave={() => setHovered(0)}
+            onClick={() => setRating(n)}
+            className="p-0.5 transition-transform hover:scale-110"
+          >
+            <Star
+              className={`w-5 h-5 transition-colors ${
+                n <= (hovered || rating) ? "text-[#F59E0B] fill-[#F59E0B]" : "text-[#4B5563]"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+
+      {/* Comment */}
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        rows={3}
+        placeholder={label.placeholder}
+        className="w-full bg-[#1A1A2E] border border-[#2D2D4E] rounded-lg px-3 py-2 text-xs text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] resize-none transition-colors"
+        maxLength={500}
+      />
+
+      {/* Error messages */}
+      {status === "duplicate" && (
+        <p className="text-[10px] text-yellow-400">{label.duplicate}</p>
+      )}
+      {status === "error" && (
+        <p className="text-[10px] text-red-400">{label.error}</p>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-2 justify-end">
+        <button
+          onClick={onCancel}
+          className="text-xs text-[#6B7280] hover:text-[#9CA3AF] transition-colors px-3 py-1.5"
+        >
+          {label.cancel}
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={rating === 0 || status === "submitting"}
+          className="text-xs bg-[#7C3AED] text-white px-4 py-1.5 rounded-lg hover:bg-[#6D28D9] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {status === "submitting" ? "..." : label.submit}
+        </button>
       </div>
     </div>
   );

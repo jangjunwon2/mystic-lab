@@ -10,7 +10,8 @@ interface ShippingAddress {
   phone: string;
   line1: string;
   line2: string;
-  postal: string;
+  postal_code: string;
+  country: string;
 }
 
 interface Props {
@@ -20,9 +21,10 @@ interface Props {
   items: { id: string; slug: string; name: string; price_usd: number; quantity: number }[];
   totalUsd: number;
   shippingAddress?: ShippingAddress;
+  onBeforePay?: () => Promise<void>;
 }
 
-export default function TossPaymentWidget({ amountKrw, locale, email, items, totalUsd, shippingAddress }: Props) {
+export default function TossPaymentWidget({ amountKrw, locale, email, items, totalUsd, shippingAddress, onBeforePay }: Props) {
   const widgetRef = useRef<PaymentWidgetInstance | null>(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -60,14 +62,13 @@ export default function TossPaymentWidget({ amountKrw, locale, email, items, tot
 
   const handlePay = async () => {
     if (!widgetRef.current) return;
-    setError("");
-
-    if (!email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError("이메일 주소를 올바르게 입력해주세요.");
       return;
     }
-
+    setError("");
     setLoading(true);
+    if (onBeforePay) await onBeforePay().catch(() => {});
 
     try {
       const orderId = `ML-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
@@ -75,7 +76,7 @@ export default function TossPaymentWidget({ amountKrw, locale, email, items, tot
       // Store cart data in sessionStorage so success page can confirm
       sessionStorage.setItem(
         "toss_pending",
-        JSON.stringify({ items, customerEmail: email, totalUsd, orderId, shippingAddress: shippingAddress ?? null })
+        JSON.stringify({ items, customerEmail: email, totalUsd, orderId, shippingAddress })
       );
 
       await widgetRef.current.requestPayment({

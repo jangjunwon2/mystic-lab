@@ -4,8 +4,19 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, UserPlus, Eye, EyeOff, Sparkles, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, User, UserPlus, Eye, EyeOff, Sparkles, CheckCircle2, ChevronDown, MapPin } from "lucide-react";
+import { COUNTRIES } from "@/lib/constants/countries";
 import { createClient } from "@/lib/supabase/client";
+
+declare global {
+  interface Window {
+    daum?: {
+      Postcode: new (options: {
+        oncomplete: (data: { zonecode: string; roadAddress: string; jibunAddress: string }) => void;
+      }) => { open: () => void };
+    };
+  }
+}
 
 interface Props {
   params: Promise<{ locale: string }>;
@@ -23,31 +34,83 @@ export default function SignUpPage({ params }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const [marketingAgreed, setMarketingAgreed] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+
+  // Optional address
+  const [addrOpen, setAddrOpen] = useState(false);
+  const [addrName, setAddrName] = useState("");
+  const [addrPhone, setAddrPhone] = useState("");
+  const [addrPostal, setAddrPostal] = useState("");
+  const [addrLine1, setAddrLine1] = useState("");
+  const [addrLine2, setAddrLine2] = useState("");
+  const [addrCity, setAddrCity] = useState("");
+  const [addrCountry, setAddrCountry] = useState("");
 
   useEffect(() => {
-    params.then(({ locale: l }) => setLocale(l));
+    params.then(({ locale: l }) => {
+      setLocale(l);
+      if (l === "ko") setAddrCountry("KR");
+    });
   }, [params]);
+
+  function openDaumPostcode() {
+    const open = () => {
+      new window.daum!.Postcode({
+        oncomplete(data) {
+          setAddrPostal(data.zonecode);
+          setAddrLine1(data.roadAddress || data.jibunAddress);
+        },
+      }).open();
+    };
+    if (window.daum?.Postcode) {
+      open();
+    } else {
+      const script = document.createElement("script");
+      script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+      script.onload = open;
+      document.head.appendChild(script);
+    }
+  }
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const trimmedName = name.trim();
-    if (!trimmedName) { setError("이름을 입력해주세요."); return; }
-    if (trimmedName.length > 50) { setError("이름은 50자 이하로 입력해주세요."); return; }
-
     if (password !== confirmPassword) {
-      setError("비밀번호가 일치하지 않습니다.");
+      setError("Passwords do not match.");
       return;
     }
     if (password.length < 8) {
-      setError("비밀번호는 최소 8자 이상이어야 합니다.");
+      setError("Password must be at least 8 characters.");
       return;
     }
-    if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      setError("비밀번호에 숫자 또는 특수문자를 포함해주세요.");
+    if (!termsAgreed || !privacyAgreed || !ageConfirmed) {
+      setError(
+        locale === "ko"
+          ? "필수 항목에 모두 동의해주세요."
+          : locale === "ja"
+          ? "必須項目にすべて同意してください。"
+          : locale === "zh-CN"
+          ? "请同意所有必填项后继续。"
+          : "Please accept the required agreements to continue."
+      );
       return;
     }
+
+    const defaultAddress = addrLine1.trim()
+      ? {
+          name: addrName.trim(),
+          phone: addrPhone.trim(),
+          postal: addrPostal.trim(),
+          line1: addrLine1.trim(),
+          line2: addrLine2.trim(),
+          city: addrCity.trim(),
+          country: addrCountry.trim().toUpperCase() || (locale === "ko" ? "KR" : ""),
+        }
+      : undefined;
 
     setLoading(true);
     const supabase = createClient();
@@ -55,24 +118,19 @@ export default function SignUpPage({ params }: Props) {
       email: email.trim(),
       password,
       options: {
-        data: { full_name: trimmedName },
+        data: {
+          full_name: name.trim(),
+          marketing_agreed: marketingAgreed,
+          terms_agreed_at: new Date().toISOString(),
+          ...(defaultAddress ? { default_address: defaultAddress } : {}),
+        },
         emailRedirectTo: `${window.location.origin}/api/auth/callback?next=/${locale}/account`,
       },
     });
 
     setLoading(false);
     if (authError) {
-      // Supabase 내부 메시지 → 사용자 친화적 메시지로 변환
-      const msg = authError.message.toLowerCase();
-      if (msg.includes("already registered") || msg.includes("already exists")) {
-        setError("이미 사용 중인 이메일입니다.");
-      } else if (msg.includes("invalid email")) {
-        setError("올바른 이메일 형식이 아닙니다.");
-      } else if (msg.includes("password")) {
-        setError("비밀번호가 보안 요건을 충족하지 않습니다.");
-      } else {
-        setError("회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-      }
+      setError(authError.message);
       return;
     }
 
@@ -162,7 +220,6 @@ export default function SignUpPage({ params }: Props) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  maxLength={50}
                   placeholder="Your name"
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
@@ -198,7 +255,7 @@ export default function SignUpPage({ params }: Props) {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  placeholder="8자 이상, 숫자 또는 특수문자 포함"
+                  placeholder="Minimum 8 characters"
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-10 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
                 <button
@@ -226,6 +283,222 @@ export default function SignUpPage({ params }: Props) {
                   className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
               </div>
+            </div>
+
+            {/* Optional shipping address */}
+            <div className="border-t border-[#2D2D4E] pt-3">
+              <button
+                type="button"
+                onClick={() => setAddrOpen(!addrOpen)}
+                className="w-full flex items-center justify-between text-xs text-[#9CA3AF] hover:text-[#C084FC] transition-colors py-1"
+              >
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {locale === "ko"
+                    ? "기본 배송지 저장 (선택)"
+                    : locale === "ja"
+                    ? "配送先を保存（任意）"
+                    : locale === "zh-CN"
+                    ? "保存收货地址（可选）"
+                    : "Save Shipping Address (optional)"}
+                </span>
+                <ChevronDown
+                  className="w-4 h-4 transition-transform"
+                  style={{ transform: addrOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                />
+              </button>
+
+              {addrOpen && (
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  <input
+                    type="text"
+                    placeholder={locale === "ko" ? "받는 분 성함" : "Full name"}
+                    value={addrName}
+                    onChange={(e) => setAddrName(e.target.value)}
+                    className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
+                  />
+                  <input
+                    type="text"
+                    placeholder={locale === "ko" ? "연락처" : "Phone"}
+                    value={addrPhone}
+                    onChange={(e) => setAddrPhone(e.target.value)}
+                    className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
+                  />
+
+                  {locale === "ko" ? (
+                    <>
+                      <div className="col-span-2 flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="우편번호"
+                          value={addrPostal}
+                          readOnly
+                          className="flex-1 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
+                        />
+                        <button
+                          type="button"
+                          onClick={openDaumPostcode}
+                          className="px-3 py-2 rounded-xl text-xs font-medium text-white bg-[#7C3AED] hover:bg-[#6D28D9] transition-colors whitespace-nowrap"
+                        >
+                          주소 찾기
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="주소"
+                        value={addrLine1}
+                        readOnly
+                        className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="상세 주소 (동/호수 등)"
+                        value={addrLine2}
+                        onChange={(e) => setAddrLine2(e.target.value)}
+                        className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <select
+                        value={addrCountry}
+                        onChange={(e) => setAddrCountry(e.target.value)}
+                        className="bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] focus:outline-none focus:border-[#7C3AED]"
+                      >
+                        <option value="">Country</option>
+                        {COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code}>{c.name}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Postal code"
+                        value={addrPostal}
+                        onChange={(e) => setAddrPostal(e.target.value)}
+                        className="bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Address line 1"
+                        value={addrLine1}
+                        onChange={(e) => setAddrLine1(e.target.value)}
+                        className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Address line 2 (optional)"
+                        value={addrLine2}
+                        onChange={(e) => setAddrLine2(e.target.value)}
+                        className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="City"
+                        value={addrCity}
+                        onChange={(e) => setAddrCity(e.target.value)}
+                        className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-3 py-2 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED]"
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Consent checkboxes */}
+            <div className="space-y-2.5 pt-2 border-t border-[#2D2D4E]">
+              <label className="flex items-start gap-2.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={termsAgreed}
+                  onChange={(e) => setTermsAgreed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-[#2D2D4E] bg-[#13131F] text-[#7C3AED] accent-[#7C3AED] shrink-0"
+                />
+                <span className="text-xs text-[#9CA3AF] group-hover:text-[#C084FC] transition-colors leading-relaxed">
+                  {locale === "ko" ? (
+                    <><Link href={`/${locale}/terms`} className="text-[#A855F7] underline underline-offset-2" target="_blank">이용약관</Link>에 동의합니다 <span className="text-red-400">*</span></>
+                  ) : locale === "ja" ? (
+                    <><Link href={`/${locale}/terms`} className="text-[#A855F7] underline underline-offset-2" target="_blank">利用規約</Link>に同意します <span className="text-red-400">*</span></>
+                  ) : locale === "zh-CN" ? (
+                    <>我同意<Link href={`/${locale}/terms`} className="text-[#A855F7] underline underline-offset-2" target="_blank">服务条款</Link> <span className="text-red-400">*</span></>
+                  ) : locale === "de" ? (
+                    <>Ich stimme den <Link href={`/${locale}/terms`} className="text-[#A855F7] underline underline-offset-2" target="_blank">Nutzungsbedingungen</Link> zu <span className="text-red-400">*</span></>
+                  ) : locale === "fr" ? (
+                    <>J&apos;accepte les <Link href={`/${locale}/terms`} className="text-[#A855F7] underline underline-offset-2" target="_blank">Conditions d&apos;Utilisation</Link> <span className="text-red-400">*</span></>
+                  ) : locale === "es" ? (
+                    <>Acepto los <Link href={`/${locale}/terms`} className="text-[#A855F7] underline underline-offset-2" target="_blank">Términos de Servicio</Link> <span className="text-red-400">*</span></>
+                  ) : (
+                    <>I agree to the <Link href={`/${locale}/terms`} className="text-[#A855F7] underline underline-offset-2" target="_blank">Terms of Service</Link> <span className="text-red-400">*</span></>
+                  )}
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={privacyAgreed}
+                  onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-[#2D2D4E] bg-[#13131F] text-[#7C3AED] accent-[#7C3AED] shrink-0"
+                />
+                <span className="text-xs text-[#9CA3AF] group-hover:text-[#C084FC] transition-colors leading-relaxed">
+                  {locale === "ko" ? (
+                    <><Link href={`/${locale}/privacy`} className="text-[#A855F7] underline underline-offset-2" target="_blank">개인정보처리방침</Link>에 동의합니다 <span className="text-red-400">*</span></>
+                  ) : locale === "ja" ? (
+                    <><Link href={`/${locale}/privacy`} className="text-[#A855F7] underline underline-offset-2" target="_blank">プライバシーポリシー</Link>に同意します <span className="text-red-400">*</span></>
+                  ) : locale === "zh-CN" ? (
+                    <>我同意<Link href={`/${locale}/privacy`} className="text-[#A855F7] underline underline-offset-2" target="_blank">隐私政策</Link> <span className="text-red-400">*</span></>
+                  ) : locale === "de" ? (
+                    <>Ich stimme der <Link href={`/${locale}/privacy`} className="text-[#A855F7] underline underline-offset-2" target="_blank">Datenschutzerklärung</Link> zu <span className="text-red-400">*</span></>
+                  ) : locale === "fr" ? (
+                    <>J&apos;accepte la <Link href={`/${locale}/privacy`} className="text-[#A855F7] underline underline-offset-2" target="_blank">Politique de Confidentialité</Link> <span className="text-red-400">*</span></>
+                  ) : locale === "es" ? (
+                    <>Acepto la <Link href={`/${locale}/privacy`} className="text-[#A855F7] underline underline-offset-2" target="_blank">Política de Privacidad</Link> <span className="text-red-400">*</span></>
+                  ) : (
+                    <>I agree to the <Link href={`/${locale}/privacy`} className="text-[#A855F7] underline underline-offset-2" target="_blank">Privacy Policy</Link> <span className="text-red-400">*</span></>
+                  )}
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={ageConfirmed}
+                  onChange={(e) => setAgeConfirmed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-[#2D2D4E] bg-[#13131F] text-[#7C3AED] accent-[#7C3AED] shrink-0"
+                />
+                <span className="text-xs text-[#9CA3AF] group-hover:text-[#C084FC] transition-colors leading-relaxed">
+                  {locale === "ko"
+                    ? <>만 14세 이상임을 확인합니다 <span className="text-red-400">*</span></>
+                    : locale === "ja"
+                    ? <>14歳以上であることを確認します <span className="text-red-400">*</span></>
+                    : locale === "zh-CN"
+                    ? <>我确认我已年满14周岁 <span className="text-red-400">*</span></>
+                    : <>I confirm I am at least 16 years old <span className="text-red-400">*</span></>}
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={marketingAgreed}
+                  onChange={(e) => setMarketingAgreed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-[#2D2D4E] bg-[#13131F] text-[#7C3AED] accent-[#7C3AED] shrink-0"
+                />
+                <span className="text-xs text-[#9CA3AF] group-hover:text-[#C084FC] transition-colors leading-relaxed">
+                  {locale === "ko"
+                    ? "Mystic Lab의 마케팅 이메일 수신에 동의합니다 (선택)"
+                    : locale === "ja"
+                    ? "Mystic Labからのプロモーションメールの受信に同意します（任意）"
+                    : locale === "zh-CN"
+                    ? "我同意接收Mystic Lab的推广邮件（选填）"
+                    : locale === "de"
+                    ? "Ich stimme dem Erhalt von Werbe-E-Mails von Mystic Lab zu (optional)"
+                    : locale === "fr"
+                    ? "J'accepte de recevoir des emails promotionnels de Mystic Lab (facultatif)"
+                    : locale === "es"
+                    ? "Acepto recibir emails promocionales de Mystic Lab (opcional)"
+                    : "I agree to receive promotional emails from Mystic Lab (optional)"}
+                </span>
+              </label>
             </div>
 
             <button

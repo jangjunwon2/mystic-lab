@@ -17,33 +17,13 @@ import {
   Tag,
   Check,
   X,
-  Truck,
+  Bookmark,
+  BookmarkCheck,
 } from "lucide-react";
-import { usdToKrw } from "@/lib/payments/toss";
+import { COUNTRIES } from "@/lib/constants/countries";
+import { usdToKrw, USD_TO_KRW } from "@/lib/payments/toss";
+import { createClient } from "@/lib/supabase/client";
 import type { CartItem } from "@/lib/payments/types";
-import CountrySelect from "@/components/ui/CountrySelect";
-import { getPhoneCode } from "@/lib/constants/countries";
-import type { Country } from "@/lib/constants/countries";
-
-interface ShippingAddress {
-  name: string;
-  phone: string;
-  line1: string;
-  line2: string;
-  city: string;
-  country: string;
-  postal: string;
-}
-
-interface KoreanAddress {
-  name: string;
-  phone: string;
-  line1: string;
-  line2: string;
-  postal: string;
-}
-
-const SHIPPING_COSTS: Record<string, number> = { standard: 0, express: 15 };
 
 // Lazy load Toss widget to avoid SSR issues
 const TossPaymentWidget = dynamic(
@@ -58,10 +38,27 @@ declare global {
       Url: { Open: (url: string) => void; Close: () => void };
       Setup: (cfg: { eventHandler: (e: { event: string }) => void }) => void;
     };
+    daum?: {
+      Postcode: new (options: {
+        oncomplete: (data: { zonecode: string; roadAddress: string; jibunAddress: string }) => void;
+      }) => { open: () => void };
+    };
   }
 }
 
 type Track = "international" | "korea";
+
+type SavedAddress = {
+  id: string;
+  name: string;
+  phone: string | null;
+  line1: string;
+  line2: string | null;
+  city: string | null;
+  postal: string | null;
+  country: string;
+  is_default: boolean;
+};
 
 interface AppliedDiscount {
   id: string;
@@ -90,14 +87,26 @@ export default function CheckoutPage({ params }: Props) {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
-  const [krwRate, setKrwRate] = useState(1380);
+  const [krwRate, setKrwRate] = useState(USD_TO_KRW);
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard");
-  const [intlAddress, setIntlAddress] = useState<ShippingAddress>({
-    name: "", phone: "", line1: "", line2: "", city: "", country: "US", postal: "",
-  });
-  const [krAddress, setKrAddress] = useState<KoreanAddress>({
-    name: "", phone: "", line1: "", line2: "", postal: "",
-  });
+  const [shippingName, setShippingName] = useState("");
+  const [shippingPhone, setShippingPhone] = useState("");
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingDetail, setShippingDetail] = useState("");
+  const [shippingPostal, setShippingPostal] = useState("");
+  // International shipping address
+  const [intlName, setIntlName] = useState("");
+  const [intlPhone, setIntlPhone] = useState("");
+  const [intlLine1, setIntlLine1] = useState("");
+  const [intlLine2, setIntlLine2] = useState("");
+  const [intlCity, setIntlCity] = useState("");
+  const [intlPostal, setIntlPostal] = useState("");
+  const [intlCountry, setIntlCountry] = useState("");
+  // Saved addresses
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [saveIntlAddress, setSaveIntlAddress] = useState(false);
+  const [saveKrAddress, setSaveKrAddress] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
@@ -108,11 +117,67 @@ export default function CheckoutPage({ params }: Props) {
       setItems([]);
     }
     setMounted(true);
-    // 실시간 환율 조회
     fetch("/api/exchange-rate")
       .then((r) => r.json())
-      .then((d: { usd_to_krw: number }) => { if (d.usd_to_krw > 0) setKrwRate(d.usd_to_krw); })
+      .then((d: { usd_to_krw: number }) => { if (d.usd_to_krw) setKrwRate(d.usd_to_krw); })
       .catch(() => {});
+
+    // Auto-fill from user data and load saved addresses
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      setIsLoggedIn(true);
+      if (user.email) setEmail(user.email);
+      const meta = user.user_metadata?.default_address as Record<string, string> | undefined;
+
+      // Load saved addresses; if found, use default; else fall back to metadata
+      fetch("/api/shipping-addresses")
+        .then((r) => r.json())
+        .then((addresses: SavedAddress[]) => {
+          if (!Array.isArray(addresses) || addresses.length === 0) {
+            // Fall back to metadata address
+            if (!meta?.line1) return;
+            if (meta.country === "KR") {
+              setTrack("korea");
+              if (meta.name) setShippingName(meta.name);
+              if (meta.phone) setShippingPhone(meta.phone);
+              if (meta.postal) setShippingPostal(meta.postal);
+              if (meta.line1) setShippingAddress(meta.line1);
+              if (meta.line2) setShippingDetail(meta.line2);
+            } else {
+              setTrack("international");
+              if (meta.name) setIntlName(meta.name);
+              if (meta.phone) setIntlPhone(meta.phone);
+              if (meta.line1) setIntlLine1(meta.line1);
+              if (meta.line2) setIntlLine2(meta.line2);
+              if (meta.city) setIntlCity(meta.city);
+              if (meta.postal) setIntlPostal(meta.postal);
+              if (meta.country) setIntlCountry(meta.country);
+            }
+            return;
+          }
+          setSavedAddresses(addresses);
+          const def = addresses.find((a) => a.is_default) ?? addresses[0];
+          if (def.country === "KR") {
+            setTrack("korea");
+            setShippingName(def.name);
+            setShippingPhone(def.phone ?? "");
+            setShippingPostal(def.postal ?? "");
+            setShippingAddress(def.line1);
+            setShippingDetail(def.line2 ?? "");
+          } else {
+            setTrack("international");
+            setIntlName(def.name);
+            setIntlPhone(def.phone ?? "");
+            setIntlLine1(def.line1);
+            setIntlLine2(def.line2 ?? "");
+            setIntlCity(def.city ?? "");
+            setIntlPostal(def.postal ?? "");
+            setIntlCountry(def.country);
+          }
+        })
+        .catch(() => {});
+    }).catch(() => {});
   }, [params]);
 
   // Listen for Lemon Squeezy overlay success message
@@ -135,10 +200,49 @@ export default function CheckoutPage({ params }: Props) {
     return () => window.removeEventListener("message", handler);
   }, []);
 
+  const SHIPPING_COSTS = { standard: 0, express: 15 } as const;
   const subtotalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
-  const shippingUsd = track === "international" ? (SHIPPING_COSTS[shippingMethod] ?? 0) : 0;
-  const totalUsd = Math.max(0, subtotalUsd - (appliedDiscount?.discountAmount ?? 0) + shippingUsd);
-  const totalKrw = usdToKrw(totalUsd, krwRate);
+  const discountedUsd = Math.max(0, subtotalUsd - (appliedDiscount?.discountAmount ?? 0));
+  const shippingCostUsd = track === "international" ? SHIPPING_COSTS[shippingMethod] : 0;
+  const totalUsd = discountedUsd + shippingCostUsd;
+  const totalKrw = usdToKrw(discountedUsd, krwRate);
+
+  function fillIntlFromSaved(addr: SavedAddress) {
+    setIntlName(addr.name);
+    setIntlPhone(addr.phone ?? "");
+    setIntlLine1(addr.line1);
+    setIntlLine2(addr.line2 ?? "");
+    setIntlCity(addr.city ?? "");
+    setIntlPostal(addr.postal ?? "");
+    setIntlCountry(addr.country);
+  }
+
+  function fillKrFromSaved(addr: SavedAddress) {
+    setShippingName(addr.name);
+    setShippingPhone(addr.phone ?? "");
+    setShippingPostal(addr.postal ?? "");
+    setShippingAddress(addr.line1);
+    setShippingDetail(addr.line2 ?? "");
+  }
+
+  function openDaumPostcode() {
+    const open = () => {
+      new window.daum!.Postcode({
+        oncomplete(data) {
+          setShippingPostal(data.zonecode);
+          setShippingAddress(data.roadAddress || data.jibunAddress);
+        },
+      }).open();
+    };
+    if (window.daum?.Postcode) {
+      open();
+    } else {
+      const script = document.createElement("script");
+      script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+      script.onload = open;
+      document.head.appendChild(script);
+    }
+  }
 
   async function applyCoupon() {
     if (!couponCode.trim()) return;
@@ -178,18 +282,32 @@ export default function CheckoutPage({ params }: Props) {
     return true;
   };
 
-  const validateIntlAddress = (): boolean => {
-    if (!intlAddress.name.trim()) { setLsError("수신인 이름을 입력해주세요."); return false; }
-    if (!intlAddress.line1.trim()) { setLsError("주소를 입력해주세요."); return false; }
-    if (!intlAddress.country) { setLsError("국가를 선택해주세요."); return false; }
-    return true;
-  };
-
   const handleLemonPay = async () => {
     if (!validateEmail()) return;
-    if (!validateIntlAddress()) return;
+    if (!intlName.trim() || !intlLine1.trim() || !intlCity.trim() || !intlCountry.trim()) {
+      setLsError("배송지 정보를 입력해주세요. (성함, 주소, 도시, 국가 필수)");
+      return;
+    }
     setLsError("");
     setLsLoading(true);
+
+    // Save address if requested
+    if (saveIntlAddress && isLoggedIn) {
+      await fetch("/api/shipping-addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: intlName.trim(),
+          phone: intlPhone.trim() || null,
+          line1: intlLine1.trim(),
+          line2: intlLine2.trim() || null,
+          city: intlCity.trim(),
+          postal: intlPostal.trim() || null,
+          country: intlCountry.trim().toUpperCase(),
+          set_default: savedAddresses.length === 0,
+        }),
+      }).catch(() => {});
+    }
 
     try {
       const res = await fetch("/api/payment/lemon-checkout", {
@@ -201,8 +319,17 @@ export default function CheckoutPage({ params }: Props) {
           locale,
           discountAmount: appliedDiscount?.discountAmount ?? 0,
           discountCodeId: appliedDiscount?.id ?? null,
+          discountCode: appliedDiscount?.code ?? null,
           shippingMethod,
-          shippingAddress: intlAddress,
+          shippingAddress: {
+            name: intlName.trim(),
+            phone: intlPhone.trim(),
+            line1: intlLine1.trim(),
+            line2: intlLine2.trim(),
+            city: intlCity.trim(),
+            postal: intlPostal.trim(),
+            country: intlCountry.trim().toUpperCase(),
+          },
         }),
       });
       const data = await res.json();
@@ -213,11 +340,28 @@ export default function CheckoutPage({ params }: Props) {
         return;
       }
 
+      // Save pending order data for success page fallback
+      try {
+        sessionStorage.setItem("lemon_pending", JSON.stringify({
+          items,
+          customerEmail: email,
+          totalUsd,
+          shippingMethod,
+          shippingAddress: {
+            name: intlName.trim(), phone: intlPhone.trim(),
+            line1: intlLine1.trim(), line2: intlLine2.trim(),
+            city: intlCity.trim(), postal: intlPostal.trim(),
+            country: intlCountry.trim().toUpperCase(),
+          },
+          discountCode: appliedDiscount?.code ?? null,
+          discountCodeId: appliedDiscount?.id ?? null,
+        }));
+      } catch { /* ignore */ }
+
       // Open Lemon Squeezy overlay
       if (window.LemonSqueezy) {
         window.LemonSqueezy.Url.Open(data.url);
       } else {
-        // Fallback: redirect
         window.location.href = data.url;
       }
     } catch {
@@ -390,111 +534,137 @@ export default function CheckoutPage({ params }: Props) {
                       </p>
                     </div>
 
-                    {/* 배송 방법 */}
+                    {/* Shipping method selection */}
                     <div>
-                      <p className="text-xs text-[#9CA3AF] uppercase tracking-wider mb-2">배송 방법</p>
+                      <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+                        Shipping Method
+                      </p>
                       <div className="grid grid-cols-2 gap-2">
-                        {([
-                          { key: "standard", label: "Standard (EMS)", sub: "7~14일 · 무료", price: "+$0" },
-                          { key: "express", label: "Express (DHL/FedEx)", sub: "3~5일", price: "+$15" },
-                        ] as const).map((m) => (
-                          <button
-                            key={m.key}
-                            type="button"
-                            onClick={() => setShippingMethod(m.key)}
-                            className={`flex flex-col p-3 rounded-lg border text-left transition-all ${
-                              shippingMethod === m.key
-                                ? "border-[#7C3AED] bg-[#7C3AED]/10"
-                                : "border-[#2D2D4E] hover:border-[#4B5563]"
-                            }`}
-                          >
-                            <span className="text-xs font-semibold text-[#F0E6FF]">{m.label}</span>
-                            <span className="text-[11px] text-[#9CA3AF] mt-0.5">{m.sub}</span>
-                            <span className={`text-xs font-bold mt-1 ${m.key === "express" ? "text-[#F59E0B]" : "text-[#10B981]"}`}>{m.price}</span>
-                          </button>
-                        ))}
+                        {(["standard", "express"] as const).map((method) => {
+                          const isSelected = shippingMethod === method;
+                          return (
+                            <button
+                              key={method}
+                              type="button"
+                              onClick={() => setShippingMethod(method)}
+                              className="text-left rounded-lg border px-3 py-2.5 transition-all"
+                              style={{
+                                background: isSelected ? "#7C3AED15" : "#13131F",
+                                borderColor: isSelected ? "#7C3AED" : "#2D2D4E",
+                              }}
+                            >
+                              <p className="text-xs font-semibold" style={{ color: isSelected ? "#A855F7" : "#F0E6FF" }}>
+                                {method === "standard" ? "Standard" : "Express"}
+                              </p>
+                              <p className="text-[11px] mt-0.5" style={{ color: "#6B7280" }}>
+                                {method === "standard"
+                                  ? "EMS · 7–20 business days"
+                                  : "DHL / FedEx · 3–7 business days"}
+                              </p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    {/* 국제 배송지 */}
-                    <div>
-                      <p className="text-xs text-[#9CA3AF] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <Truck className="w-3.5 h-3.5" /> 배송지 정보
+                    {/* International Shipping Address */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                        Shipping Address
                       </p>
-                      <div className="space-y-2.5">
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            placeholder="수신인 이름 *"
-                            value={intlAddress.name}
-                            onChange={(e) => setIntlAddress((p) => ({ ...p, name: e.target.value }))}
-                            maxLength={100}
-                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
-                          />
-                          <div className="relative">
-                            {intlAddress.country && (
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#9CA3AF] font-mono pointer-events-none select-none">
-                                {getPhoneCode(intlAddress.country)}
-                              </span>
-                            )}
-                            <input
-                              type="tel"
-                              placeholder="연락처"
-                              value={intlAddress.phone}
-                              onChange={(e) => setIntlAddress((p) => ({ ...p, phone: e.target.value }))}
-                              maxLength={30}
-                              className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
-                              style={{ paddingLeft: intlAddress.country ? `${getPhoneCode(intlAddress.country).length * 8 + 16}px` : "12px" }}
-                            />
-                          </div>
+
+                      {/* Saved address selector */}
+                      {savedAddresses.filter((a) => a.country !== "KR").length > 0 && (
+                        <div className="space-y-1.5 mb-1">
+                          <p className="text-[11px] text-[#6B7280]">저장된 배송지에서 선택:</p>
+                          {savedAddresses.filter((a) => a.country !== "KR").map((addr) => (
+                            <button
+                              key={addr.id}
+                              type="button"
+                              onClick={() => fillIntlFromSaved(addr)}
+                              className="w-full text-left rounded-lg border px-3 py-2 text-xs transition-all hover:border-[#7C3AED]/60"
+                              style={{
+                                background: intlLine1 === addr.line1 && intlCountry === addr.country ? "#7C3AED15" : "#13131F",
+                                borderColor: intlLine1 === addr.line1 && intlCountry === addr.country ? "#7C3AED" : "#2D2D4E",
+                              }}
+                            >
+                              <span className="font-medium text-[#F0E6FF]">{addr.name}</span>
+                              {addr.is_default && (
+                                <span className="ml-2 text-[10px] text-[#A855F7]">기본</span>
+                              )}
+                              <p className="text-[#9CA3AF] mt-0.5 truncate">
+                                {addr.line1}{addr.city ? `, ${addr.city}` : ""} · {COUNTRIES.find((c) => c.code === addr.country)?.name ?? addr.country}
+                              </p>
+                            </button>
+                          ))}
+                          <p className="text-[11px] text-[#4B5563] pt-1">또는 새 주소 입력:</p>
                         </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2">
                         <input
-                          type="text"
-                          placeholder="주소 *"
-                          value={intlAddress.line1}
-                          onChange={(e) => setIntlAddress((p) => ({ ...p, line1: e.target.value }))}
-                          maxLength={200}
-                          className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          placeholder="Full name *"
+                          value={intlName}
+                          onChange={(e) => setIntlName(e.target.value)}
+                          className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
                         />
                         <input
-                          type="text"
-                          placeholder="상세주소 (선택)"
-                          value={intlAddress.line2}
-                          onChange={(e) => setIntlAddress((p) => ({ ...p, line2: e.target.value }))}
-                          maxLength={200}
-                          className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          placeholder="Phone (optional)"
+                          value={intlPhone}
+                          onChange={(e) => setIntlPhone(e.target.value)}
+                          className="bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            placeholder="도시"
-                            value={intlAddress.city}
-                            onChange={(e) => setIntlAddress((p) => ({ ...p, city: e.target.value }))}
-                            maxLength={100}
-                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
-                          />
-                          <input
-                            type="text"
-                            placeholder="우편번호"
-                            value={intlAddress.postal}
-                            onChange={(e) => setIntlAddress((p) => ({ ...p, postal: e.target.value }))}
-                            maxLength={20}
-                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
-                          />
-                        </div>
-                        <CountrySelect
-                          value={intlAddress.country}
-                          onChange={(c: Country) => {
-                            // 국가 변경 시 전화번호 국가코드 자동 입력 (비어있을 때만)
-                            setIntlAddress((p) => ({
-                              ...p,
-                              country: c.code,
-                              phone: p.phone ? p.phone : c.phone,
-                            }));
-                          }}
-                          placeholder="국가 선택 *"
+                        <select
+                          value={intlCountry}
+                          onChange={(e) => setIntlCountry(e.target.value)}
+                          className="bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] focus:outline-none focus:border-[#7C3AED]/60"
+                        >
+                          <option value="">Country *</option>
+                          {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>{c.name}</option>
+                          ))}
+                        </select>
+                        <input
+                          placeholder="Address line 1 *"
+                          value={intlLine1}
+                          onChange={(e) => setIntlLine1(e.target.value)}
+                          className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
+                        />
+                        <input
+                          placeholder="Address line 2 (optional)"
+                          value={intlLine2}
+                          onChange={(e) => setIntlLine2(e.target.value)}
+                          className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
+                        />
+                        <input
+                          placeholder="City *"
+                          value={intlCity}
+                          onChange={(e) => setIntlCity(e.target.value)}
+                          className="bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
+                        />
+                        <input
+                          placeholder="Postal code"
+                          value={intlPostal}
+                          onChange={(e) => setIntlPostal(e.target.value)}
+                          className="bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
                         />
                       </div>
+
+                      {/* Save address checkbox */}
+                      {isLoggedIn && (
+                        <label className="flex items-center gap-2 cursor-pointer mt-1">
+                          <input
+                            type="checkbox"
+                            checked={saveIntlAddress}
+                            onChange={(e) => setSaveIntlAddress(e.target.checked)}
+                            className="w-3.5 h-3.5 rounded border-[#2D2D4E] bg-[#13131F] accent-[#7C3AED]"
+                          />
+                          {saveIntlAddress
+                            ? <BookmarkCheck className="w-3.5 h-3.5 text-[#A855F7]" />
+                            : <Bookmark className="w-3.5 h-3.5 text-[#6B7280]" />}
+                          <span className="text-xs text-[#9CA3AF]">이 주소 저장하기</span>
+                        </label>
+                      )}
                     </div>
 
                     {lsError && (
@@ -536,60 +706,94 @@ export default function CheckoutPage({ params }: Props) {
 
                     <div className="text-xs text-[#6B7280] bg-[#13131F] rounded-lg px-3 py-2">
                       결제 금액: <span className="text-[#F59E0B] font-semibold">{totalKrw.toLocaleString()}원</span>
-                      <span className="ml-2 text-[#4B5563]">(≈ ${totalUsd.toLocaleString()} USD · 환율 {krwRate.toLocaleString()}원)</span>
+                      <span className="ml-2 text-[#4B5563]">(≈ ${totalUsd.toLocaleString()} USD · 환율 {krwRate.toLocaleString()}원 기준)</span>
                     </div>
 
-                    {/* 국내 배송지 */}
-                    <div>
-                      <p className="text-xs text-[#9CA3AF] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <Truck className="w-3.5 h-3.5" /> 배송지 정보
-                      </p>
-                      <div className="space-y-2.5">
-                        <div className="grid grid-cols-2 gap-2">
+                    {/* 배송지 입력 */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">배송지 정보</p>
+
+                      {/* Saved KR address selector */}
+                      {savedAddresses.filter((a) => a.country === "KR").length > 0 && (
+                        <div className="space-y-1.5 mb-1">
+                          <p className="text-[11px] text-[#6B7280]">저장된 배송지에서 선택:</p>
+                          {savedAddresses.filter((a) => a.country === "KR").map((addr) => (
+                            <button
+                              key={addr.id}
+                              type="button"
+                              onClick={() => fillKrFromSaved(addr)}
+                              className="w-full text-left rounded-lg border px-3 py-2 text-xs transition-all hover:border-[#7C3AED]/60"
+                              style={{
+                                background: shippingAddress === addr.line1 ? "#7C3AED15" : "#13131F",
+                                borderColor: shippingAddress === addr.line1 ? "#7C3AED" : "#2D2D4E",
+                              }}
+                            >
+                              <span className="font-medium text-[#F0E6FF]">{addr.name}</span>
+                              {addr.is_default && <span className="ml-2 text-[10px] text-[#A855F7]">기본</span>}
+                              <p className="text-[#9CA3AF] mt-0.5 truncate">{addr.line1} {addr.line2 ?? ""}</p>
+                            </button>
+                          ))}
+                          <p className="text-[11px] text-[#4B5563] pt-1">또는 새 주소 입력:</p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          placeholder="받는 분 성함"
+                          value={shippingName}
+                          onChange={(e) => setShippingName(e.target.value)}
+                          className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
+                        />
+                        <input
+                          placeholder="연락처"
+                          value={shippingPhone}
+                          onChange={(e) => setShippingPhone(e.target.value)}
+                          className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
+                        />
+                        <div className="col-span-2 flex gap-2">
                           <input
-                            type="text"
-                            placeholder="수신인 이름 *"
-                            value={krAddress.name}
-                            onChange={(e) => setKrAddress((p) => ({ ...p, name: e.target.value }))}
-                            maxLength={50}
-                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                            placeholder="우편번호"
+                            value={shippingPostal}
+                            readOnly
+                            className="flex-1 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
                           />
-                          <input
-                            type="tel"
-                            placeholder="연락처 *"
-                            value={krAddress.phone}
-                            onChange={(e) => setKrAddress((p) => ({ ...p, phone: e.target.value }))}
-                            maxLength={20}
-                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
-                          />
+                          <button
+                            type="button"
+                            onClick={openDaumPostcode}
+                            className="px-3 py-2 rounded-lg text-xs font-medium text-white bg-[#7C3AED] hover:bg-[#6D28D9] transition-colors whitespace-nowrap"
+                          >
+                            주소 찾기
+                          </button>
                         </div>
                         <input
-                          type="text"
-                          placeholder="주소 *"
-                          value={krAddress.line1}
-                          onChange={(e) => setKrAddress((p) => ({ ...p, line1: e.target.value }))}
-                          maxLength={200}
-                          className="w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
+                          placeholder="주소"
+                          value={shippingAddress}
+                          readOnly
+                          className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            placeholder="상세주소"
-                            value={krAddress.line2}
-                            onChange={(e) => setKrAddress((p) => ({ ...p, line2: e.target.value }))}
-                            maxLength={200}
-                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
-                          />
-                          <input
-                            type="text"
-                            placeholder="우편번호"
-                            value={krAddress.postal}
-                            onChange={(e) => setKrAddress((p) => ({ ...p, postal: e.target.value }))}
-                            maxLength={10}
-                            className="bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] placeholder:text-[#4B5563]"
-                          />
-                        </div>
+                        <input
+                          placeholder="상세 주소 (동/호수 등)"
+                          value={shippingDetail}
+                          onChange={(e) => setShippingDetail(e.target.value)}
+                          className="col-span-2 bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
+                        />
                       </div>
+
+                      {/* Save KR address checkbox */}
+                      {isLoggedIn && (
+                        <label className="flex items-center gap-2 cursor-pointer mt-1">
+                          <input
+                            type="checkbox"
+                            checked={saveKrAddress}
+                            onChange={(e) => setSaveKrAddress(e.target.checked)}
+                            className="w-3.5 h-3.5 rounded border-[#2D2D4E] bg-[#13131F] accent-[#7C3AED]"
+                          />
+                          {saveKrAddress
+                            ? <BookmarkCheck className="w-3.5 h-3.5 text-[#A855F7]" />
+                            : <Bookmark className="w-3.5 h-3.5 text-[#6B7280]" />}
+                          <span className="text-xs text-[#9CA3AF]">이 주소 저장하기</span>
+                        </label>
+                      )}
                     </div>
 
                     <TossPaymentWidget
@@ -598,7 +802,29 @@ export default function CheckoutPage({ params }: Props) {
                       email={email}
                       items={items}
                       totalUsd={totalUsd}
-                      shippingAddress={krAddress}
+                      shippingAddress={shippingName ? {
+                        name: shippingName,
+                        phone: shippingPhone,
+                        line1: shippingAddress,
+                        line2: shippingDetail,
+                        postal_code: shippingPostal,
+                        country: "KR",
+                      } : undefined}
+                      onBeforePay={saveKrAddress && isLoggedIn && shippingAddress ? async () => {
+                        await fetch("/api/shipping-addresses", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            name: shippingName,
+                            phone: shippingPhone || null,
+                            line1: shippingAddress,
+                            line2: shippingDetail || null,
+                            postal: shippingPostal || null,
+                            country: "KR",
+                            set_default: savedAddresses.filter((a) => a.country === "KR").length === 0,
+                          }),
+                        });
+                      } : undefined}
                     />
                   </motion.div>
                 )}
@@ -650,8 +876,12 @@ export default function CheckoutPage({ params }: Props) {
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-[#9CA3AF]">배송비</span>
-                    <span className={shippingUsd > 0 ? "text-[#F0E6FF]" : "text-[#10B981]"}>
-                      {track === "international" ? (shippingUsd === 0 ? "무료" : `+$${shippingUsd}`) : "국내 무료"}
+                    <span className="text-[#9CA3AF]">
+                      {track === "international"
+                        ? shippingCostUsd === 0
+                          ? "무료 (EMS)"
+                          : `$${shippingCostUsd} (DHL/FedEx)`
+                        : "무료 (국내)"}
                     </span>
                   </div>
                 </div>

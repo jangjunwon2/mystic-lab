@@ -68,7 +68,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
   }
 
   async function deleteReview(id: string) {
-    if (!window.confirm("이 리뷰를 영구적으로 삭제하시겠습니까?")) return;
+    if (!window.confirm("이 리뷰를 영구 삭제할까요?")) return;
     setLoadingId(id);
     const res = await fetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
     if (res.ok) setReviews((prev) => prev.filter((r) => r.id !== id));
@@ -92,7 +92,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
             }}
           >
             {f === "pending"
-              ? `승인 대기 (${pendingCount})`
+              ? `대기 중 (${pendingCount})`
               : f === "reported"
               ? `신고됨 (${reportedCount})`
               : f === "approved"
@@ -143,7 +143,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                             : { background: "rgba(245,158,11,0.12)", color: "#F59E0B" }
                         }
                       >
-                        {r.is_approved ? "승인됨" : "승인 대기"}
+                        {r.is_approved ? "승인됨" : "대기 중"}
                       </span>
                       {r.is_reported && (
                         <span
@@ -170,7 +170,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
                       <p className="text-sm" style={{ color: "#9CA3AF" }}>{r.comment}</p>
                     )}
                     <p className="text-xs mt-2" style={{ color: "#6B7280" }}>
-                      {new Date(r.created_at).toLocaleDateString("ko-KR")}
+                      {new Date(r.created_at).toLocaleDateString()}
                     </p>
                   </div>
 

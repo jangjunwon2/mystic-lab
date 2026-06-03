@@ -65,8 +65,8 @@ export default function ManualOrderForm({ users, products }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!selectedUserId) { setError("회원을 선택해주세요."); return; }
-    if (items.some((i) => !i.product_id)) { setError("All items must have a product selected."); return; }
+    if (!selectedUserId) { setError("회원을 선택하세요."); return; }
+    if (items.some((i) => !i.product_id)) { setError("모든 항목에 상품을 선택해주세요."); return; }
 
     setSaving(true);
     const res = await fetch("/api/admin/orders/manual", {
@@ -81,7 +81,7 @@ export default function ManualOrderForm({ users, products }: Props) {
     });
     const json = await res.json();
     if (!res.ok) {
-      setError(json.error ?? "주문 생성에 실패했습니다.");
+      setError(json.error ?? "주문 생성 실패.");
     } else {
       setSuccess(`주문 생성 완료: #${(json.order_id as string).slice(0, 8).toUpperCase()}`);
       setTimeout(() => router.push("/admin/orders"), 1500);
@@ -148,7 +148,7 @@ export default function ManualOrderForm({ users, products }: Props) {
 
       {/* Items */}
       <div className="rounded-xl border p-5 space-y-3" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
-        <h3 className="font-medium" style={{ color: "#F0E6FF" }}>주문 상품</h3>
+        <h3 className="font-medium" style={{ color: "#F0E6FF" }}>상품 목록</h3>
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-2">
             <select
@@ -195,7 +195,7 @@ export default function ManualOrderForm({ users, products }: Props) {
           className="flex items-center gap-1.5 text-xs transition-opacity hover:opacity-80"
           style={{ color: "#A855F7" }}
         >
-          <Plus className="w-3.5 h-3.5" /> 상품 추가
+          <Plus className="w-3.5 h-3.5" /> 항목 추가
         </button>
         <div className="text-right pt-2 border-t" style={{ borderColor: "#2D2D4E" }}>
           <span className="text-sm font-semibold" style={{ color: "#F59E0B" }}>
@@ -206,7 +206,7 @@ export default function ManualOrderForm({ users, products }: Props) {
 
       {/* Note */}
       <div>
-        <label className="block text-xs mb-1.5" style={{ color: "#9CA3AF" }}>관리자 메모 (선택)</label>
+        <label className="block text-xs mb-1.5" style={{ color: "#9CA3AF" }}>어드민 메모 (선택)</label>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -221,7 +221,7 @@ export default function ManualOrderForm({ users, products }: Props) {
         className="w-full py-3 rounded-xl font-medium text-sm transition-opacity hover:opacity-90 disabled:opacity-50"
         style={{ background: "linear-gradient(135deg, #7C3AED, #A855F7)", color: "#fff" }}
       >
-        {saving ? "주문 생성 중…" : "주문 생성 (상태: 결제 완료)"}
+        {saving ? "주문 생성 중…" : "주문 생성 (상태: 결제완료)"}
       </button>
     </form>
   );

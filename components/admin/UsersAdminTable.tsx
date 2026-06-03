@@ -2,16 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, ShieldOff, ShieldCheck, Ban, ChevronRight } from "lucide-react";
+import { Search, ShieldOff, ShieldCheck, Ban, Clock } from "lucide-react";
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  active:    { bg: "rgba(16,185,129,0.12)", color: "#10B981", label: "활성" },
-  suspended: { bg: "rgba(245,158,11,0.12)", color: "#F59E0B", label: "정지" },
-  banned:    { bg: "rgba(239,68,68,0.12)",  color: "#EF4444", label: "차단" },
-};
-
-const STATUS_FILTER_LABELS: Record<string, string> = {
-  active: "활성", suspended: "정지", banned: "차단",
+  active:    { bg: "rgba(16,185,129,0.12)",  color: "#10B981", label: "활성" },
+  suspended: { bg: "rgba(245,158,11,0.12)",  color: "#F59E0B", label: "정지" },
+  banned:    { bg: "rgba(239,68,68,0.12)",   color: "#EF4444", label: "차단" },
+  dormant:   { bg: "rgba(99,102,241,0.12)",  color: "#818CF8", label: "휴면" },
 };
 
 export interface AdminUser {
@@ -22,6 +19,8 @@ export interface AdminUser {
   status: string;
   suspension_reason: string | null;
   created_at: string;
+  phone: string | null;
+  default_address: string | null;
 }
 
 interface Props {
@@ -61,7 +60,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
   }
 
   async function handleSuspend(user: AdminUser) {
-    const reason = window.prompt(`${user.email ?? user.display_name} 정지 사유:`);
+    const reason = window.prompt(`${user.email ?? user.display_name} 회원 정지 사유:`);
     if (reason === null) return;
     await updateStatus(user.id, "suspended", reason);
   }
@@ -76,11 +75,13 @@ export default function UsersAdminTable({ users: initial }: Props) {
   };
 
   function downloadUsersCSV() {
-    const header = ["ID", "Email", "Display Name", "Role", "Status", "Joined"];
+    const header = ["ID", "Email", "Display Name", "Phone", "Address", "Role", "Status", "Joined"];
     const rows = users.map((u) => [
       u.id,
       u.email ?? "",
       u.display_name ?? "",
+      u.phone ?? "",
+      u.default_address ?? "",
       u.role,
       u.status,
       new Date(u.created_at).toISOString().slice(0, 10),
@@ -95,6 +96,11 @@ export default function UsersAdminTable({ users: initial }: Props) {
     URL.revokeObjectURL(url);
   }
 
+  const statusCounts = users.reduce<Record<string, number>>((acc, u) => {
+    acc[u.status] = (acc[u.status] ?? 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-4">
       {/* Search + filter */}
@@ -104,25 +110,29 @@ export default function UsersAdminTable({ users: initial }: Props) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="이메일 또는 이름으로 검색…"
+            placeholder="이메일 또는 이름 검색…"
             style={{ ...inputBase, paddingLeft: "36px", width: "100%" }}
           />
         </div>
-        {["all", "active", "suspended", "banned"].map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className="px-3 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80"
-            style={{
-              background: statusFilter === s ? "#7C3AED" : "#1A1A2E",
-              color: statusFilter === s ? "#fff" : "#9CA3AF",
-              border: "1px solid",
-              borderColor: statusFilter === s ? "#7C3AED" : "#2D2D4E",
-            }}
-          >
-            {s === "all" ? `전체 (${users.length})` : STATUS_FILTER_LABELS[s] ?? s}
-          </button>
-        ))}
+        {(["all", "active", "suspended", "banned", "dormant"] as const).map((s) => {
+          const count = s === "all" ? users.length : (statusCounts[s] ?? 0);
+          const style = s !== "all" ? STATUS_STYLES[s] : null;
+          return (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className="px-3 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80"
+              style={{
+                background: statusFilter === s ? (style?.bg ?? "#7C3AED22") : "#1A1A2E",
+                color: statusFilter === s ? (style?.color ?? "#A855F7") : "#9CA3AF",
+                border: "1px solid",
+                borderColor: statusFilter === s ? (style?.color ?? "#7C3AED") + "66" : "#2D2D4E",
+              }}
+            >
+              {s === "all" ? `전체 (${count})` : `${STATUS_STYLES[s].label} (${count})`}
+            </button>
+          );
+        })}
         <button
           onClick={downloadUsersCSV}
           className="ml-auto px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
@@ -137,7 +147,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["이름", "이메일", "권한", "상태", "가입일", "관리"].map((h) => (
+                {["이름", "이메일", "연락처", "주소", "역할", "상태", "가입일", "관리"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
@@ -147,7 +157,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center" style={{ color: "#9CA3AF" }}>
+                  <td colSpan={8} className="px-5 py-12 text-center" style={{ color: "#9CA3AF" }}>
                     회원이 없습니다.
                   </td>
                 </tr>
@@ -162,10 +172,26 @@ export default function UsersAdminTable({ users: initial }: Props) {
                       style={{ borderColor: "#2D2D4E", opacity: isLoading ? 0.5 : 1 }}
                     >
                       <td className="px-5 py-3.5 font-medium" style={{ color: "#F0E6FF" }}>
-                        {user.display_name ?? "—"}
+                        {user.display_name ?? <span style={{ color: "#4B5563" }}>—</span>}
                       </td>
-                      <td className="px-5 py-3.5" style={{ color: "#9CA3AF" }}>
-                        {user.email ?? "—"}
+                      <td className="px-5 py-3.5">
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="transition-colors hover:underline"
+                          style={{ color: "#9CA3AF" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = "#A855F7")}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+                        >
+                          {user.email ?? "—"}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-3.5 text-xs" style={{ color: "#9CA3AF", maxWidth: "120px" }}>
+                        {user.phone ?? <span style={{ color: "#4B5563" }}>—</span>}
+                      </td>
+                      <td className="px-5 py-3.5 text-xs" style={{ color: "#9CA3AF", maxWidth: "200px" }}>
+                        {user.default_address
+                          ? <span className="line-clamp-2 leading-relaxed">{user.default_address}</span>
+                          : <span style={{ color: "#4B5563" }}>—</span>}
                       </td>
                       <td className="px-5 py-3.5">
                         <span
@@ -195,56 +221,71 @@ export default function UsersAdminTable({ users: initial }: Props) {
                         </div>
                       </td>
                       <td className="px-5 py-3.5 text-xs" style={{ color: "#6B7280" }}>
-                        {new Date(user.created_at).toLocaleDateString("ko-KR")}
+                        {new Date(user.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          {/* Status actions */}
-                          {user.status === "active" && user.role !== "admin" && (
+                        <div className="flex items-center gap-1.5">
+                          {user.role !== "admin" && (
                             <>
-                              <button
-                                onClick={() => handleSuspend(user)}
-                                disabled={isLoading}
-                                title="정지"
-                                className="p-1.5 rounded transition-colors hover:opacity-80"
-                                style={{ background: "rgba(245,158,11,0.12)", color: "#F59E0B" }}
-                              >
-                                <ShieldOff className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (window.confirm(`${user.email} 회원을 차단하시겠습니까? 모든 접근 권한을 잃게 됩니다.`)) {
-                                    updateStatus(user.id, "banned");
-                                  }
-                                }}
-                                disabled={isLoading}
-                                title="차단"
-                                className="p-1.5 rounded transition-colors hover:opacity-80"
-                                style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
-                              >
-                                <Ban className="w-3.5 h-3.5" />
-                              </button>
+                              {user.status === "active" && (
+                                <>
+                                  <button
+                                    onClick={() => handleSuspend(user)}
+                                    disabled={isLoading}
+                                    title="정지"
+                                    className="p-1.5 rounded transition-colors hover:opacity-80"
+                                    style={{ background: "rgba(245,158,11,0.12)", color: "#F59E0B" }}
+                                  >
+                                    <ShieldOff className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm(`${user.email} 회원을 휴면 처리할까요?`)) {
+                                        updateStatus(user.id, "dormant");
+                                      }
+                                    }}
+                                    disabled={isLoading}
+                                    title="휴면"
+                                    className="p-1.5 rounded transition-colors hover:opacity-80"
+                                    style={{ background: "rgba(99,102,241,0.12)", color: "#818CF8" }}
+                                  >
+                                    <Clock className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm(`${user.email} 회원을 영구 차단할까요?`)) {
+                                        updateStatus(user.id, "banned");
+                                      }
+                                    }}
+                                    disabled={isLoading}
+                                    title="영구 차단"
+                                    className="p-1.5 rounded transition-colors hover:opacity-80"
+                                    style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
+                                  >
+                                    <Ban className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                              {(user.status === "suspended" || user.status === "banned" || user.status === "dormant") && (
+                                <button
+                                  onClick={() => updateStatus(user.id, "active", "")}
+                                  disabled={isLoading}
+                                  title="활성화"
+                                  className="p-1.5 rounded transition-colors hover:opacity-80"
+                                  style={{ background: "rgba(16,185,129,0.12)", color: "#10B981" }}
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </>
                           )}
-                          {(user.status === "suspended" || user.status === "banned") && (
-                            <button
-                              onClick={() => updateStatus(user.id, "active", "")}
-                              disabled={isLoading}
-                              title="복구"
-                              className="p-1.5 rounded transition-colors hover:opacity-80"
-                              style={{ background: "rgba(16,185,129,0.12)", color: "#10B981" }}
-                            >
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          {/* Detail link */}
                           <Link
                             href={`/admin/users/${user.id}`}
-                            className="p-1.5 rounded transition-colors hover:opacity-80"
+                            className="p-1.5 rounded transition-colors hover:opacity-80 text-xs font-medium"
                             style={{ background: "#2D2D4E", color: "#A855F7" }}
                             title="상세 보기"
                           >
-                            <ChevronRight className="w-3.5 h-3.5" />
+                            상세
                           </Link>
                         </div>
                       </td>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { ShoppingCart, User, Menu, X, Sparkles } from "lucide-react";
+import { ShoppingCart, User, Menu, X, Sparkles, Search } from "lucide-react";
 
 const LOCALES = [
   { code: "en", label: "EN" },
@@ -16,13 +16,30 @@ const LOCALES = [
   { code: "de", label: "DE" },
 ];
 
-export default function Header() {
+export default function Header({ isAdmin = false }: { isAdmin?: boolean }) {
   const t = useTranslations("nav");
   const locale = useLocale();
   const pathname = usePathname();
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  function submitSearch() {
+    const q = searchQuery.trim();
+    if (!q) { setSearchOpen(false); return; }
+    router.push(`/${locale}/products?search=${encodeURIComponent(q)}`);
+    setSearchOpen(false);
+    setSearchQuery("");
+    setIsMobileOpen(false);
+  }
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -91,6 +108,32 @@ export default function Header() {
 
           {/* Desktop Right */}
           <div className="hidden lg:flex items-center gap-4">
+            {/* Search */}
+            <div className="relative flex items-center">
+              {searchOpen ? (
+                <div className="flex items-center gap-2 bg-[#1A1A2E] border border-[#7C3AED]/60 rounded-lg px-3 py-1.5">
+                  <Search className="w-3.5 h-3.5 text-[#6B7280] shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") submitSearch(); if (e.key === "Escape") setSearchOpen(false); }}
+                    onBlur={() => { if (!searchQuery.trim()) setSearchOpen(false); }}
+                    placeholder="Search..."
+                    className="w-40 bg-transparent text-xs text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none"
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  className="p-2 text-[#9CA3AF] hover:text-[#A855F7] transition-colors"
+                  aria-label="Search"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
             {/* Language Selector */}
             <select
               value={locale}
@@ -124,6 +167,17 @@ export default function Header() {
             >
               <User className="w-5 h-5" />
             </Link>
+
+            {/* Admin Button */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
+                style={{ background: "linear-gradient(135deg, #7C3AED, #A855F7)", color: "#fff" }}
+              >
+                <span>⚙</span> Admin
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -160,6 +214,15 @@ export default function Header() {
                 <User className="w-4 h-4" />
                 {t("account")}
               </Link>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+                  style={{ background: "linear-gradient(135deg, #7C3AED, #A855F7)", color: "#fff" }}
+                >
+                  ⚙ Admin
+                </Link>
+              )}
             </div>
             <select
               value={locale}
@@ -170,6 +233,17 @@ export default function Header() {
                 <option key={l.code} value={l.code}>{l.label}</option>
               ))}
             </select>
+            {/* Mobile Search */}
+            <div className="flex items-center gap-2 bg-[#1A1A2E] border border-[#2D2D4E] rounded-lg px-3 py-2 mt-2 focus-within:border-[#7C3AED] transition-colors">
+              <Search className="w-3.5 h-3.5 text-[#6B7280] shrink-0" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submitSearch(); }}
+                placeholder="Search products..."
+                className="flex-1 bg-transparent text-xs text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none"
+              />
+            </div>
           </div>
         </div>
       )}

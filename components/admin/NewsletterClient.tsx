@@ -1,30 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { Send, Users, ShoppingBag, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Send, Users, ShoppingBag, Package, Heart, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
-type Segment = "all" | "buyers";
+type Segment = "all" | "buyers" | "product_buyers" | "wishlist_product";
 
 const TEMPLATES = [
   {
-    label: "New Product Launch",
+    label: "신상품 출시",
     subject: "✨ New arrival at Mystic Lab",
     html: `<h2 style="color:#7C3AED">New Arrival</h2><p>We just added an exciting new product to our collection. Check it out now!</p><a href="https://mystic-lab.vercel.app/en/products" style="display:inline-block;background:#7C3AED;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Shop Now</a>`,
   },
   {
-    label: "Discount Offer",
+    label: "할인 이벤트",
     subject: "🎩 Exclusive discount for you",
     html: `<h2 style="color:#F59E0B">Special Offer</h2><p>Use code <strong>MAGIC10</strong> for 10% off your next order. Limited time only!</p><a href="https://mystic-lab.vercel.app/en/products" style="display:inline-block;background:#F59E0B;color:#000;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Claim Offer</a>`,
   },
   {
-    label: "Tutorial Reminder",
+    label: "튜토리얼 안내",
     subject: "📹 Don't forget your tutorials",
     html: `<h2 style="color:#10B981">Your Tutorials Await</h2><p>You have unlocked tutorial videos — head to your account to watch them anytime.</p><a href="https://mystic-lab.vercel.app/en/account" style="display:inline-block;background:#10B981;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">View Tutorials</a>`,
   },
 ];
 
-export default function NewsletterClient() {
+interface Product {
+  id: string;
+  name: string;
+}
+
+export default function NewsletterClient({ products = [] }: { products?: Product[] }) {
   const [segment, setSegment] = useState<Segment>("all");
+  const [selectedProductId, setSelectedProductId] = useState(products[0]?.id ?? "");
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [sending, setSending] = useState(false);
@@ -50,7 +56,12 @@ export default function NewsletterClient() {
       const res = await fetch("/api/admin/newsletter/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, html, segment }),
+        body: JSON.stringify({
+          subject,
+          html,
+          segment,
+          ...((segment === "product_buyers" || segment === "wishlist_product") ? { product_id: selectedProductId } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -70,10 +81,12 @@ export default function NewsletterClient() {
       {/* Segment */}
       <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-3">수신 대상</p>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {([
             { value: "all", label: "전체 회원", icon: Users },
-            { value: "buyers", label: "구매자만", icon: ShoppingBag },
+            { value: "buyers", label: "구매자 전체", icon: ShoppingBag },
+            { value: "product_buyers", label: "특정 상품 구매자", icon: Package },
+            { value: "wishlist_product", label: "상품 위시리스트", icon: Heart },
           ] as const).map(({ value, label, icon: Icon }) => (
             <button
               key={value}
@@ -89,6 +102,29 @@ export default function NewsletterClient() {
             </button>
           ))}
         </div>
+
+        {(segment === "product_buyers" || segment === "wishlist_product") && (
+          <div className="mt-3">
+            <label className="text-xs text-[#6B7280] mb-1 block">
+              {segment === "wishlist_product" ? "위시리스트 대상 상품" : "상품 선택"}
+            </label>
+            {products.length === 0 ? (
+              <p className="text-sm text-[#9CA3AF]">등록된 상품이 없습니다.</p>
+            ) : (
+              <select
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                className="bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] focus:outline-none focus:border-[#7C3AED]/60 min-w-[280px]"
+              >
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Templates */}
@@ -115,7 +151,7 @@ export default function NewsletterClient() {
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder="Email subject..."
+            placeholder="이메일 제목..."
             className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-lg px-4 py-2.5 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
           />
         </div>

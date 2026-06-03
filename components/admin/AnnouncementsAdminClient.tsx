@@ -87,9 +87,9 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>공지 배너</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>공지 관리</h1>
           <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>
-            활성화된 공지는 스토어 모든 페이지 상단에 표시됩니다.
+            활성화된 공지는 스토어의 모든 페이지 상단에 표시됩니다.
           </p>
         </div>
         <button
@@ -108,15 +108,15 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
           className="rounded-xl border p-6 space-y-4"
           style={{ background: "#1A1A2E", borderColor: "#7C3AED" }}
         >
-          <h2 className="text-sm font-semibold" style={{ color: "#A855F7" }}>새 공지</h2>
+          <h2 className="text-sm font-semibold" style={{ color: "#A855F7" }}>새 공지 작성</h2>
 
           <label className="block space-y-1">
-            <span className="text-xs" style={{ color: "#9CA3AF" }}>메시지 *</span>
+            <span className="text-xs" style={{ color: "#9CA3AF" }}>공지 내용 *</span>
             <textarea
               style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
-              placeholder="🎉 여름 세일 — 이번 주 전 전자기기 20% 할인!"
+              placeholder="🎉 Summer sale — 20% off all electronic devices this week!"
               required
             />
           </label>
@@ -137,7 +137,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
                 style={inputStyle}
                 value={form.link_label}
                 onChange={(e) => setForm({ ...form, link_label: e.target.value })}
-                placeholder="지금 쇼핑하기"
+                placeholder="지금 보기"
               />
             </label>
             <label className="space-y-1">
@@ -218,11 +218,11 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
                   </span>
                   {item.ends_at && (
                     <span className="text-xs" style={{ color: "#9CA3AF" }}>
-                      종료 {new Date(item.ends_at).toLocaleDateString("ko-KR")}
+                      종료 {new Date(item.ends_at).toLocaleDateString()}
                     </span>
                   )}
                   <span className="text-xs" style={{ color: "#4B5563" }}>
-                    {new Date(item.created_at).toLocaleDateString("ko-KR")}
+                    {new Date(item.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -240,7 +240,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
                 <button
                   onClick={() => deleteItem(item.id)}
                   disabled={loadingId === item.id}
-                  title="삭제"
+                  title="Delete"
                   style={{ color: "#EF4444" }}
                 >
                   <Trash2 className="w-4 h-4" />

@@ -57,7 +57,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-8" style={{ color: "#F0E6FF" }}>
-        User Detail
+        회원 상세
       </h1>
       <UserDetailClient
         profile={{ ...profileRes.data, status: profileRes.data.status ?? "active", admin_notes: profileRes.data.admin_notes ?? null }}

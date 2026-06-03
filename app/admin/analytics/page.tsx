@@ -1,12 +1,38 @@
-﻿import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import AnalyticsExportButton from "@/components/admin/AnalyticsExportButton";
 
-export const metadata = { title: "분석 — Admin" };
+export const metadata = { title: "Analytics — Admin" };
 
 interface OrderRow {
   total_usd: number;
   status: string;
   created_at: string;
   customer_email: string;
+}
+
+function getLtv(orders: OrderRow[]) {
+  const map: Record<string, { email: string; total: number; count: number }> = {};
+  for (const o of orders) {
+    if (!["paid", "shipped", "completed"].includes(o.status)) continue;
+    const e = o.customer_email;
+    if (!map[e]) map[e] = { email: e, total: 0, count: 0 };
+    map[e].total += o.total_usd;
+    map[e].count += 1;
+  }
+  return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 10);
+}
+
+function getBuyerSegments(orders: OrderRow[]) {
+  const map: Record<string, number> = {};
+  for (const o of orders) {
+    if (!["paid", "shipped", "completed"].includes(o.status)) continue;
+    map[o.customer_email] = (map[o.customer_email] ?? 0) + 1;
+  }
+  const values = Object.values(map);
+  return {
+    newBuyers: values.filter((n) => n === 1).length,
+    returning: values.filter((n) => n > 1).length,
+  };
 }
 
 interface OrderItemRow {
@@ -142,7 +168,7 @@ export default async function AdminAnalyticsPage() {
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
-  const [ordersRes, orderItemsRes, profilesRes] = await Promise.all([
+  const [ordersRes, orderItemsRes, profilesRes, allOrdersRes] = await Promise.all([
     supabase
       .from("orders")
       .select("total_usd, status, created_at, customer_email")
@@ -153,10 +179,20 @@ export default async function AdminAnalyticsPage() {
       .select("quantity, price_usd, products(slug, product_translations(name, language))")
       .limit(500),
     supabase.from("profiles").select("id, created_at", { count: "exact" }),
+    supabase
+      .from("orders")
+      .select("total_usd, status, customer_email")
+      .limit(2000),
   ]);
 
   const allOrders: OrderRow[] = ordersRes.data ?? [];
   const orderItems: OrderItemRow[] = orderItemsRes.data ?? [];
+  const allTimeOrders: OrderRow[] = (allOrdersRes.data ?? []).map((o: { total_usd: number; status: string; customer_email: string }) => ({
+    ...o,
+    created_at: "",
+  }));
+  const topCustomers = getLtv(allTimeOrders);
+  const buyerSegments = getBuyerSegments(allTimeOrders);
 
   // Split orders: last 30 days vs prev 30 days
   const now = new Date();
@@ -217,9 +253,12 @@ export default async function AdminAnalyticsPage() {
 
   return (
     <div className="p-8 space-y-8">
-      <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>
-        Analytics
-      </h1>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>
+          매출 분석
+        </h1>
+        <AnalyticsExportButton />
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -228,7 +267,7 @@ export default async function AdminAnalyticsPage() {
           value={`$${recentRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
           sub={
             revChangePct !== null
-              ? `${revChangePct > 0 ? "+" : ""}${revChangePct}% vs prev 30d`
+              ? `${revChangePct > 0 ? "+" : ""}${revChangePct}% 전월 대비`
               : "이전 데이터 없음"
           }
           highlight
@@ -236,10 +275,10 @@ export default async function AdminAnalyticsPage() {
         <StatCard
           label="주문 (30일)"
           value={String(recentOrderCount)}
-          sub={`${prevOrders.filter((o) => ["paid","shipped","completed"].includes(o.status)).length} prev period`}
+          sub={`전월 ${prevOrders.filter((o) => ["paid","shipped","completed"].includes(o.status)).length}건`}
         />
         <StatCard
-          label="평균 주문"
+          label="평균 주문금액"
           value={`$${avgOrderValue.toFixed(0)}`}
           sub="최근 30일"
         />
@@ -250,6 +289,25 @@ export default async function AdminAnalyticsPage() {
         />
       </div>
 
+      {/* Buyer Segments */}
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard
+          label="신규 구매자 (1회 구매)"
+          value={String(buyerSegments.newBuyers)}
+          sub="첫 구매자 (전체 기간)"
+        />
+        <StatCard
+          label="재구매자 (2회 이상)"
+          value={String(buyerSegments.returning)}
+          sub={
+            buyerSegments.newBuyers + buyerSegments.returning > 0
+              ? `${Math.round((buyerSegments.returning / (buyerSegments.newBuyers + buyerSegments.returning)) * 100)}% 재구매율`
+              : "아직 데이터 없음"
+          }
+          highlight={buyerSegments.returning > 0}
+        />
+      </div>
+
       {/* Revenue Chart */}
       <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
@@ -257,7 +315,7 @@ export default async function AdminAnalyticsPage() {
         </h2>
         <RevenueChart data={dailyData} />
         <p className="text-xs mt-2" style={{ color: "#4B5563" }}>
-          Weekends shown in lighter purple · paid / shipped / completed orders only
+          주말은 밝은 보라색으로 표시 · paid / shipped / completed 주문만 집계
         </p>
       </div>
 
@@ -265,10 +323,10 @@ export default async function AdminAnalyticsPage() {
         {/* Top Products */}
         <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
           <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
-            매출 상위 상품
+            상품별 매출 순위
           </h2>
           {topProducts.length === 0 ? (
-            <p className="text-sm" style={{ color: "#9CA3AF" }}>No order data yet.</p>
+            <p className="text-sm" style={{ color: "#9CA3AF" }}>아직 주문 데이터가 없습니다.</p>
           ) : (
             <div className="space-y-3">
               {topProducts.map((p, idx) => {
@@ -283,7 +341,7 @@ export default async function AdminAnalyticsPage() {
                       <span style={{ color: "#A855F7" }}>
                         ${p.revenue.toFixed(0)}
                         <span className="ml-2 text-xs" style={{ color: "#9CA3AF" }}>
-                          ({p.count} sold)
+                          ({p.count}개 판매)
                         </span>
                       </span>
                     </div>
@@ -306,7 +364,7 @@ export default async function AdminAnalyticsPage() {
         {/* Order Status Breakdown */}
         <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
           <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
-            주문 상태별 현황 (전체)
+            상태별 주문 현황 (전체)
           </h2>
           <div className="space-y-2">
             {Object.entries(statusMap)
@@ -320,7 +378,7 @@ export default async function AdminAnalyticsPage() {
                     <div className="flex justify-between text-sm mb-1">
                       <span style={{ color: "#F0E6FF" }}>{status}</span>
                       <span style={{ color }}>
-                        {count} ({pct}%)
+                        {count}건 ({pct}%)
                       </span>
                     </div>
                     <div className="h-1.5 rounded-full" style={{ background: "#2D2D4E" }}>
@@ -333,10 +391,48 @@ export default async function AdminAnalyticsPage() {
                 );
               })}
             {Object.keys(statusMap).length === 0 && (
-              <p className="text-sm" style={{ color: "#9CA3AF" }}>No orders yet.</p>
+              <p className="text-sm" style={{ color: "#9CA3AF" }}>아직 주문이 없습니다.</p>
             )}
           </div>
         </div>
+      </div>
+
+      {/* Top Customers by LTV */}
+      <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+        <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
+          고객 LTV 순위
+        </h2>
+        {topCustomers.length === 0 ? (
+          <p className="text-sm" style={{ color: "#9CA3AF" }}>아직 주문 데이터가 없습니다.</p>
+        ) : (
+          <div className="space-y-2">
+            {topCustomers.map((c, idx) => {
+              const maxLtv = topCustomers[0].total || 1;
+              return (
+                <div key={c.email}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span style={{ color: "#F0E6FF" }}>
+                      <span style={{ color: "#9CA3AF" }} className="mr-2">#{idx + 1}</span>
+                      {c.email}
+                    </span>
+                    <span style={{ color: "#F59E0B" }}>
+                      ${c.total.toFixed(0)}
+                      <span className="ml-2 text-xs" style={{ color: "#9CA3AF" }}>
+                        {c.count}건
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full" style={{ background: "#2D2D4E" }}>
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${(c.total / maxLtv) * 100}%`, background: "linear-gradient(90deg,#F59E0B,#F97316)" }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Note on conversion tracking */}
@@ -344,13 +440,13 @@ export default async function AdminAnalyticsPage() {
         className="rounded-xl border p-5 text-sm"
         style={{ background: "#13131F", borderColor: "#2D2D4E", color: "#9CA3AF" }}
       >
-        <p className="font-medium mb-1" style={{ color: "#F0E6FF" }}>Conversion Rate Tracking</p>
+        <p className="font-medium mb-1" style={{ color: "#F0E6FF" }}>전환율 추적</p>
         <p>
-          Product page views → cart adds → purchase funnel data is available in{" "}
-          <strong style={{ color: "#A855F7" }}>Vercel Analytics</strong> and{" "}
-          <strong style={{ color: "#A855F7" }}>Google Analytics 4</strong>.
-          Set up GA4 purchase events in <code>.env.local</code> with{" "}
-          <code>NEXT_PUBLIC_GA_ID</code> to track the full conversion funnel.
+          상품 조회 → 장바구니 추가 → 구매 전환 데이터는{" "}
+          <strong style={{ color: "#A855F7" }}>Vercel Analytics</strong> 및{" "}
+          <strong style={{ color: "#A855F7" }}>Google Analytics 4</strong>에서 확인 가능합니다.
+          전체 전환 퍼널 추적을 위해 <code>.env.local</code>에{" "}
+          <code>NEXT_PUBLIC_GA_ID</code>를 설정하세요.
         </p>
       </div>
     </div>

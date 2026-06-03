@@ -16,10 +16,10 @@ export default async function AdminReferralsPage() {
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>
-          Referral Codes
+          레퍼럴 코드
         </h1>
         <p className="mt-1 text-sm" style={{ color: "#9CA3AF" }}>
-          Create codes for affiliates and partners. Optionally attach a discount for buyers who use them.
+          파트너 및 제휴사를 위한 레퍼럴 코드를 생성합니다. 코드 사용 구매자에게 선택적으로 할인을 제공할 수 있습니다.
         </p>
       </div>
 

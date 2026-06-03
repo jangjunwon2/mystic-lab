@@ -18,6 +18,7 @@ interface RawProduct {
   is_featured: boolean;
   thumbnail_url: string | null;
   demo_video_cloudflare_id: string | null;
+  image_urls: string[];
   product_translations: { language: string; name: string; description: string; short_description: string | null }[];
 }
 
@@ -30,7 +31,7 @@ export default async function EditProductPage({ params }: Props) {
     .from("products")
     .select(`
       id, slug, category, price_usd, stock, is_active, is_featured,
-      thumbnail_url, demo_video_cloudflare_id,
+      thumbnail_url, demo_video_cloudflare_id, image_urls,
       product_translations(language, name, description, short_description)
     `)
     .eq("id", id)
@@ -49,6 +50,7 @@ export default async function EditProductPage({ params }: Props) {
     is_featured: p.is_featured,
     thumbnail_url: p.thumbnail_url ?? "",
     demo_video_cloudflare_id: p.demo_video_cloudflare_id ?? "",
+    image_urls: p.image_urls ?? [],
     translations: p.product_translations.map((t) => ({
       language: t.language,
       name: t.name,
@@ -62,7 +64,7 @@ export default async function EditProductPage({ params }: Props) {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-8" style={{ color: "#F0E6FF" }}>
-        Edit: {enName}
+        수정: {enName}
       </h1>
       <ProductForm productId={id} initial={initial} />
     </div>

@@ -12,14 +12,27 @@ export interface OrderPayload {
   locale: string;
 }
 
+export interface ShippingAddress {
+  name?: string;
+  phone?: string;
+  line1?: string;
+  line2?: string;
+  postal_code?: string;
+  country?: string;
+}
+
 export interface SaveOrderInput {
-  gateway: "lemon" | "toss" | "portone";
-  gatewayRef: string; // payment intent or order ID from gateway
+  gateway: "lemon" | "toss";
+  gatewayRef: string;
   items: CartItem[];
   customerEmail: string;
   totalUsd: number;
   totalKrw?: number;
+  appliedDiscountCode?: string;
+  appliedReferralCode?: string;
+  customerNote?: string;
+  shippingAddress?: ShippingAddress;
+  shippingMethod?: string;
 }
 
-// Extend here when PortOne is integrated
-export type PaymentGateway = "lemon" | "toss" | "portone";
+export type PaymentGateway = "lemon" | "toss";

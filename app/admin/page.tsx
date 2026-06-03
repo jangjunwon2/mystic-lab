@@ -1,4 +1,4 @@
-﻿import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
 interface OrderRow {
@@ -42,19 +42,11 @@ async function getStats() {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:   "#F59E0B",
-  paid:      "#3B82F6",
-  shipped:   "#818CF8",
+  pending: "#F59E0B",
+  paid: "#10B981",
+  shipped: "#3B82F6",
   completed: "#10B981",
-  refunded:  "#EF4444",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  pending:   "결제 대기",
-  paid:      "결제 완료",
-  shipped:   "배송중",
-  completed: "배송 완료",
-  refunded:  "환불",
+  refunded: "#EF4444",
 };
 
 export default async function AdminDashboard() {
@@ -63,7 +55,7 @@ export default async function AdminDashboard() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-8" style={{ color: "#F0E6FF" }}>
-        Dashboard
+        대시보드
       </h1>
 
       {/* Stats Grid */}
@@ -71,8 +63,8 @@ export default async function AdminDashboard() {
         {[
           { label: "총 주문", value: stats.totalOrders },
           { label: "총 매출", value: `$${stats.totalRevenue.toFixed(2)}` },
-          { label: "상품", value: stats.totalProducts },
-          { label: "대기 중 커스텀 의뢰", value: stats.pendingCustomOrders, highlight: true },
+          { label: "상품 수", value: stats.totalProducts },
+          { label: "대기 중인 커스텀 주문", value: stats.pendingCustomOrders, highlight: true },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -102,14 +94,14 @@ export default async function AdminDashboard() {
           className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80"
           style={{ background: "#7C3AED", color: "#fff" }}
         >
-          + New Product
+          + 새 상품
         </Link>
         <Link
           href="/admin/orders"
           className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80"
           style={{ background: "#1A1A2E", color: "#A855F7", border: "1px solid #2D2D4E" }}
         >
-          View All Orders
+          주문 전체 보기
         </Link>
         {stats.pendingCustomOrders > 0 && (
           <Link
@@ -117,7 +109,7 @@ export default async function AdminDashboard() {
             className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80"
             style={{ background: "#1A1A2E", color: "#F59E0B", border: "1px solid #F59E0B" }}
           >
-            {stats.pendingCustomOrders} New Custom Order{stats.pendingCustomOrders > 1 ? "s" : ""}
+            커스텀 주문 {stats.pendingCustomOrders}건 대기 중
           </Link>
         )}
       </div>
@@ -126,14 +118,14 @@ export default async function AdminDashboard() {
       <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <div className="px-6 py-4 border-b" style={{ borderColor: "#2D2D4E" }}>
           <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>
-            Recent Orders
+            최근 주문
           </h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["주문번호", "이메일", "금액", "상태", "주문일"].map((h) => (
+                {["주문 ID", "고객", "합계", "상태", "날짜"].map((h) => (
                   <th
                     key={h}
                     className="text-left px-6 py-3 font-medium"
@@ -148,7 +140,7 @@ export default async function AdminDashboard() {
               {stats.recentOrders.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center" style={{ color: "#9CA3AF" }}>
-                    No orders yet.
+                    아직 주문이 없습니다.
                   </td>
                 </tr>
               ) : (
@@ -175,11 +167,11 @@ export default async function AdminDashboard() {
                           color: STATUS_COLORS[order.status] ?? "#9CA3AF",
                         }}
                       >
-                        {STATUS_LABELS[order.status] ?? order.status}
+                        {order.status}
                       </span>
                     </td>
                     <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
-                      {new Date(order.created_at).toLocaleDateString("ko-KR")}
+                      {new Date(order.created_at).toLocaleDateString()}
                     </td>
                   </tr>
                 ))

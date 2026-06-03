@@ -5,11 +5,12 @@ import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
   ShoppingCart, Zap, Play, ArrowLeft,
-  CheckCircle2, AlertCircle, Star,
+  CheckCircle2, AlertCircle, Star, Share2, Copy, Check,
 } from "lucide-react";
 import SolutionVideoSection from "@/components/video/SolutionVideoSection";
 import CloudflarePlayer from "@/components/video/CloudflarePlayer";
 import ReviewForm from "@/components/products/ReviewForm";
+import WishlistButton from "@/components/products/WishlistButton";
 import MagicActivation from "@/components/products/MagicActivation";
 import MagicMemberAccess from "@/components/products/MagicMemberAccess";
 import type {
@@ -235,6 +236,17 @@ export default function ProductDetail({
                 </Link>
               )}
             </div>
+
+            {/* Wishlist + Share */}
+            <div className="flex items-center gap-3 mt-5">
+              <WishlistButton
+                productId={product.id}
+                isLoggedIn={isLoggedIn}
+                locale={locale}
+                className="p-2 rounded-lg bg-[#1A1A2E] border border-[#2D2D4E] hover:border-[#EF4444]/50 transition-colors"
+              />
+              <ShareButtons name={translation?.name ?? product.slug} />
+            </div>
           </motion.div>
         </div>
 
@@ -374,6 +386,44 @@ function ReviewCard({ review }: { review: ReviewWithProfile }) {
           {review.comment}
         </p>
       )}
+    </div>
+  );
+}
+
+function ShareButtons({ name }: { name: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  }
+
+  function shareTwitter() {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(`Check out "${name}" on Mystic Lab ✨`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank", "noopener");
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-5 pt-5 border-t border-[#2D2D4E]">
+      <Share2 className="w-3.5 h-3.5 text-[#6B7280]" />
+      <button
+        onClick={copyLink}
+        className="flex items-center gap-1.5 text-xs text-[#6B7280] hover:text-[#9CA3AF] transition-colors"
+      >
+        {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+        {copied ? "Copied!" : "Copy link"}
+      </button>
+      <span className="text-[#2D2D4E]">·</span>
+      <button
+        onClick={shareTwitter}
+        className="text-xs text-[#6B7280] hover:text-[#9CA3AF] transition-colors"
+      >
+        𝕏 / Twitter
+      </button>
     </div>
   );
 }

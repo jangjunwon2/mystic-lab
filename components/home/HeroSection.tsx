@@ -53,17 +53,23 @@ export default function HeroSection() {
           className="text-4xl sm:text-5xl lg:text-7xl font-black text-[#F0E6FF] leading-tight mb-6"
           style={{ fontFamily: "var(--font-cinzel), serif" }}
         >
-          Master the Art of{" "}
-          <span
-            style={{
-              background: "linear-gradient(135deg, #A855F7, #F59E0B)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            Impossible
-          </span>
+          {(() => {
+            const headline = t("headline");
+            const lastSpace = headline.lastIndexOf(" ");
+            if (lastSpace < 0) return (
+              <span style={{ background: "linear-gradient(135deg, #A855F7, #F59E0B)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                {headline}
+              </span>
+            );
+            return (
+              <>
+                {headline.slice(0, lastSpace)}{" "}
+                <span style={{ background: "linear-gradient(135deg, #A855F7, #F59E0B)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                  {headline.slice(lastSpace + 1)}
+                </span>
+              </>
+            );
+          })()}
         </motion.h1>
 
         {/* Subheadline */}

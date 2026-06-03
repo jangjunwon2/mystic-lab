@@ -6,7 +6,7 @@ export default function NewProductPage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-8" style={{ color: "#F0E6FF" }}>
-        New Product
+        새 상품
       </h1>
       <ProductForm />
     </div>

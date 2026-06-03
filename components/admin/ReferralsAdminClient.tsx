@@ -32,12 +32,12 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
 
   async function create() {
     if (!form.code.trim() || !form.referrer_name.trim()) {
-      setError("Code and referrer name are required.");
+      setError("코드와 추천인 이름을 입력해주세요.");
       return;
     }
     const pct = parseFloat(form.discount_percent);
     if (isNaN(pct) || pct < 0 || pct > 100) {
-      setError("Discount must be between 0 and 100.");
+      setError("할인율은 0~100 사이여야 합니다.");
       return;
     }
 
@@ -59,7 +59,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
     setCreating(false);
 
     if (!res.ok) {
-      setError(json.error ?? "Failed to create referral code.");
+      setError(json.error ?? "레퍼럴 코드 생성에 실패했습니다.");
     } else {
       setCodes((prev) => [json as ReferralCode, ...prev]);
       setForm({ code: "", referrer_name: "", referrer_email: "", discount_percent: "0" });
@@ -80,7 +80,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
   }
 
   async function remove(id: string, code: string) {
-    if (!confirm(`레퍼럴 코드 "${code}"를 삭제하시겠습니까?`)) return;
+    if (!confirm(`레퍼럴 코드 "${code}"를 삭제할까요?`)) return;
     setLoadingId(id);
     const res = await fetch(`/api/admin/referrals/${id}`, { method: "DELETE" });
     if (res.ok) {
@@ -142,7 +142,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
           </div>
           <div>
             <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
-              신규 구매자 할인율 %
+              신규 구매자 할인율 (%)
             </label>
             <input
               type="number"
@@ -179,7 +179,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["코드", "추천인", "할인", "사용 횟수", "상태", "관리"].map((h) => (
+                {["코드", "추천인", "할인율", "사용 횟수", "상태", "관리"].map((h) => (
                   <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
@@ -190,7 +190,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
               {codes.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
-                    레퍼럴 코드가 없습니다.
+                    아직 레퍼럴 코드가 없습니다.
                   </td>
                 </tr>
               ) : (

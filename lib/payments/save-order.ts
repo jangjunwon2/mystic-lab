@@ -1,9 +1,21 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { sendLowStockAlert } from "@/lib/resend";
 import type { SaveOrderInput } from "./types";
+
+const LOW_STOCK_THRESHOLD = 3;
 
 export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = (await createAdminClient()) as any;
+
+  // Resolve user_id from email
+  let userId: string | null = null;
+  try {
+    const { data: listRes } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    userId = listRes?.users?.find((u: { email?: string; id: string }) => u.email === input.customerEmail)?.id ?? null;
+  } catch {
+    // non-critical — order saves without user_id
+  }
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
@@ -11,10 +23,15 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
       status: "paid",
       total_usd: input.totalUsd,
       customer_email: input.customerEmail,
-      // store gateway-specific reference in the appropriate column
+      ...(userId ? { user_id: userId } : {}),
       ...(input.gateway === "toss"
         ? { stripe_payment_intent_id: `toss_${input.gatewayRef}` }
         : { stripe_payment_intent_id: `lemon_${input.gatewayRef}` }),
+      ...(input.appliedDiscountCode ? { applied_discount_code: input.appliedDiscountCode } : {}),
+      ...(input.appliedReferralCode ? { applied_referral_code: input.appliedReferralCode } : {}),
+      ...(input.customerNote ? { customer_note: input.customerNote } : {}),
+      ...(input.shippingAddress ? { shipping_address: input.shippingAddress } : {}),
+      ...(input.shippingMethod ? { shipping_method: input.shippingMethod } : {}),
     })
     .select("id")
     .single();
@@ -35,6 +52,47 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
 
   if (itemsError) {
     console.error(`[${input.gateway}] saveOrderItems error:`, itemsError);
+  }
+
+  // Decrement stock for each ordered product and collect low-stock items for alert
+  const lowStockItems: { productName: string; stock: number }[] = [];
+
+  for (const item of input.items) {
+    const { data: product } = await supabase
+      .from("products")
+      .select("stock")
+      .eq("id", item.id)
+      .single();
+
+    if (!product || typeof product.stock !== "number") continue;
+
+    const newStock = Math.max(0, product.stock - item.quantity);
+    await supabase.from("products").update({ stock: newStock }).eq("id", item.id);
+
+    if (newStock <= LOW_STOCK_THRESHOLD) {
+      const { data: transKo } = await supabase
+        .from("product_translations")
+        .select("name")
+        .eq("product_id", item.id)
+        .eq("language", "ko")
+        .maybeSingle();
+      const { data: transEn } = await supabase
+        .from("product_translations")
+        .select("name")
+        .eq("product_id", item.id)
+        .eq("language", "en")
+        .maybeSingle();
+      lowStockItems.push({
+        productName: transKo?.name ?? transEn?.name ?? item.id,
+        stock: newStock,
+      });
+    }
+  }
+
+  if (lowStockItems.length > 0) {
+    sendLowStockAlert(lowStockItems).catch((err) =>
+      console.error("[saveOrder] Low stock alert failed:", err)
+    );
   }
 
   return order.id as string;

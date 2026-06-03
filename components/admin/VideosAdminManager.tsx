@@ -51,7 +51,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
 
   async function addByStreamId() {
     if (!addProductId || !addStreamId.trim()) {
-      setAddError("상품과 Stream ID는 필수입니다.");
+      setAddError("Product and Stream ID are required.");
       return;
     }
     setAdding(true);
@@ -75,7 +75,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
       setAddTitle("");
     } else {
       const data = await res.json().catch(() => ({}));
-      setAddError(data.error ?? "영상 추가에 실패했습니다.");
+      setAddError(data.error ?? "Failed to add video.");
     }
     setAdding(false);
   }
@@ -170,7 +170,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
   }
 
   async function deleteVideo(id: string) {
-    if (!confirm("이 영상 링크를 삭제하시겠습니까?")) return;
+    if (!confirm("이 영상 연결을 삭제할까요?")) return;
     setLoadingId(id);
     const res = await fetch(`/api/admin/videos/${id}`, { method: "DELETE" });
     if (res.ok) setVideos((prev) => prev.filter((v) => v.id !== id));
@@ -208,7 +208,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
               }}
             >
               {mode === "id" ? <LinkIcon className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
-              {mode === "id" ? "Stream ID 붙여넣기" : "영상 파일 업로드"}
+              {mode === "id" ? "Stream ID 입력" : "영상 파일 업로드"}
             </button>
           ))}
         </div>
@@ -218,7 +218,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
             /* ── Paste Stream ID ── */
             <div className="space-y-4">
               <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                이미 Cloudflare Stream에 업로드하셨나요? 영상 ID를 붙여넣어 상품에 연결하세요.
+                이미 Cloudflare Stream에 업로드된 영상이 있으신가요? 여기에 영상 ID를 붙여 넣어 상품과 연결하세요.
               </p>
               {addError && <p className="text-sm" style={{ color: "#EF4444" }}>{addError}</p>}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -231,11 +231,11 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Cloudflare Stream ID</label>{/* 고유명사 유지 */}
+                  <label className="text-xs block mb-1" style={{ color: "#9CA3AF" }}>Cloudflare Stream ID</label>
                   <input
                     value={addStreamId}
                     onChange={(e) => setAddStreamId(e.target.value)}
-                    placeholder="e.g. 5d5bc37ffcf54c9b82e99682…"
+                    placeholder="예: 5d5bc37ffcf54c9b82e99682…"
                     style={inputStyle}
                   />
                 </div>
@@ -262,11 +262,11 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
             /* ── Direct Upload ── */
             <div className="space-y-4">
               <p className="text-xs" style={{ color: "#9CA3AF" }}>
-영상 파일을 Cloudflare Stream에 직접 업로드합니다. 다음 환경변수가 필요합니다:{" "}
+                영상 파일을 직접 Cloudflare Stream에 업로드합니다. 필요 환경변수:{" "}
                 <code className="px-1 py-0.5 rounded" style={{ background: "#2D2D4E" }}>CLOUDFLARE_ACCOUNT_ID</code>{" "}
-                and{" "}
+                및{" "}
                 <code className="px-1 py-0.5 rounded" style={{ background: "#2D2D4E" }}>CLOUDFLARE_STREAM_TOKEN</code>.
-Mock 모드에서는 임시 Stream ID가 생성됩니다.
+                Mock 모드에서는 임시 Stream ID가 생성됩니다.
               </p>
 
               {uploadError && (
@@ -279,7 +279,7 @@ Mock 모드에서는 임시 Stream ID가 생성됩니다.
                   style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#10B981" }}
                 >
                   <CheckCircle className="w-4 h-4 shrink-0" />
-영상이 업로드되어 연결되었습니다. Stream ID:{" "}
+                  영상 업로드 및 연결 완료. Stream ID:{" "}
                   <code className="font-mono text-xs">{uploadedStreamId}</code>
                 </div>
               )}
@@ -299,7 +299,7 @@ Mock 모드에서는 임시 Stream ID가 생성됩니다.
                     <input
                       value={uploadTitle}
                       onChange={(e) => setUploadTitle(e.target.value)}
-                      placeholder="예: 전체 시연 가이드"
+                      placeholder="예: 완전 해법 가이드"
                       style={inputStyle}
                     />
                   </div>
@@ -345,7 +345,7 @@ Mock 모드에서는 임시 Stream ID가 생성됩니다.
                     style={{ background: "#7C3AED", color: "#fff" }}
                   >
                     <Upload className="w-4 h-4" />
-                    Upload & Link
+                    업로드 & 연결
                   </button>
                   {uploadFile && (
                     <button
@@ -358,7 +358,7 @@ Mock 모드에서는 임시 Stream ID가 생성됩니다.
                       style={{ background: "#2D2D4E", color: "#9CA3AF" }}
                     >
                       <X className="w-4 h-4" />
-                      Clear
+                      초기화
                     </button>
                   )}
                 </div>
@@ -372,16 +372,16 @@ Mock 모드에서는 임시 Stream ID가 생성됩니다.
       <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "#2D2D4E" }}>
           <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>
-            Linked Solution Videos ({videos.length})
+            연결된 해법 영상 ({videos.length}개)
           </h2>
           <p className="text-xs" style={{ color: "#9CA3AF" }}>
-            These are private — only accessible to verified purchasers
+            비공개 영상 — 구매 확인된 회원만 접근 가능
           </p>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-              {["Product", "Stream ID", "Title", "Added", "Action"].map((h) => (
+              {["상품", "Stream ID", "제목", "추가일", "관리"].map((h) => (
                 <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                   {h}
                 </th>
@@ -392,7 +392,7 @@ Mock 모드에서는 임시 Stream ID가 생성됩니다.
             {videos.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
-                  No solution videos linked yet.
+                  연결된 해법 영상이 없습니다.
                 </td>
               </tr>
             ) : (
@@ -423,7 +423,7 @@ Mock 모드에서는 임시 Stream ID가 생성됩니다.
                       className="text-xs hover:opacity-80 transition-opacity"
                       style={{ color: "#EF4444" }}
                     >
-                      Delete
+                      삭제
                     </button>
                   </td>
                 </tr>

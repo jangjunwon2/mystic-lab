@@ -1,9 +1,10 @@
 import { getTranslations } from "next-intl/server";
+import { createClient } from "@/lib/supabase/server";
 import ProductsClient from "@/components/products/ProductsClient";
 
 interface ProductsPageProps {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ category?: string; sort?: string; page?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; page?: string; search?: string }>;
 }
 
 export async function generateMetadata({ params }: ProductsPageProps) {
@@ -12,9 +13,72 @@ export async function generateMetadata({ params }: ProductsPageProps) {
   return { title: t("title") };
 }
 
+export interface ProductItem {
+  id: string;
+  slug: string;
+  category: string;
+  price_usd: number;
+  is_featured: boolean;
+  thumbnail_url: string | null;
+  name: string;
+  short_description: string | null;
+}
+
 export default async function ProductsPage({ params, searchParams }: ProductsPageProps) {
   const { locale } = await params;
   const filters = await searchParams;
 
-  return <ProductsClient locale={locale} filters={filters} />;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
+
+  const [{ data: allData }, { data: filteredData }] = await Promise.all([
+    supabase
+      .from("products")
+      .select("category")
+      .eq("is_active", true),
+    (() => {
+      let q = supabase
+        .from("products")
+        .select("id, slug, category, price_usd, is_featured, thumbnail_url, product_translations(name, short_description, language)")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+      if (filters.category) q = q.eq("category", filters.category);
+      return q;
+    })(),
+  ]);
+
+  const allCategories = Array.from(
+    new Set(((allData ?? []) as { category: string }[]).map((p) => p.category))
+  );
+
+  const data = filteredData;
+
+  const searchLower = filters.search?.toLowerCase() ?? "";
+
+  const products: ProductItem[] = ((data ?? []) as {
+    id: string; slug: string; category: string; price_usd: number; is_featured: boolean;
+    thumbnail_url: string | null;
+    product_translations: { name: string; short_description: string | null; language: string }[];
+  }[])
+    .map((p) => {
+      const translation =
+        p.product_translations?.find((t) => t.language === locale) ??
+        p.product_translations?.find((t) => t.language === "en") ??
+        p.product_translations?.[0];
+      return {
+        id: p.id,
+        slug: p.slug,
+        category: p.category,
+        price_usd: p.price_usd,
+        is_featured: p.is_featured,
+        thumbnail_url: p.thumbnail_url,
+        name: translation?.name ?? p.slug,
+        short_description: translation?.short_description ?? null,
+      };
+    })
+    .filter((p) => !searchLower || p.name.toLowerCase().includes(searchLower));
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  return <ProductsClient locale={locale} filters={filters} products={products} allCategories={allCategories} isLoggedIn={!!user} />;
 }

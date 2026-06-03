@@ -1,15 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, Trash2, Upload, Loader2, Wand2, GripVertical } from "lucide-react";
 
 const CATEGORIES = [
   { value: "card_magic", label: "Card Magic" },
-  { value: "coin_magic", label: "Coin Magic" },
   { value: "stage_magic", label: "Stage Magic" },
+  { value: "coin_magic", label: "Coin Magic" },
   { value: "mentalism", label: "Mentalism" },
   { value: "electronic", label: "Electronic" },
   { value: "accessories", label: "Accessories" },
+];
+
+const ALL_LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "ko", label: "Korean" },
+  { code: "ja", label: "Japanese" },
+  { code: "zh-CN", label: "Chinese (Simplified)" },
+  { code: "es", label: "Spanish" },
+  { code: "fr", label: "French" },
+  { code: "de", label: "German" },
 ];
 
 interface Translation {
@@ -30,14 +41,61 @@ interface ProductFormProps {
     is_featured: boolean;
     thumbnail_url: string;
     demo_video_cloudflare_id: string;
+    image_urls: string[];
     translations: Translation[];
   };
 }
 
-const DEFAULT_TRANSLATIONS: Translation[] = [
-  { language: "en", name: "", description: "", short_description: "" },
-  { language: "ko", name: "", description: "", short_description: "" },
-];
+const DEFAULT_TRANSLATIONS: Translation[] = ALL_LANGUAGES.map((l) => ({
+  language: l.code,
+  name: "",
+  description: "",
+  short_description: "",
+}));
+
+function extractGoogleDriveId(url: string): string | null {
+  const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch) return fileMatch[1];
+  const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (openMatch) return openMatch[1];
+  return null;
+}
+
+function convertGoogleDriveLink(url: string): string {
+  const id = extractGoogleDriveId(url);
+  if (id) return `https://drive.google.com/uc?export=view&id=${id}`;
+  return url;
+}
+
+function extractYoutubeId(input: string): string | null {
+  // Already stored as yt:ID
+  if (input.startsWith("yt:")) return input.slice(3);
+  const patterns = [
+    /[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /shorts\/([a-zA-Z0-9_-]{11})/,
+    /embed\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const pat of patterns) {
+    const m = input.match(pat);
+    if (m) return m[1];
+  }
+  // Raw 11-char ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(input.trim())) return input.trim();
+  return null;
+}
+
+async function uploadImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/admin/products/upload", { method: "POST", body: form });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    throw new Error(data.error ?? "Upload failed");
+  }
+  const data = await res.json() as { url: string };
+  return data.url;
+}
 
 export default function ProductForm({ productId, initial }: ProductFormProps) {
   const router = useRouter();
@@ -50,17 +108,111 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
   const [isActive, setIsActive] = useState(initial?.is_active ?? true);
   const [isFeatured, setIsFeatured] = useState(initial?.is_featured ?? false);
   const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnail_url ?? "");
-  const [demoVideoId, setDemoVideoId] = useState(initial?.demo_video_cloudflare_id ?? "");
+  const [imageUrls, setImageUrls] = useState<string[]>(initial?.image_urls ?? []);
   const [translations, setTranslations] = useState<Translation[]>(
-    initial?.translations ?? DEFAULT_TRANSLATIONS
+    initial?.translations?.length
+      ? ALL_LANGUAGES.map((l) => {
+          const existing = initial.translations.find((t) => t.language === l.code);
+          return existing ?? { language: l.code, name: "", description: "", short_description: "" };
+        })
+      : DEFAULT_TRANSLATIONS
   );
+  const initialDemoType = initial?.demo_video_cloudflare_id?.startsWith("yt:") ? "youtube" : "cloudflare";
+  const initialDemoValue = initial?.demo_video_cloudflare_id?.startsWith("yt:")
+    ? initial.demo_video_cloudflare_id.slice(3)
+    : (initial?.demo_video_cloudflare_id ?? "");
+
+  const [demoVideoType, setDemoVideoType] = useState<"cloudflare" | "youtube">(initialDemoType);
+  const [demoVideoInput, setDemoVideoInput] = useState(initialDemoValue);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
+
+  const thumbInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const dragIndexRef = useRef<number | null>(null);
 
   function updateTranslation(index: number, field: keyof Translation, value: string) {
     setTranslations((prev) =>
       prev.map((t, i) => (i === index ? { ...t, [field]: value } : t))
     );
+  }
+
+  async function handleThumbUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingThumb(true);
+    setError(null);
+    try {
+      const url = await uploadImage(file);
+      setThumbnailUrl(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "썸네일 업로드 실패");
+    }
+    setUploadingThumb(false);
+    e.target.value = "";
+  }
+
+  async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploadingGallery(true);
+    setError(null);
+    try {
+      const urls = await Promise.all(files.map(uploadImage));
+      setImageUrls((prev) => [...prev, ...urls]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "갤러리 업로드 실패");
+    }
+    setUploadingGallery(false);
+    e.target.value = "";
+  }
+
+  async function handleAutoTranslate() {
+    const koIdx = translations.findIndex((t) => t.language === "ko");
+    const koTrans = translations[koIdx];
+    if (!koTrans?.name?.trim()) {
+      setTranslateError("한국어 이름을 먼저 입력하세요 (ko Name 필드)");
+      return;
+    }
+    setTranslating(true);
+    setTranslateError(null);
+    try {
+      const res = await fetch("/api/admin/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: koTrans.name,
+          short_description: koTrans.short_description,
+          description: koTrans.description,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(data.error ?? "Translation failed");
+      }
+      const data = await res.json() as { translations: Record<string, { name: string; short_description: string; description: string }> };
+      setTranslations((prev) =>
+        prev.map((t) => {
+          if (t.language === "ko") return t;
+          const translated = data.translations[t.language];
+          if (!translated) return t;
+          return {
+            ...t,
+            name: translated.name || t.name,
+            short_description: translated.short_description || t.short_description,
+            description: translated.description || t.description,
+          };
+        })
+      );
+    } catch (err) {
+      setTranslateError(err instanceof Error ? err.message : "Translation failed");
+    }
+    setTranslating(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -76,7 +228,16 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
       is_active: isActive,
       is_featured: isFeatured,
       thumbnail_url: thumbnailUrl.trim() || null,
-      demo_video_cloudflare_id: demoVideoId.trim() || null,
+      demo_video_cloudflare_id: (() => {
+        const v = demoVideoInput.trim();
+        if (!v) return null;
+        if (demoVideoType === "youtube") {
+          const ytId = extractYoutubeId(v);
+          return ytId ? `yt:${ytId}` : null;
+        }
+        return v;
+      })(),
+      image_urls: imageUrls.filter((u) => u.trim()),
       translations: translations.filter((t) => t.name.trim()),
     };
 
@@ -93,8 +254,8 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
       router.push("/admin/products");
       router.refresh();
     } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Failed to save product.");
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      setError(data.error ?? "상품 저장 실패.");
     }
 
     setSaving(false);
@@ -110,7 +271,12 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
     fontSize: "14px",
   };
 
-  const labelStyle = { color: "#9CA3AF", fontSize: "13px", marginBottom: "6px", display: "block" };
+  const labelStyle: React.CSSProperties = {
+    color: "#9CA3AF",
+    fontSize: "13px",
+    marginBottom: "6px",
+    display: "block",
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
@@ -122,10 +288,10 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
 
       {/* Basic Info */}
       <section className="rounded-xl p-6 border space-y-4" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
-        <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>Basic Info</h2>
+        <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>기본 정보</h2>
 
         <div>
-          <label style={labelStyle}>Slug (URL identifier)</label>
+          <label style={labelStyle}>Slug (URL 식별자)</label>
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
@@ -137,17 +303,15 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label style={labelStyle}>Category</label>
+            <label style={labelStyle}>카테고리</label>
             <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle}>
               {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Price (USD)</label>
+            <label style={labelStyle}>가격 (USD)</label>
             <input
               type="number"
               min="0"
@@ -162,7 +326,7 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label style={labelStyle}>Stock</label>
+            <label style={labelStyle}>재고</label>
             <input
               type="number"
               min="0"
@@ -174,51 +338,208 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
           </div>
           <div className="flex items-end gap-4 pb-2">
             <label className="flex items-center gap-2 cursor-pointer" style={{ color: "#F0E6FF" }}>
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4"
-              />
-              Active
+              <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="w-4 h-4" />
+              활성
             </label>
             <label className="flex items-center gap-2 cursor-pointer" style={{ color: "#F0E6FF" }}>
-              <input
-                type="checkbox"
-                checked={isFeatured}
-                onChange={(e) => setIsFeatured(e.target.checked)}
-                className="w-4 h-4"
-              />
-              Featured
+              <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="w-4 h-4" />
+              추천
             </label>
           </div>
         </div>
 
+        {/* Thumbnail */}
         <div>
-          <label style={labelStyle}>Thumbnail URL</label>
-          <input
-            type="url"
-            value={thumbnailUrl}
-            onChange={(e) => setThumbnailUrl(e.target.value)}
-            placeholder="https://..."
-            style={inputStyle}
-          />
+          <label style={labelStyle}>썸네일 이미지</label>
+          <div className="flex items-start gap-3">
+            {thumbnailUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={thumbnailUrl}
+                alt="thumbnail"
+                className="w-16 h-16 object-cover rounded"
+                style={{ border: "1px solid #2D2D4E", flexShrink: 0 }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            )}
+            <div className="flex-1 space-y-2">
+              <input
+                type="url"
+                value={thumbnailUrl}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v.includes("drive.google.com")) {
+                    setThumbnailUrl(convertGoogleDriveLink(v));
+                  } else {
+                    setThumbnailUrl(v);
+                  }
+                }}
+                placeholder="https://... · 구글 드라이브 링크 자동 변환 · 또는 아래에서 업로드"
+                style={inputStyle}
+              />
+              <div className="flex items-center gap-2">
+                <input ref={thumbInputRef} type="file" accept="image/*" className="hidden" onChange={handleThumbUpload} />
+                <button
+                  type="button"
+                  onClick={() => thumbInputRef.current?.click()}
+                  disabled={uploadingThumb}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-opacity hover:opacity-80 disabled:opacity-50"
+                  style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7", border: "1px solid #4C1D95" }}
+                >
+                  {uploadingThumb ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                  {uploadingThumb ? "업로드 중…" : "파일 업로드"}
+                </button>
+                <span className="text-xs" style={{ color: "#6B7280" }}>JPEG, PNG, WebP, GIF · 최대 10MB</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div>
-          <label style={labelStyle}>Demo Video (Cloudflare Stream ID)</label>
+          <label style={labelStyle}>데모 영상</label>
+          <div className="flex gap-2 mb-2">
+            {(["cloudflare", "youtube"] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => { setDemoVideoType(type); setDemoVideoInput(""); }}
+                className="px-3 py-1 rounded text-xs font-medium transition-all"
+                style={{
+                  background: demoVideoType === type ? "#7C3AED" : "rgba(124,58,237,0.1)",
+                  color: demoVideoType === type ? "#fff" : "#A855F7",
+                  border: `1px solid ${demoVideoType === type ? "#7C3AED" : "#4C1D95"}`,
+                }}
+              >
+                {type === "cloudflare" ? "☁ Cloudflare Stream" : "▶ YouTube"}
+              </button>
+            ))}
+          </div>
           <input
-            value={demoVideoId}
-            onChange={(e) => setDemoVideoId(e.target.value)}
-            placeholder="Cloudflare Stream video ID"
+            value={demoVideoInput}
+            onChange={(e) => setDemoVideoInput(e.target.value)}
+            placeholder={
+              demoVideoType === "cloudflare"
+                ? "Cloudflare Stream 영상 ID"
+                : "YouTube URL 또는 영상 ID (예: dQw4w9WgXcQ)"
+            }
             style={inputStyle}
           />
+          {demoVideoType === "youtube" && demoVideoInput && (() => {
+            const id = extractYoutubeId(demoVideoInput);
+            return id ? (
+              <p className="text-xs mt-1" style={{ color: "#34D399" }}>✓ YouTube ID: {id}</p>
+            ) : (
+              <p className="text-xs mt-1" style={{ color: "#F59E0B" }}>YouTube URL 또는 11자리 영상 ID를 입력하세요</p>
+            );
+          })()}
+        </div>
+
+        {/* Gallery Images */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label style={{ ...labelStyle, marginBottom: 0 }}>갤러리 이미지</label>
+            <div className="flex items-center gap-2">
+              <input ref={galleryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryUpload} />
+              <button
+                type="button"
+                onClick={() => galleryInputRef.current?.click()}
+                disabled={uploadingGallery}
+                className="flex items-center gap-1 text-xs px-2 py-1 rounded transition-opacity hover:opacity-80 disabled:opacity-50"
+                style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}
+              >
+                {uploadingGallery ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                {uploadingGallery ? "업로드 중…" : "업로드"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageUrls((prev) => [...prev, ""])}
+                className="flex items-center gap-1 text-xs px-2 py-1 rounded transition-opacity hover:opacity-80"
+                style={{ background: "rgba(124,58,237,0.1)", color: "#A855F7" }}
+              >
+                <Plus className="w-3 h-3" /> URL 추가
+              </button>
+            </div>
+          </div>
+          {imageUrls.length === 0 && (
+            <p className="text-xs" style={{ color: "#6B7280" }}>갤러리 이미지가 없습니다.</p>
+          )}
+          <div className="space-y-2">
+            {imageUrls.map((url, i) => (
+              <div
+                key={i}
+                draggable
+                onDragStart={() => { dragIndexRef.current = i; }}
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={() => {
+                  const from = dragIndexRef.current;
+                  if (from === null || from === i) return;
+                  setImageUrls((prev) => {
+                    const next = [...prev];
+                    const [moved] = next.splice(from, 1);
+                    next.splice(i, 0, moved);
+                    return next;
+                  });
+                  dragIndexRef.current = null;
+                }}
+                onDragEnd={() => { dragIndexRef.current = null; }}
+                className="flex items-center gap-2"
+                style={{ cursor: "grab" }}
+              >
+                <GripVertical className="w-4 h-4 shrink-0" style={{ color: "#4B5563" }} />
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setImageUrls((prev) => prev.map((u, j) => j === i ? e.target.value : u))}
+                  placeholder="https://..."
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                {url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={url}
+                    alt=""
+                    className="w-10 h-10 object-cover rounded"
+                    style={{ border: "1px solid #2D2D4E", flexShrink: 0 }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setImageUrls((prev) => prev.filter((_, j) => j !== i))}
+                  className="p-1.5 rounded transition-opacity hover:opacity-80"
+                  style={{ color: "#EF4444", flexShrink: 0 }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Translations */}
       <section className="rounded-xl p-6 border space-y-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
-        <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>Product Translations</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>상품 번역</h2>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={handleAutoTranslate}
+              disabled={translating}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: "#F59E0B22", color: "#F59E0B", border: "1px solid #F59E0B44" }}
+            >
+              {translating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+              {translating ? "번역 중…" : "한국어(ko)에서 자동 번역"}
+            </button>
+            {translateError && (
+              <p className="text-xs" style={{ color: "#EF4444" }}>{translateError}</p>
+            )}
+            <p className="text-xs" style={{ color: "#6B7280" }}>
+              ANTHROPIC_API_KEY 환경변수 필요
+            </p>
+          </div>
+        </div>
 
         {translations.map((t, i) => (
           <div key={t.language} className="space-y-3">
@@ -229,25 +550,24 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
               >
                 {t.language}
               </span>
-              {i === 0 && (
-                <span className="text-xs" style={{ color: "#9CA3AF" }}>
-                  (required)
-                </span>
-              )}
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>
+                {ALL_LANGUAGES.find((l) => l.code === t.language)?.label}
+                {t.language === "ko" && <span style={{ color: "#F59E0B" }}> ← 자동 번역 소스</span>}
+              </span>
             </div>
 
             <div>
-              <label style={labelStyle}>Name</label>
+              <label style={labelStyle}>이름</label>
               <input
                 value={t.name}
                 onChange={(e) => updateTranslation(i, "name", e.target.value)}
-                required={i === 0}
+                required={t.language === "en"}
                 style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Short Description</label>
+              <label style={labelStyle}>짧은 설명</label>
               <input
                 value={t.short_description}
                 onChange={(e) => updateTranslation(i, "short_description", e.target.value)}
@@ -256,19 +576,16 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
             </div>
 
             <div>
-              <label style={labelStyle}>Full Description</label>
+              <label style={labelStyle}>전체 설명</label>
               <textarea
                 value={t.description}
                 onChange={(e) => updateTranslation(i, "description", e.target.value)}
                 rows={4}
-                required={i === 0}
                 style={{ ...inputStyle, resize: "vertical" }}
               />
             </div>
 
-            {i < translations.length - 1 && (
-              <hr style={{ borderColor: "#2D2D4E" }} />
-            )}
+            {i < translations.length - 1 && <hr style={{ borderColor: "#2D2D4E" }} />}
           </div>
         ))}
       </section>
@@ -281,7 +598,7 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
           className="px-6 py-2.5 rounded-lg font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
           style={{ background: "#7C3AED", color: "#fff" }}
         >
-          {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
+          {saving ? "저장 중…" : isEdit ? "변경 저장" : "상품 생성"}
         </button>
         <button
           type="button"
@@ -289,7 +606,7 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
           className="px-6 py-2.5 rounded-lg font-medium transition-opacity hover:opacity-80"
           style={{ background: "transparent", color: "#9CA3AF", border: "1px solid #2D2D4E" }}
         >
-          Cancel
+          취소
         </button>
       </div>
     </form>

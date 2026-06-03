@@ -1,7 +1,7 @@
-﻿import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import AnnouncementsAdminClient from "@/components/admin/AnnouncementsAdminClient";
 
-export const metadata = { title: "공지 배너 — Admin" };
+export const metadata = { title: "Announcements — Admin" };
 
 export default async function AdminAnnouncementsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

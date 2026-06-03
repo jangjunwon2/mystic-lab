@@ -1,7 +1,7 @@
-﻿import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import VideosAdminManager from "@/components/admin/VideosAdminManager";
 
-export const metadata = { title: "영상 관리 — Admin" };
+export const metadata = { title: "Videos — Admin" };
 
 interface RawVideo {
   id: string;
@@ -55,10 +55,10 @@ export default async function AdminVideosPage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-2" style={{ color: "#F0E6FF" }}>
-        영상 관리
+        해법 영상
       </h1>
       <p className="text-sm mb-8" style={{ color: "#9CA3AF" }}>
-        Link Cloudflare Stream video IDs to products. These are the secret &quot;how-to&quot; videos.
+        Cloudflare Stream 영상 ID를 상품에 연결합니다. 구매 확인 회원만 접근 가능한 비공개 해법 영상입니다.
       </p>
       <VideosAdminManager videos={videos} products={products} />
     </div>
