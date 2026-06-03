@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
   { href: "/admin/products", label: "상품 관리", icon: "🪄" },
   { href: "/admin/orders", label: "주문 관리", icon: "📦" },
   { href: "/admin/shipping", label: "배송 관리", icon: "🚚" },
+  { href: "/admin/gifts", label: "증정", icon: "🎁" },
   { href: "/admin/reviews", label: "리뷰 관리", icon: "⭐" },
   { href: "/admin/custom-orders", label: "커스텀 주문", icon: "✉️" },
   { href: "/admin/discounts", label: "할인 코드", icon: "🏷️" },
