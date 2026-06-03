@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
@@ -11,9 +10,8 @@ import {
 import SolutionVideoSection from "@/components/video/SolutionVideoSection";
 import CloudflarePlayer from "@/components/video/CloudflarePlayer";
 import ReviewForm from "@/components/products/ReviewForm";
-
-const MagicActivation = dynamic(() => import("@/components/products/MagicActivation"), { ssr: false });
-const MagicMemberAccess = dynamic(() => import("@/components/products/MagicMemberAccess"), { ssr: false });
+import MagicActivation from "@/components/products/MagicActivation";
+import MagicMemberAccess from "@/components/products/MagicMemberAccess";
 import type {
   ProductWithTranslations,
   ProductTranslation,
