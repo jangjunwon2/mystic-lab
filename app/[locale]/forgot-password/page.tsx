@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { Mail, Sparkles, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function ForgotPasswordPage({ params }: Props) {
+  const t = useTranslations("auth");
   const router = useRouter();
   const [locale, setLocale] = useState("en");
   const [email, setEmail] = useState("");
@@ -39,7 +41,7 @@ export default function ForgotPasswordPage({ params }: Props) {
     setLoading(false);
 
     if (authError) {
-      setError("Something went wrong. Please try again.");
+      setError(t("errGeneric"));
       return;
     }
 
@@ -68,10 +70,10 @@ export default function ForgotPasswordPage({ params }: Props) {
             className="text-2xl font-bold text-[#F0E6FF] mb-1"
             style={{ fontFamily: "var(--font-cinzel), serif" }}
           >
-            Reset Password
+            {t("fpTitle")}
           </h1>
           <p className="text-sm text-[#9CA3AF]">
-            Enter your email and we&apos;ll send you a reset link
+            {t("fpSubtitle")}
           </p>
         </div>
 
@@ -79,15 +81,15 @@ export default function ForgotPasswordPage({ params }: Props) {
           {sent ? (
             <div className="text-center py-4">
               <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
-              <h2 className="text-lg font-semibold text-[#F0E6FF] mb-2">Check your email</h2>
+              <h2 className="text-lg font-semibold text-[#F0E6FF] mb-2">{t("fpCheckTitle")}</h2>
               <p className="text-sm text-[#9CA3AF] mb-6">
-                We sent a password reset link to <strong className="text-[#F0E6FF]">{email}</strong>
+                {t("fpCheckBody", { email })}
               </p>
               <button
                 onClick={() => router.push(`/${locale}/sign-in`)}
                 className="text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
               >
-                Back to sign in
+                {t("backToSignIn")}
               </button>
             </div>
           ) : (
@@ -101,7 +103,7 @@ export default function ForgotPasswordPage({ params }: Props) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                    Email
+                    {t("emailLabel")}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
@@ -126,7 +128,7 @@ export default function ForgotPasswordPage({ params }: Props) {
                   ) : (
                     <Mail className="w-4 h-4" />
                   )}
-                  {loading ? "Sending..." : "Send Reset Link"}
+                  {loading ? t("fpSending") : t("fpSend")}
                 </button>
               </form>
             </>
@@ -139,7 +141,7 @@ export default function ForgotPasswordPage({ params }: Props) {
             className="inline-flex items-center gap-1 text-[#A855F7] hover:text-[#C084FC] transition-colors"
           >
             <ArrowLeft className="w-3 h-3" />
-            Back to sign in
+            {t("backToSignIn")}
           </Link>
         </p>
       </motion.div>

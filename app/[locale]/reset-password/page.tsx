@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { Lock, Sparkles, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function ResetPasswordPage({ params }: Props) {
+  const t = useTranslations("auth");
   const router = useRouter();
   const [locale, setLocale] = useState("en");
   const [password, setPassword] = useState("");
@@ -30,11 +32,11 @@ export default function ResetPasswordPage({ params }: Props) {
     setError(null);
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("errPasswordShort"));
       return;
     }
     if (password !== confirm) {
-      setError("Passwords do not match.");
+      setError(t("errPasswordMismatch"));
       return;
     }
 
@@ -44,7 +46,7 @@ export default function ResetPasswordPage({ params }: Props) {
     setLoading(false);
 
     if (updateError) {
-      setError(updateError.message ?? "Failed to update password. Please try again.");
+      setError(t("errUpdateFailed"));
       return;
     }
 
@@ -74,17 +76,17 @@ export default function ResetPasswordPage({ params }: Props) {
             className="text-2xl font-bold text-[#F0E6FF] mb-1"
             style={{ fontFamily: "var(--font-cinzel), serif" }}
           >
-            New Password
+            {t("rpTitle")}
           </h1>
-          <p className="text-sm text-[#9CA3AF]">Choose a strong password for your account</p>
+          <p className="text-sm text-[#9CA3AF]">{t("rpSubtitle")}</p>
         </div>
 
         <div className="bg-[#1A1A2E] rounded-2xl border border-[#2D2D4E] p-8">
           {done ? (
             <div className="text-center py-4">
               <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
-              <h2 className="text-lg font-semibold text-[#F0E6FF] mb-2">Password updated!</h2>
-              <p className="text-sm text-[#9CA3AF]">Redirecting to your account…</p>
+              <h2 className="text-lg font-semibold text-[#F0E6FF] mb-2">{t("rpDoneTitle")}</h2>
+              <p className="text-sm text-[#9CA3AF]">{t("rpDoneBody")}</p>
             </div>
           ) : (
             <>
@@ -97,7 +99,7 @@ export default function ResetPasswordPage({ params }: Props) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                    New Password
+                    {t("newPasswordLabel")}
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
@@ -107,7 +109,7 @@ export default function ResetPasswordPage({ params }: Props) {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={8}
-                      placeholder="Min. 8 characters"
+                      placeholder={t("phMin8")}
                       className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-10 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                     />
                     <button
@@ -122,7 +124,7 @@ export default function ResetPasswordPage({ params }: Props) {
 
                 <div>
                   <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                    Confirm Password
+                    {t("confirmPasswordLabel")}
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
@@ -131,7 +133,7 @@ export default function ResetPasswordPage({ params }: Props) {
                       value={confirm}
                       onChange={(e) => setConfirm(e.target.value)}
                       required
-                      placeholder="Repeat your password"
+                      placeholder={t("phRepeat")}
                       className="w-full bg-[#13131F] border border-[#2D2D4E] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none focus:border-[#7C3AED] transition-colors"
                     />
                   </div>
@@ -147,7 +149,7 @@ export default function ResetPasswordPage({ params }: Props) {
                   ) : (
                     <Lock className="w-4 h-4" />
                   )}
-                  {loading ? "Updating..." : "Update Password"}
+                  {loading ? t("rpUpdating") : t("rpUpdate")}
                 </button>
               </form>
             </>
