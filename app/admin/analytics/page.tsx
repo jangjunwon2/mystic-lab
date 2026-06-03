@@ -36,6 +36,7 @@ function getBuyerSegments(orders: OrderRow[]) {
 }
 
 interface OrderItemRow {
+  product_id: string | null;
   quantity: number;
   price_usd: number;
   products: { slug: string; product_translations: { name: string; language: string }[] } | null;
@@ -168,7 +169,8 @@ export default async function AdminAnalyticsPage() {
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
-  const [ordersRes, orderItemsRes, profilesRes, allOrdersRes] = await Promise.all([
+  const [ordersRes, orderItemsRes, profilesRes, allOrdersRes,
+    productsRes, viewsRes, wishlistsRes, sharesRes] = await Promise.all([
     supabase
       .from("orders")
       .select("total_usd, status, created_at, customer_email")
@@ -176,13 +178,21 @@ export default async function AdminAnalyticsPage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("order_items")
-      .select("quantity, price_usd, products(slug, product_translations(name, language))")
-      .limit(500),
+      .select("product_id, quantity, price_usd, products(slug, product_translations(name, language))")
+      .limit(2000),
     supabase.from("profiles").select("id, created_at", { count: "exact" }),
     supabase
       .from("orders")
-      .select("total_usd, status, customer_email")
+      .select("total_usd, status, customer_email, user_id")
       .limit(2000),
+    // 상품 마스터 (상품별 상세 통계 행 구성)
+    supabase.from("products").select("id, slug, product_translations(name, language)").eq("is_active", true),
+    // 상품 조회수 (최근 30일)
+    supabase.from("product_views").select("product_id").gte("viewed_at", thirtyDaysAgo.toISOString()).limit(20000),
+    // 위시리스트 (전체)
+    supabase.from("wishlists").select("user_id, product_id").limit(20000),
+    // 공유 이벤트 (최근 30일)
+    supabase.from("share_events").select("product_id, channel").gte("created_at", thirtyDaysAgo.toISOString()).limit(20000),
   ]);
 
   const allOrders: OrderRow[] = ordersRes.data ?? [];
@@ -251,11 +261,76 @@ export default async function AdminAnalyticsPage() {
     (p) => new Date(p.created_at) >= thisMonthStart
   ).length;
 
+  // ───── 마케팅 지표 (신규) ─────
+  const pickName = (translations: { name: string; language: string }[] | undefined, slug: string) =>
+    translations?.find((t) => t.language === "ko")?.name ??
+    translations?.find((t) => t.language === "en")?.name ?? slug;
+
+  const productList = ((productsRes.data ?? []) as { id: string; slug: string; product_translations: { name: string; language: string }[] }[])
+    .map((p) => ({ id: p.id, name: pickName(p.product_translations, p.slug) }));
+
+  const views = (viewsRes.data ?? []) as { product_id: string }[];
+  const wishlists = (wishlistsRes.data ?? []) as { user_id: string; product_id: string }[];
+  const shares = (sharesRes.data ?? []) as { product_id: string | null; channel: string }[];
+  const allOrdersFull = (allOrdersRes.data ?? []) as { status: string; user_id: string | null }[];
+  const PAID = ["paid", "shipped", "completed"];
+
+  const totalViews = views.length; // 최근 30일 상품 조회수 (24h 쿠키 중복방지 후)
+
+  // 결제 전환율: 결제완료+ / (결제완료+ + 결제대기)
+  const paidOrdersCount = allOrdersFull.filter((o) => PAID.includes(o.status)).length;
+  const pendingOrdersCount = allOrdersFull.filter((o) => o.status === "pending").length;
+  const paymentConversion = paidOrdersCount + pendingOrdersCount > 0
+    ? Math.round((paidOrdersCount / (paidOrdersCount + pendingOrdersCount)) * 100)
+    : null;
+
+  // 위시리스트 → 구매 전환율: 위시한 회원 중 실제 구매(결제완료+)한 회원 비율
+  const wishlistUserIds = new Set(wishlists.map((w) => w.user_id));
+  const buyerUserIds = new Set(allOrdersFull.filter((o) => PAID.includes(o.status) && o.user_id).map((o) => o.user_id));
+  const wishlistBuyers = [...wishlistUserIds].filter((id) => buyerUserIds.has(id)).length;
+  const wishlistConversion = wishlistUserIds.size > 0
+    ? Math.round((wishlistBuyers / wishlistUserIds.size) * 100)
+    : null;
+
+  // 상품별 상세 통계 (조회/위시/판매/매출/공유)
+  const countByProduct = (rows: { product_id: string | null }[]) => {
+    const m: Record<string, number> = {};
+    for (const r of rows) if (r.product_id) m[r.product_id] = (m[r.product_id] ?? 0) + 1;
+    return m;
+  };
+  const viewsByProduct = countByProduct(views);
+  const wishByProduct = countByProduct(wishlists);
+  const sharesByProduct = countByProduct(shares);
+  const salesByProduct: Record<string, { qty: number; revenue: number }> = {};
+  for (const it of orderItems) {
+    if (!it.product_id) continue;
+    if (!salesByProduct[it.product_id]) salesByProduct[it.product_id] = { qty: 0, revenue: 0 };
+    salesByProduct[it.product_id].qty += it.quantity;
+    salesByProduct[it.product_id].revenue += it.price_usd * it.quantity;
+  }
+  const productStats = productList.map((p) => ({
+    name: p.name,
+    views: viewsByProduct[p.id] ?? 0,
+    wishes: wishByProduct[p.id] ?? 0,
+    sales: salesByProduct[p.id]?.qty ?? 0,
+    revenue: salesByProduct[p.id]?.revenue ?? 0,
+    shares: sharesByProduct[p.id] ?? 0,
+    cvr: (viewsByProduct[p.id] ?? 0) > 0 ? Math.round(((salesByProduct[p.id]?.qty ?? 0) / (viewsByProduct[p.id] ?? 1)) * 100) : 0,
+  })).sort((a, b) => b.revenue - a.revenue || b.views - a.views);
+
+  // 공유 채널별 집계
+  const shareByChannel: Record<string, number> = {};
+  for (const s of shares) shareByChannel[s.channel] = (shareByChannel[s.channel] ?? 0) + 1;
+  const totalShares = shares.length;
+  const SHARE_LABELS: Record<string, string> = {
+    native: "공유시트", facebook: "Facebook", x: "X", whatsapp: "WhatsApp", telegram: "Telegram", line: "LINE", copy: "링크복사",
+  };
+
   return (
     <div className="p-8 space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <h1 className="text-2xl font-bold" style={{ color: "#F0E6FF" }}>
-          매출 분석
+          통계
         </h1>
         <AnalyticsExportButton />
       </div>
@@ -286,6 +361,32 @@ export default async function AdminAnalyticsPage() {
           label="신규 회원"
           value={String(newMembersThisMonth)}
           sub="이번 달"
+        />
+      </div>
+
+      {/* 마케팅 지표 — 조회수 / 전환율 / 공유 */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="상품 조회수 (30일)"
+          value={totalViews.toLocaleString()}
+          sub="24시간 중복 제외"
+        />
+        <StatCard
+          label="결제 전환율"
+          value={paymentConversion !== null ? `${paymentConversion}%` : "—"}
+          sub={`결제완료 ${paidOrdersCount} / 대기 ${pendingOrdersCount}`}
+          highlight={paymentConversion !== null && paymentConversion >= 50}
+        />
+        <StatCard
+          label="위시 → 구매 전환율"
+          value={wishlistConversion !== null ? `${wishlistConversion}%` : "—"}
+          sub={`위시 회원 ${wishlistUserIds.size}명 중 ${wishlistBuyers}명 구매`}
+          highlight={wishlistConversion !== null && wishlistConversion >= 30}
+        />
+        <StatCard
+          label="공유 (30일)"
+          value={totalShares.toLocaleString()}
+          sub="전 채널 합계"
         />
       </div>
 
@@ -435,18 +536,85 @@ export default async function AdminAnalyticsPage() {
         )}
       </div>
 
+      {/* 상품별 상세 통계 */}
+      <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+        <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
+          상품별 상세 통계
+        </h2>
+        {productStats.length === 0 ? (
+          <p className="text-sm" style={{ color: "#9CA3AF" }}>등록된 상품이 없습니다.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
+                  {["상품", "조회수(30일)", "위시", "판매량", "매출", "공유(30일)", "조회→구매"].map((h, i) => (
+                    <th key={h} className={`py-2 font-medium ${i === 0 ? "text-left" : "text-right"}`} style={{ color: "#9CA3AF" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {productStats.map((p) => (
+                  <tr key={p.name} style={{ borderBottom: "1px solid #2D2D4E" }}>
+                    <td className="py-2.5 pr-4" style={{ color: "#F0E6FF" }}>{p.name}</td>
+                    <td className="py-2.5 text-right" style={{ color: "#9CA3AF" }}>{p.views.toLocaleString()}</td>
+                    <td className="py-2.5 text-right" style={{ color: "#9CA3AF" }}>{p.wishes.toLocaleString()}</td>
+                    <td className="py-2.5 text-right" style={{ color: "#9CA3AF" }}>{p.sales.toLocaleString()}</td>
+                    <td className="py-2.5 text-right" style={{ color: "#A855F7" }}>${p.revenue.toFixed(0)}</td>
+                    <td className="py-2.5 text-right" style={{ color: "#9CA3AF" }}>{p.shares.toLocaleString()}</td>
+                    <td className="py-2.5 text-right" style={{ color: p.cvr >= 5 ? "#10B981" : "#6B7280" }}>{p.cvr}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-xs mt-3" style={{ color: "#4B5563" }}>
+          조회→구매 = (판매량 / 30일 조회수). 조회수·공유는 최근 30일, 위시·판매·매출은 전체 기간 기준.
+        </p>
+      </div>
+
+      {/* 공유 채널별 통계 */}
+      <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+        <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
+          공유 채널별 (최근 30일)
+        </h2>
+        {totalShares === 0 ? (
+          <p className="text-sm" style={{ color: "#9CA3AF" }}>아직 공유 데이터가 없습니다.</p>
+        ) : (
+          <div className="space-y-2">
+            {Object.entries(shareByChannel)
+              .sort(([, a], [, b]) => b - a)
+              .map(([channel, count]) => {
+                const pct = Math.round((count / totalShares) * 100);
+                return (
+                  <div key={channel}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span style={{ color: "#F0E6FF" }}>{SHARE_LABELS[channel] ?? channel}</span>
+                      <span style={{ color: "#A855F7" }}>{count}회 ({pct}%)</span>
+                    </div>
+                    <div className="h-1.5 rounded-full" style={{ background: "#2D2D4E" }}>
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#7C3AED,#A855F7)" }} />
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+      </div>
+
       {/* Note on conversion tracking */}
       <div
         className="rounded-xl border p-5 text-sm"
         style={{ background: "#13131F", borderColor: "#2D2D4E", color: "#9CA3AF" }}
       >
-        <p className="font-medium mb-1" style={{ color: "#F0E6FF" }}>전환율 추적</p>
+        <p className="font-medium mb-1" style={{ color: "#F0E6FF" }}>방문자(세션) 추적</p>
         <p>
-          상품 조회 → 장바구니 추가 → 구매 전환 데이터는{" "}
-          <strong style={{ color: "#A855F7" }}>Vercel Analytics</strong> 및{" "}
-          <strong style={{ color: "#A855F7" }}>Google Analytics 4</strong>에서 확인 가능합니다.
-          전체 전환 퍼널 추적을 위해 <code>.env.local</code>에{" "}
-          <code>NEXT_PUBLIC_GA_ID</code>를 설정하세요.
+          상품 조회수는 자체 집계(<code>product_views</code>)입니다. 전체 사이트 방문자·세션·유입경로 등은{" "}
+          <strong style={{ color: "#A855F7" }}>Google Analytics 4</strong>에서 확인하세요
+          (<code>.env.local</code>의 <code>NEXT_PUBLIC_GA_ID</code> 설정 시 활성화).
         </p>
       </div>
     </div>

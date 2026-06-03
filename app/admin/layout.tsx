@@ -7,7 +7,7 @@ export const metadata = { title: "Admin — Mystic Lab" };
 
 export const NAV_ITEMS = [
   { href: "/admin", label: "대시보드", icon: "📊" },
-  { href: "/admin/analytics", label: "매출 분석", icon: "📈" },
+  { href: "/admin/analytics", label: "통계", icon: "📈" },
   { href: "/admin/users", label: "회원 관리", icon: "👥" },
   { href: "/admin/products", label: "상품 관리", icon: "🪄" },
   { href: "/admin/orders", label: "주문 관리", icon: "📦" },
