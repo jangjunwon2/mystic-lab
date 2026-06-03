@@ -515,14 +515,17 @@ export default function MagicCalculator({ locale, productId }: Props) {
     triggerDimmingFeedback();
   };
 
-  // 디스플레이 스와이프 삭제
+  // -/+ 모드: 디스플레이에 손이 닿는 즉시 맨 앞(왼쪽) 글자부터 1개씩 제거 (함수형 업데이트로 연타 안전)
+  const eraseFrontChar = () => {
+    setDisplay((prev) => (prev.length > 1 && prev !== "Error" ? prev.substring(1) : "0"));
+    setEquation((prev) => (prev.length > 1 ? prev.substring(1) : ""));
+  };
+
+  // 일반 모드 디스플레이 스와이프 삭제 (오른쪽 → 마지막 글자)
   const handleDisplaySwipe = (direction: "left" | "right") => {
     if (isEraseLeftActive) {
-      // -/+ 모드(마술): 왼쪽 드래그 → 앞자리(왼쪽)부터 제거, 별도 효과 없음
-      if (direction !== "left") return;
-      const nextVal = display.length > 1 ? display.substring(1) : "0";
-      setDisplay(nextVal);
-      setEquation(nextVal === "0" ? "" : nextVal);
+      // -/+ 모드 삭제는 touchstart/move에서 즉시 처리하므로 여기선 무시
+      return;
     } else {
       // 일반 모드: 오른쪽 드래그 → 뒤(마지막) 한 글자씩 삭제 (예전 계산기 백스페이스)
       if (direction !== "right") return;
@@ -774,10 +777,24 @@ export default function MagicCalculator({ locale, productId }: Props) {
           }`}
           style={{ height: "35vh" }}
           onTouchStart={(e) => {
-            const touch = e.touches[0];
-            (window as any).displayStartX = touch.clientX;
+            const x = e.touches[0].clientX;
+            (window as any).displayStartX = x;
+            (window as any).displayLastX = x;
+            // -/+ 모드: 닿는 즉시 맨 앞 글자 1개 제거
+            if (isEraseLeftActive) eraseFrontChar();
+          }}
+          onTouchMove={(e) => {
+            if (!isEraseLeftActive) return;
+            const x = e.touches[0].clientX;
+            const last = (window as any).displayLastX ?? x;
+            // 왼쪽으로 일정 거리 이동할 때마다 앞 글자 추가 제거
+            if (last - x > 28) {
+              eraseFrontChar();
+              (window as any).displayLastX = x;
+            }
           }}
           onTouchEnd={(e) => {
+            if (isEraseLeftActive) return; // 삭제 모드는 touchstart/move에서 처리됨
             const touch = e.changedTouches[0];
             const startX = (window as any).displayStartX;
             if (startX !== undefined) {
