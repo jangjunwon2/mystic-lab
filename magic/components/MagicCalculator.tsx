@@ -225,9 +225,13 @@ export default function MagicCalculator({ locale, productId }: Props) {
       if (savedConfig) {
         const parsed = JSON.parse(savedConfig) as Partial<MagicConfig>;
         setConfig((prev) => ({ ...prev, ...parsed }));
+        // 설정에서 고른 언어를 앱 진입 시 적용·유지 (PWA가 기본 로케일로 열려도 저장 언어로 이동)
+        if (parsed.appLocale && parsed.appLocale !== locale) {
+          router.replace(`/${parsed.appLocale}/calc`);
+        }
       }
     } catch { /* ignore */ }
-  }, []);
+  }, [locale, router]);
 
   const saveConfig = (newConfig: MagicConfig) => {
     setConfig(newConfig);
