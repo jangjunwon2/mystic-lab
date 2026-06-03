@@ -68,7 +68,22 @@
     "reviews": {
       "title": "Bewertungen",
       "noReviews": "Noch keine Bewertungen. Seien Sie der Erste!"
-    }
+    },
+    "clear": "Löschen",
+    "productsCount": "{n} Produkte",
+    "description": "Beschreibung",
+    "solutionTutorial": "Lösungs-Tutorial",
+    "inStock": "Auf Lager — {n} verfügbar",
+    "cat": {
+      "card_magic": "Kartenmagie",
+      "stage_magic": "Bühnenmagie",
+      "coin_magic": "Münzmagie",
+      "mentalism": "Mentalismus",
+      "electronic": "Elektronik",
+      "accessories": "Zubehör"
+    },
+    "all": "Alle",
+    "noProducts": "Noch keine Produkte."
   },
   "customOrder": {
     "title": "Individuelles Elektronisches Gerät",

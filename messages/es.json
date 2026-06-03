@@ -68,7 +68,22 @@
     "reviews": {
       "title": "Reseñas",
       "noReviews": "Aún no hay reseñas. ¡Sé el primero!"
-    }
+    },
+    "clear": "Borrar",
+    "productsCount": "{n} productos",
+    "description": "Descripción",
+    "solutionTutorial": "Tutorial de solución",
+    "inStock": "En stock — {n} disponibles",
+    "cat": {
+      "card_magic": "Magia con cartas",
+      "stage_magic": "Magia de escenario",
+      "coin_magic": "Magia con monedas",
+      "mentalism": "Mentalismo",
+      "electronic": "Electrónico",
+      "accessories": "Accesorios"
+    },
+    "all": "Todos",
+    "noProducts": "Aún no hay productos."
   },
   "customOrder": {
     "title": "Dispositivo Electrónico Personalizado",

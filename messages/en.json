@@ -68,7 +68,22 @@
     "reviews": {
       "title": "Reviews",
       "noReviews": "No reviews yet. Be the first!"
-    }
+    },
+    "clear": "Clear",
+    "productsCount": "{n} products",
+    "description": "Description",
+    "solutionTutorial": "Solution Tutorial",
+    "inStock": "In Stock — {n} available",
+    "cat": {
+      "card_magic": "Card Magic",
+      "stage_magic": "Stage Magic",
+      "coin_magic": "Coin Magic",
+      "mentalism": "Mentalism",
+      "electronic": "Electronic",
+      "accessories": "Accessories"
+    },
+    "all": "All",
+    "noProducts": "No products available yet."
   },
   "customOrder": {
     "title": "Custom Electronic Device",

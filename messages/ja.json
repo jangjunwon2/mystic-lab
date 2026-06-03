@@ -68,7 +68,22 @@
     "reviews": {
       "title": "レビュー",
       "noReviews": "まだレビューはありません。最初のレビューを書いてみましょう！"
-    }
+    },
+    "clear": "クリア",
+    "productsCount": "{n}件",
+    "description": "商品説明",
+    "solutionTutorial": "解法動画",
+    "inStock": "在庫あり — 残り{n}個",
+    "cat": {
+      "card_magic": "カードマジック",
+      "stage_magic": "ステージマジック",
+      "coin_magic": "コインマジック",
+      "mentalism": "メンタリズム",
+      "electronic": "電子機器",
+      "accessories": "アクセサリー"
+    },
+    "all": "すべて",
+    "noProducts": "まだ商品がありません。"
   },
   "customOrder": {
     "title": "カスタム電子デバイス",

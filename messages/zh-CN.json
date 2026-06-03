@@ -68,7 +68,22 @@
     "reviews": {
       "title": "评价",
       "noReviews": "暂无评价，快来抢先评价吧！"
-    }
+    },
+    "clear": "清除",
+    "productsCount": "{n} 件商品",
+    "description": "商品描述",
+    "solutionTutorial": "解法视频",
+    "inStock": "有货 — 剩余{n}件",
+    "cat": {
+      "card_magic": "纸牌魔术",
+      "stage_magic": "舞台魔术",
+      "coin_magic": "硬币魔术",
+      "mentalism": "心灵魔术",
+      "electronic": "电子设备",
+      "accessories": "配件"
+    },
+    "all": "全部",
+    "noProducts": "暂无商品。"
   },
   "customOrder": {
     "title": "定制电子设备",

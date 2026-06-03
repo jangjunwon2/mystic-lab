@@ -10,15 +10,6 @@ import type { ProductItem, BundleView } from "@/app/[locale]/products/page";
 import WishlistButton from "@/components/products/WishlistButton";
 import BundlesSection from "@/components/products/BundlesSection";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  card_magic: "Card Magic",
-  stage_magic: "Stage Magic",
-  coin_magic: "Coin Magic",
-  mentalism: "Mentalism",
-  electronic: "Electronic",
-  accessories: "Accessories",
-};
-
 interface ProductsClientProps {
   locale: string;
   filters: { category?: string; sort?: string; page?: string; search?: string };
@@ -30,6 +21,7 @@ interface ProductsClientProps {
 
 export default function ProductsClient({ locale, filters, products, allCategories, isLoggedIn, bundles = [] }: ProductsClientProps) {
   const t = useTranslations("products");
+  const catLabel = (c: string) => (t.has(`cat.${c}`) ? t(`cat.${c}`) : c);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [sort, setSort] = useState(filters.sort || "featured");
@@ -60,10 +52,10 @@ export default function ProductsClient({ locale, filters, products, allCategorie
                   onClick={() => router.push(`/${locale}/products`)}
                   className="text-xs text-[#6B7280] hover:text-[#9CA3AF] border border-[#2D2D4E] rounded-full px-2.5 py-0.5 transition-colors"
                 >
-                  × Clear
+                  × {t("clear")}
                 </button>
               </div>
-              <p className="text-sm text-[#6B7280]">{products.length} result{products.length !== 1 ? "s" : ""}</p>
+              <p className="text-sm text-[#6B7280]">{t("productsCount", { n: products.length })}</p>
             </>
           ) : (
             <>
@@ -94,7 +86,7 @@ export default function ProductsClient({ locale, filters, products, allCategorie
                 border: `1px solid ${!filters.category ? "#7C3AED" : "#4C1D95"}`,
               }}
             >
-              All
+              {t("all")}
             </button>
             {allCategories.map((cat) => (
               <button
@@ -111,7 +103,7 @@ export default function ProductsClient({ locale, filters, products, allCategorie
                   border: `1px solid ${filters.category === cat ? "#7C3AED" : "#4C1D95"}`,
                 }}
               >
-                {CATEGORY_LABELS[cat] ?? cat}
+                {catLabel(cat)}
               </button>
             ))}
           </div>
@@ -122,7 +114,7 @@ export default function ProductsClient({ locale, filters, products, allCategorie
 
         {/* Controls */}
         <div className="flex items-center justify-between mb-8">
-          <p className="text-xs text-[#9CA3AF]">{sorted.length} products</p>
+          <p className="text-xs text-[#9CA3AF]">{t("productsCount", { n: sorted.length })}</p>
           <div className="relative">
             <select
               value={sort}
@@ -141,7 +133,7 @@ export default function ProductsClient({ locale, filters, products, allCategorie
         {sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <Package className="w-12 h-12 text-[#2D2D4E]" />
-            <p className="text-[#9CA3AF] text-sm">No products available yet.</p>
+            <p className="text-[#9CA3AF] text-sm">{t("noProducts")}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -194,7 +186,7 @@ function ProductCard({
           )}
           <div className="absolute top-2 left-2">
             <span className="text-[10px] font-medium bg-[#7C3AED]/80 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
-              {CATEGORY_LABELS[product.category] ?? product.category}
+              {t.has(`cat.${product.category}`) ? t(`cat.${product.category}`) : product.category}
             </span>
           </div>
           <div className="absolute top-2 right-2 flex items-center gap-1.5">

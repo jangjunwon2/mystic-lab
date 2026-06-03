@@ -216,7 +216,7 @@ export default function ProductDetail({
                 <>
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span className="text-sm text-emerald-400">
-                    In Stock — {product.stock} available
+                    {t("inStock", { n: product.stock })}
                   </span>
                 </>
               ) : (
@@ -271,7 +271,7 @@ export default function ProductDetail({
         </div>
 
         {/* ── Description ── */}
-        <Section title="Description">
+        <Section title={t("description")}>
           <p className="text-[#9CA3AF] leading-relaxed" style={{ whiteSpace: "pre-wrap" }}>
             {translation.description}
           </p>
@@ -291,7 +291,7 @@ export default function ProductDetail({
         )}
 
         {/* ── Solution Tutorial ── */}
-        <Section title="Solution Tutorial">
+        <Section title={t("solutionTutorial")}>
           <SolutionVideoSection
             isLoggedIn={isLoggedIn}
             isAdmin={isAdmin}

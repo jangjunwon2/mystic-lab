@@ -68,7 +68,22 @@
     "reviews": {
       "title": "Avis",
       "noReviews": "Aucun avis pour l'instant. Soyez le premier !"
-    }
+    },
+    "clear": "Effacer",
+    "productsCount": "{n} produits",
+    "description": "Description",
+    "solutionTutorial": "Tutoriel de solution",
+    "inStock": "En stock — {n} disponibles",
+    "cat": {
+      "card_magic": "Magie des cartes",
+      "stage_magic": "Magie de scène",
+      "coin_magic": "Magie des pièces",
+      "mentalism": "Mentalisme",
+      "electronic": "Électronique",
+      "accessories": "Accessoires"
+    },
+    "all": "Tous",
+    "noProducts": "Aucun produit pour le moment."
   },
   "customOrder": {
     "title": "Appareil Électronique Personnalisé",
