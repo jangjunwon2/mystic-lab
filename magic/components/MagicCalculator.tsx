@@ -547,23 +547,11 @@ export default function MagicCalculator({ locale, productId }: Props) {
   };
 
   const handleTouchEnd = () => {
-    if (!isPeekingActive || !peekDragging) return;
+    if (!isPeekingActive) return;
+    // 손가락을 떼면 스프링 모션으로 즉시 원위치 복귀 + 피킹 종료 (기존 momentary 방식)
     setPeekDragging(false);
-    // 충분히 끌었으면 열림 고정(히스토리 스크롤 가능), 아니면 닫기
-    if (dragOffset <= -80) {
-      const open = -(typeof window !== "undefined" ? window.innerWidth * 0.8 : 320);
-      setDragOffset(open);
-    } else {
-      setDragOffset(0);
-      setIsPeekingActive(false);
-    }
-  };
-
-  // 열림 고정 상태에서 앞 계산기 영역을 탭하면 닫힘
-  const closePeek = () => {
     setDragOffset(0);
     setIsPeekingActive(false);
-    setPeekDragging(false);
   };
 
   // ── Web Bluetooth 감열 프린터 래스터화 인쇄 모듈 ──
@@ -759,12 +747,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
           background: theme === "android" ? "#13131F" : "#000000",
           x: dragOffset, // Peeking 시 손가락을 따라 이동 / 열림 고정
         }}
-        // 끄는 중엔 transition 없이 손가락 1:1 추종, 놓으면 스프링으로 고정/복귀
+        // 끄는 중엔 transition 없이 손가락 1:1 추종, 놓으면 스프링으로 복귀
         transition={peekDragging ? { duration: 0 } : { type: "spring", stiffness: 350, damping: 30 }}
-        onClick={() => {
-          // 열림 고정 상태(끄는 중 아님 + 밀려 있음)에서 앞 화면 탭 → 닫기
-          if (isPeekingActive && !peekDragging && dragOffset !== 0) closePeek();
-        }}
       >
         {/* Invisible 1/12 진입 영역 (3초 터치 시 세팅창) */}
         <div
