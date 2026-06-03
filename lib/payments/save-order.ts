@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendLowStockAlert } from "@/lib/resend";
+import { earnPointsForUsd, addPointTransaction } from "@/lib/points";
 import type { SaveOrderInput } from "./types";
 
 const LOW_STOCK_THRESHOLD = 3;
@@ -70,6 +71,20 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
 
   if (itemsError) {
     console.error(`[${input.gateway}] saveOrderItems error:`, itemsError);
+  }
+
+  // 마일리지 적립 — 회원이며 결제 금액이 있을 때 (5%)
+  if (userId && input.totalUsd > 0) {
+    const earned = earnPointsForUsd(input.totalUsd);
+    if (earned > 0) {
+      await addPointTransaction(supabase, {
+        userId,
+        amount: earned,
+        type: "earn",
+        orderId: order.id,
+        note: `주문 적립 (${input.gateway})`,
+      }).catch(() => { /* 적립 실패는 주문에 영향 없음 */ });
+    }
   }
 
   // Decrement stock for each ordered product and collect low-stock items for alert

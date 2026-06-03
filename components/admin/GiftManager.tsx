@@ -38,7 +38,8 @@ export default function GiftManager({ products }: Props) {
   const [grantProductId, setGrantProductId] = useState(products[0]?.id ?? "");
   const [shipProductId, setShipProductId] = useState(products[0]?.id ?? "");
   const [note, setNote] = useState("");
-  const [busy, setBusy] = useState<"grant" | "ship" | null>(null);
+  const [pointAmount, setPointAmount] = useState("");
+  const [busy, setBusy] = useState<"grant" | "ship" | "points" | null>(null);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   async function search() {
@@ -74,6 +75,30 @@ export default function GiftManager({ products }: Props) {
     } else {
       const d = await res.json().catch(() => ({}));
       setMsg({ type: "err", text: `❌ ${d.error ?? "권한 부여 실패."}` });
+    }
+    setBusy(null);
+  }
+
+  async function adjustPoints() {
+    if (!selected) return;
+    const amt = parseInt(pointAmount, 10);
+    if (!amt || !Number.isFinite(amt)) {
+      setMsg({ type: "err", text: "지급/차감할 포인트(정수)를 입력하세요. 차감은 음수." });
+      return;
+    }
+    setBusy("points");
+    setMsg(null);
+    const res = await fetch(`/api/admin/users/${selected.id}/points`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: amt, note: note.trim() || undefined }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setMsg({ type: "ok", text: `✅ ${selected.email} 포인트 ${amt > 0 ? "+" : ""}${amt}P 처리. 현재 잔액 ${d.balance}P.` });
+      setPointAmount("");
+    } else {
+      setMsg({ type: "err", text: `❌ ${d.error ?? "포인트 처리 실패."}` });
     }
     setBusy(null);
   }
@@ -195,6 +220,27 @@ export default function GiftManager({ products }: Props) {
               </select>
               <button onClick={sendGift} disabled={busy === "ship"} className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50" style={{ background: "#F59E0B", color: "#13131F" }}>
                 {busy === "ship" ? "처리 중…" : "증정 주문 생성"}
+              </button>
+            </div>
+          </div>
+
+          {/* 포인트 지급/차감 */}
+          <div className="rounded-lg p-4 space-y-3" style={{ background: "#13131F", border: "1px solid #2D2D4E" }}>
+            <div className="flex items-center gap-2">
+              <Gift className="w-4 h-4" style={{ color: "#10B981" }} />
+              <h3 className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>마일리지 지급 / 차감</h3>
+            </div>
+            <p className="text-xs" style={{ color: "#9CA3AF" }}>100 포인트 = $1. 차감은 음수로 입력 (예: -500).</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={pointAmount}
+                onChange={(e) => setPointAmount(e.target.value)}
+                placeholder="예: 1000"
+                style={{ ...inputStyle, flex: 1 }}
+              />
+              <button onClick={adjustPoints} disabled={busy === "points"} className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50" style={{ background: "#10B981", color: "#0D0D1A" }}>
+                {busy === "points" ? "처리 중…" : "적용"}
               </button>
             </div>
           </div>
