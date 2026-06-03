@@ -24,6 +24,40 @@ export interface ProductItem {
   short_description: string | null;
 }
 
+export interface BundleItemView {
+  id: string;
+  slug: string;
+  name: string;
+  price_usd: number;
+  thumbnail_url: string | null;
+  quantity: number;
+}
+
+export interface BundleView {
+  id: string;
+  name: string;
+  discount_percent: number;
+  items: BundleItemView[];
+  original: number;
+  discounted: number;
+}
+
+interface RawBundleRow {
+  id: string;
+  name: string;
+  discount_percent: number;
+  bundle_items: {
+    quantity: number;
+    products: {
+      id: string;
+      slug: string;
+      price_usd: number;
+      thumbnail_url: string | null;
+      product_translations: { name: string; language: string }[];
+    } | null;
+  }[];
+}
+
 export default async function ProductsPage({ params, searchParams }: ProductsPageProps) {
   const { locale } = await params;
   const filters = await searchParams;
@@ -80,5 +114,46 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  return <ProductsClient locale={locale} filters={filters} products={products} allCategories={allCategories} isLoggedIn={!!user} />;
+  // 활성 세트(번들) 조회 — 필터/검색 없을 때만 노출
+  let bundles: BundleView[] = [];
+  if (!filters.category && !filters.search) {
+    const { data: bundleData } = await supabase
+      .from("bundles")
+      .select("id, name, discount_percent, bundle_items(quantity, products(id, slug, price_usd, thumbnail_url, product_translations(name, language)))")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    bundles = ((bundleData ?? []) as RawBundleRow[])
+      .map((b) => {
+        const items = (b.bundle_items ?? [])
+          .filter((bi) => bi.products)
+          .map((bi) => {
+            const prod = bi.products!;
+            const tname =
+              prod.product_translations?.find((t) => t.language === locale)?.name ??
+              prod.product_translations?.find((t) => t.language === "en")?.name ??
+              prod.slug;
+            return {
+              id: prod.id,
+              slug: prod.slug,
+              name: tname,
+              price_usd: prod.price_usd,
+              thumbnail_url: prod.thumbnail_url,
+              quantity: bi.quantity,
+            };
+          });
+        const original = items.reduce((s, it) => s + it.price_usd * it.quantity, 0);
+        return {
+          id: b.id,
+          name: b.name,
+          discount_percent: b.discount_percent,
+          items,
+          original,
+          discounted: original * (1 - b.discount_percent / 100),
+        };
+      })
+      .filter((b) => b.items.length >= 2);
+  }
+
+  return <ProductsClient locale={locale} filters={filters} products={products} allCategories={allCategories} isLoggedIn={!!user} bundles={bundles} />;
 }

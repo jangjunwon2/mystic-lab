@@ -6,8 +6,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ShoppingCart, ChevronDown, Package } from "lucide-react";
-import type { ProductItem } from "@/app/[locale]/products/page";
+import type { ProductItem, BundleView } from "@/app/[locale]/products/page";
 import WishlistButton from "@/components/products/WishlistButton";
+import BundlesSection from "@/components/products/BundlesSection";
 
 const CATEGORY_LABELS: Record<string, string> = {
   card_magic: "Card Magic",
@@ -24,9 +25,10 @@ interface ProductsClientProps {
   products: ProductItem[];
   allCategories: string[];
   isLoggedIn: boolean;
+  bundles?: BundleView[];
 }
 
-export default function ProductsClient({ locale, filters, products, allCategories, isLoggedIn }: ProductsClientProps) {
+export default function ProductsClient({ locale, filters, products, allCategories, isLoggedIn, bundles = [] }: ProductsClientProps) {
   const t = useTranslations("products");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,6 +116,9 @@ export default function ProductsClient({ locale, filters, products, allCategorie
             ))}
           </div>
         )}
+
+        {/* 세트(번들) 상품 */}
+        {bundles.length > 0 && <BundlesSection bundles={bundles} locale={locale} />}
 
         {/* Controls */}
         <div className="flex items-center justify-between mb-8">
