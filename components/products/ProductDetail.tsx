@@ -12,7 +12,6 @@ import SolutionVideoSection from "@/components/video/SolutionVideoSection";
 import CloudflarePlayer from "@/components/video/CloudflarePlayer";
 import ReviewForm from "@/components/products/ReviewForm";
 import WishlistButton from "@/components/products/WishlistButton";
-import MagicActivation from "@/components/products/MagicActivation";
 import MagicMemberAccess from "@/components/products/MagicMemberAccess";
 import type {
   ProductWithTranslations,
@@ -306,11 +305,6 @@ export default function ProductDetail({
             <MagicMemberAccess productId={product.id} locale={locale} />
           )}
         </Section>
-
-        {/* ── Device Activation (Magic Calculator only) ── */}
-        {product.slug === "magic-calculator" && (
-          <MagicActivation productId={product.id} locale={locale} />
-        )}
 
         {/* ── Reviews ── */}
         <Section title={`${t("reviews.title")} (${reviews.length})`}>
