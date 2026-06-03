@@ -171,8 +171,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const [isDimmed, setIsDimmed] = useState(false); // 햅틱 대체 미세 디밍 피드백
   
   // 드래그 Peeking 상태
-  const [isPeekingActive, setIsPeekingActive] = useState(false);
+  const [isPeekingActive, setIsPeekingActive] = useState(false); // 피킹 모드 ON(드래그 중 또는 열림 고정)
+  const [peekDragging, setPeekDragging] = useState(false);       // 손가락으로 끄는 중(1:1 추종, transition 끔)
   const [dragOffset, setDragOffset] = useState(0);
+  const peekStartXRef = useRef<number | null>(null);
 
   // 블루투스 프린터 상태
   const [printerDevice, setPrinterDevice] = useState<BluetoothDevice | null>(null);
@@ -215,12 +217,14 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }
   }, [config.osTheme]);
 
-  // 로컬 스토리지에서 마술 설정 복원
+  // 로컬 스토리지에서 마술 설정 복원 (기기별 저장 → 사용자마다 각자 설정 유지)
+  // 기본값과 병합해 과거 저장본에 없던 새 필드도 안전하게 채운다
   useEffect(() => {
     try {
       const savedConfig = localStorage.getItem("ml_calc_config");
       if (savedConfig) {
-        setConfig(JSON.parse(savedConfig));
+        const parsed = JSON.parse(savedConfig) as Partial<MagicConfig>;
+        setConfig((prev) => ({ ...prev, ...parsed }));
       }
     } catch { /* ignore */ }
   }, []);
@@ -270,6 +274,12 @@ export default function MagicCalculator({ locale, productId }: Props) {
     // 포스 모드 활성화 시 강제 주입
     if (isForceActive) {
       const forcedVal = getForceValue();
+      // 관객 입력 숫자는 피킹 로그에 기록 후 비움 (배경에 남아 비쳐 보이지 않도록)
+      if (currentInputNumber) {
+        appendToPeekLog(currentInputNumber);
+        setCurrentInputNumber("");
+      }
+      // 디밍 없이 즉시 교체 → 직전 숫자가 비쳐 겹쳐 보이는 현상 방지
       setDisplay(forcedVal);
       setEquation("");
       setIsCalculated(true);
@@ -279,7 +289,6 @@ export default function MagicCalculator({ locale, productId }: Props) {
       if (config.forceMode === "one-time") {
         setIsForceActive(false);
       }
-      triggerDimmingFeedback();
       return;
     }
 
@@ -304,10 +313,12 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
       // 간단한 사칙연산 수식만 평가 (자기 입력 한정)
       // eslint-disable-next-line no-eval
-      const res = eval(expr);
+      let res = eval(expr);
       if (typeof res !== "number" || isNaN(res) || !isFinite(res)) {
         setDisplay("Error");
       } else {
+        // 부동소수점 오차 보정 (예: 0.1+0.2 → 0.3)
+        res = Math.round((res + Number.EPSILON) * 1e10) / 1e10;
         const resStr = String(res);
         setDisplay(resStr);
         setLastResult(resStr);
@@ -360,11 +371,17 @@ export default function MagicCalculator({ locale, productId }: Props) {
     setIsCalculated(false);
 
     if (val >= "0" && val <= "9") {
-      setCurrentInputNumber((prev) => prev + val);
-      setDisplay((prev) => (prev === "0" || isCalculated ? val : prev + val));
+      const fresh = display === "0" || display === "Error" || isCalculated; // 새 숫자 시작
+      setCurrentInputNumber((prev) => (isCalculated ? val : prev + val));
+      setDisplay((prev) => (fresh ? val : prev + val));
       setEquation((prev) => (isCalculated ? val : prev + val));
     } else if (val === ".") {
-      if (!display.includes(".")) {
+      if (isCalculated || display === "Error") {
+        // 결과/에러 직후 소수점 → 새 숫자 "0."로 시작
+        setDisplay("0.");
+        setEquation("0.");
+        setCurrentInputNumber("0.");
+      } else if (!display.includes(".")) {
         setCurrentInputNumber((prev) => prev + ".");
         setDisplay((prev) => prev + ".");
         setEquation((prev) => prev + ".");
@@ -375,7 +392,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
         setCurrentInputNumber("");
       }
       setEquation((prev) => {
-        const base = prev === "" ? display : prev;
+        let base = prev === "" ? display : prev;
+        if (!/\d/.test(base)) base = "0"; // Error 등 숫자 없는 값 방지
         // 마지막에 눌린 연산자만 인식 — 직전 문자가 연산자면 교체
         if (/[+\-×÷]$/.test(base)) return base.slice(0, -1) + val;
         return base + val;
@@ -413,8 +431,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const handle9Start = () => {
     isPressingKeyRef.current = "9";
     holdTimerRef.current = setTimeout(() => {
-      // 1초 도달 → Peeking 모드 ON. 홀드가 발동했음을 timer ref=null로 표시
+      // 1초 도달 → Peeking 모드 ON + 드래그 시작(손가락이 아직 닿아 있으므로 1:1 추종)
       setIsPeekingActive(true);
+      setPeekDragging(true);
       triggerDimmingFeedback();
       holdTimerRef.current = null;
     }, 1000);
@@ -496,40 +515,55 @@ export default function MagicCalculator({ locale, productId }: Props) {
     triggerDimmingFeedback();
   };
 
-  // 앞자리 삭제 마술 (Impossible Erase) — -/+ 모드에서만, 왼쪽 드래그 시 앞자리부터 제거
+  // 디스플레이 스와이프 삭제
   const handleDisplaySwipe = (direction: "left" | "right") => {
-    if (!isEraseLeftActive) return; // 평소(+/-)엔 스와이프 삭제 동작 안 함
-    if (direction !== "left") return;
-    if (display.length > 1) {
-      const nextVal = display.substring(1);
+    if (isEraseLeftActive) {
+      // -/+ 모드(마술): 왼쪽 드래그 → 앞자리(왼쪽)부터 제거, 별도 효과 없음
+      if (direction !== "left") return;
+      const nextVal = display.length > 1 ? display.substring(1) : "0";
       setDisplay(nextVal);
-      setEquation(nextVal);
+      setEquation(nextVal === "0" ? "" : nextVal);
     } else {
-      setDisplay("0");
-      setEquation("");
+      // 일반 모드: 오른쪽 드래그 → 뒤(마지막) 한 글자씩 삭제 (예전 계산기 백스페이스)
+      if (direction !== "right") return;
+      const nextVal = display.length > 1 && display !== "Error" ? display.slice(0, -1) : "0";
+      setDisplay(nextVal);
+      setEquation(nextVal === "0" ? "" : nextVal);
     }
   };
 
   // 드래그 Peeking 터치 제어
   const handleTouchStart = (e: React.TouchEvent) => {
-    // 피킹은 9번 2초 홀드 '도중'에 켜지므로 시작 좌표는 항상 기록해 둔다
-    (window as any).startX = e.touches[0].clientX;
+    // 피킹은 9번 1초 홀드 '도중'에 켜지므로 시작 좌표는 항상 기록해 둔다
+    peekStartXRef.current = e.touches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isPeekingActive) return;
-    const touch = e.touches[0];
-    const diffX = touch.clientX - ((window as any).startX ?? touch.clientX);
-    if (diffX < 0) {
-      setDragOffset(diffX);
-    }
+    // 끄는 중일 때만 앞 화면이 손가락을 1:1로 따라온다 (열림 고정 상태에선 히스토리 스크롤 허용)
+    if (!isPeekingActive || !peekDragging) return;
+    const x = e.touches[0].clientX;
+    const start = peekStartXRef.current ?? x;
+    setDragOffset(Math.min(0, x - start)); // 왼쪽으로 끌 때만 이동
   };
 
   const handleTouchEnd = () => {
-    if (!isPeekingActive) return;
-    // 떼는 즉시 스프링 모션으로 0으로 귀환하며 피킹 비활성화
+    if (!isPeekingActive || !peekDragging) return;
+    setPeekDragging(false);
+    // 충분히 끌었으면 열림 고정(히스토리 스크롤 가능), 아니면 닫기
+    if (dragOffset <= -80) {
+      const open = -(typeof window !== "undefined" ? window.innerWidth * 0.8 : 320);
+      setDragOffset(open);
+    } else {
+      setDragOffset(0);
+      setIsPeekingActive(false);
+    }
+  };
+
+  // 열림 고정 상태에서 앞 계산기 영역을 탭하면 닫힘
+  const closePeek = () => {
     setDragOffset(0);
     setIsPeekingActive(false);
+    setPeekDragging(false);
   };
 
   // ── Web Bluetooth 감열 프린터 래스터화 인쇄 모듈 ──
@@ -693,13 +727,22 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
       {/* ── 백그라운드 Peeking 뷰 (관객의 순수 숫자 히스토리) ── */}
       <div className="absolute inset-0 flex justify-end w-full h-full bg-[#000000] z-0">
-        <div className="w-full h-full px-6 pt-6 flex flex-col justify-start">
-          <div className="flex-1 overflow-y-auto space-y-3 select-text text-right">
+        <div className="w-full h-full px-6 pt-6 pb-6 flex flex-col justify-start">
+          <div
+            className="flex-1 overflow-y-auto space-y-3 select-text text-right"
+            style={{ touchAction: "pan-y", overscrollBehavior: "contain" }}
+          >
             {peekLogs.map((log, index) => (
               <div key={index} className="text-3xl font-bold text-white font-mono whitespace-nowrap leading-tight">
                 {log}
               </div>
             ))}
+            {/* 마지막 결과값 — 입력값과 구분되도록 살짝 다른 색 */}
+            {lastResult && (
+              <div className="text-3xl font-bold font-mono whitespace-nowrap leading-tight" style={{ color: "#C4B5FD" }}>
+                {lastResult}
+              </div>
+            )}
             {currentInputNumber && (
               <div className="text-3xl font-bold text-white/50 font-mono whitespace-nowrap leading-tight italic">
                 {currentInputNumber}
@@ -714,9 +757,14 @@ export default function MagicCalculator({ locale, productId }: Props) {
         className="absolute inset-0 w-full h-full z-10 flex flex-col justify-end bg-black shadow-2xl"
         style={{
           background: theme === "android" ? "#13131F" : "#000000",
-          x: dragOffset, // Peeking 활성화 시 가로 스와이프로 밀려남
+          x: dragOffset, // Peeking 시 손가락을 따라 이동 / 열림 고정
         }}
-        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+        // 끄는 중엔 transition 없이 손가락 1:1 추종, 놓으면 스프링으로 고정/복귀
+        transition={peekDragging ? { duration: 0 } : { type: "spring", stiffness: 350, damping: 30 }}
+        onClick={() => {
+          // 열림 고정 상태(끄는 중 아님 + 밀려 있음)에서 앞 화면 탭 → 닫기
+          if (isPeekingActive && !peekDragging && dragOffset !== 0) closePeek();
+        }}
       >
         {/* Invisible 1/12 진입 영역 (3초 터치 시 세팅창) */}
         <div
@@ -757,7 +805,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
           }}
         >
           <div
-            className="w-full text-right font-light text-white select-none transition-all whitespace-nowrap overflow-hidden"
+            className="w-full text-right font-light text-white select-none whitespace-nowrap overflow-hidden"
             style={{
               fontFamily: theme === "android" ? "Roboto, sans-serif" : "-apple-system, BlinkMacSystemFont, sans-serif",
               fontSize: `${Math.max(2, 5.5 - (display.length > 6 ? (display.length - 6) * 0.5 : 0))}rem`,
