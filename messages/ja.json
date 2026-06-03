@@ -19,7 +19,12 @@
     },
     "featured": {
       "title": "注目のイリュージョン",
-      "subtitle": "プロマジシャンが厳選"
+      "subtitle": "プロマジシャンが厳選",
+      "viewAll": "すべての商品を見る",
+      "empty": "おすすめ商品はまだありません。"
+    },
+    "categories": {
+      "title": "カテゴリーから探す"
     },
     "customSection": {
       "title": "カスタム電子デバイス",
@@ -104,27 +109,12 @@
     "title": "マイアカウント",
     "orders": "注文履歴",
     "tutorials": "マイチュートリアル",
+    "wishlist": "ウィッシュリスト",
     "noOrders": "まだ注文はありません。",
+    "noWishlist": "ウィッシュリストは空です。",
     "watchTutorial": "チュートリアルを見る",
-    "signOut": "ログアウト",
-    "adminDashboard": "管理ダッシュボード",
-    "browseProducts": "商品を見る",
-    "noTutorials": "まだチュートリアルがありません。商品を購入するとチュートリアルが解除されます。",
-    "orderNumber": "注文番号",
-    "trackShipment": "配送追跡",
-    "trackingPending": "追跡番号を準備中...",
-    "status": {
-      "pending": "支払い待ち",
-      "paid": "支払い完了",
-      "shipped": "配送中",
-      "completed": "配送完了",
-      "refunded": "返金"
-    },
-    "steps": {
-      "paid": "支払い完了",
-      "shipped": "配送中",
-      "completed": "配送完了"
-    }
+    "addresses": "配送先",
+    "noAddresses": "保存された配送先がありません。"
   },
   "unlock": {
     "title": "チュートリアルを解除",
@@ -143,10 +133,12 @@
       "about": "会社概要",
       "contact": "お問い合わせ",
       "privacy": "プライバシーポリシー",
-      "terms": "",
+      "terms": "利用規約",
       "refundPolicy": "返金ポリシー",
-      "shipping": "配送について"
+      "shipping": "配送ポリシー"
     },
+    "sectionExplore": "探索",
+    "sectionLegal": "法的情報",
     "copyright": "© {year} Mystic Lab. All rights reserved."
   },
   "common": {
@@ -159,5 +151,21 @@
     "cancel": "キャンセル",
     "confirm": "確認",
     "currency": "USD"
+  },
+  "signUp": {
+    "consent": {
+      "terms": "<link>利用規約</link>に同意します（必須）",
+      "privacy": "<link>プライバシーポリシー</link>に同意します（必須）",
+      "marketing": "Mystic Labからのプロモーションメールの受信に同意します（任意）",
+      "age": "14歳以上であることを確認します（必須）",
+      "required": "必須項目にすべて同意してください。"
+    }
+  },
+  "auth": {
+    "inAppBrowserError": "Googleログインは、カカオトーク、Instagram、LINEなどのアプリ内ブラウザではご利用いただけません。URLをコピーして、SafariまたはChromeで開いてください。",
+    "authFailed": "認証に失敗しました。もう一度お試しください。",
+    "invalidCredentials": "メールアドレスまたはパスワードが正しくありません。",
+    "emailNotConfirmed": "メールを確認してアカウントを認証してください。",
+    "tooManyRequests": "試行回数が多すぎます。しばらくしてからもう一度お試しください。"
   }
 }

@@ -1,22 +1,13 @@
+import { requireAdmin } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { createClient } from "@/lib/supabase/server";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any).from("profiles").select("role").eq("id", user.id).single();
-  return (profile as { role?: string } | null)?.role === "admin" ? user : null;
-}
 
 export async function POST(request: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { slug, category, price_usd, stock, is_active, is_featured, thumbnail_url, demo_video_cloudflare_id, translations } = body;
+  const { slug, category, price_usd, stock, is_active, is_featured, thumbnail_url, demo_video_cloudflare_id, image_urls, translations } = body;
 
   if (!slug || !category || price_usd == null) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -36,6 +27,7 @@ export async function POST(request: Request) {
       is_featured: is_featured ?? false,
       thumbnail_url: thumbnail_url ?? null,
       demo_video_cloudflare_id: demo_video_cloudflare_id ?? null,
+      image_urls: image_urls ?? [],
     })
     .select("id")
     .single();

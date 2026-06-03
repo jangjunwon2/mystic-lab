@@ -1,15 +1,7 @@
+import { requireAdmin } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createDirectUploadUrl, isUploadConfigured } from "@/lib/cloudflare/stream";
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any).from("profiles").select("role").eq("id", user.id).single();
-  return (profile as { role?: string } | null)?.role === "admin" ? user : null;
-}
+import { createDirectUploadUrl, isUploadConfigured } from "@/lib/cloudflare/stream";
 
 /**
  * POST /api/admin/upload-url

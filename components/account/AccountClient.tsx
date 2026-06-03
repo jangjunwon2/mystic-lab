@@ -237,7 +237,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                 : tab === "tutorials" ? <Play className="w-3.5 h-3.5" />
                 : tab === "wishlist" ? <Heart className="w-3.5 h-3.5" />
                 : <MapPin className="w-3.5 h-3.5" />}
-              {tab === "addresses" ? "배송지" : t(tab)}
+              {t(tab)}
             </button>
           ))}
         </div>

@@ -1,16 +1,8 @@
-import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/admin-auth";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { createClient } from "@/lib/supabase/server";
-import { createHash, randomBytes } from "crypto";
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any).from("profiles").select("role").eq("id", user.id).single();
-  return (profile as { role?: string } | null)?.role === "admin" ? user : null;
-}
+import { createHash, randomBytes } from "crypto";
 
 function generatePlainCode(): string {
   // Format: XXXX-XXXX-XXXX (alphanumeric uppercase, easy to type)
@@ -18,6 +10,42 @@ function generatePlainCode(): string {
   const randomChar = () => chars[randomBytes(1)[0] % chars.length];
   const segment = () => Array.from({ length: 4 }, randomChar).join("");
   return `${segment()}-${segment()}-${segment()}`;
+}
+
+export async function DELETE(request: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await request.json();
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createAdminClient() as any;
+  const { error } = await supabase
+    .from("product_unlock_codes")
+    .delete()
+    .eq("id", id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
+
+export async function PATCH(request: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id, product_id } = await request.json();
+  if (!id || !product_id) return NextResponse.json({ error: "id and product_id required" }, { status: 400 });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createAdminClient() as any;
+  const { error } = await supabase
+    .from("product_unlock_codes")
+    .update({ product_id })
+    .eq("id", id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }
 
 export async function POST(request: Request) {
@@ -34,12 +62,11 @@ export async function POST(request: Request) {
   const supabase = await createAdminClient() as any;
   const { data, error } = await supabase
     .from("product_unlock_codes")
-    .insert({ product_id, code_hash: codeHash })
+    .insert({ product_id, code_hash: codeHash, code_plain: plainCode })
     .select("id")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Return the plain code ONCE — never stored
   return NextResponse.json({ id: (data as { id: string }).id, code: plainCode }, { status: 201 });
 }

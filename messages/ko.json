@@ -19,7 +19,12 @@
     },
     "featured": {
       "title": "추천 상품",
-      "subtitle": "프로 마술사들이 직접 선별한 제품"
+      "subtitle": "프로 마술사들이 직접 선별한 제품",
+      "viewAll": "전체 상품 보기",
+      "empty": "추천 상품이 없습니다."
+    },
+    "categories": {
+      "title": "카테고리별 탐색"
     },
     "customSection": {
       "title": "커스텀 전자 장치",
@@ -104,27 +109,12 @@
     "title": "마이페이지",
     "orders": "주문 내역",
     "tutorials": "해법 영상",
+    "wishlist": "위시리스트",
     "noOrders": "아직 주문 내역이 없습니다.",
+    "noWishlist": "위시리스트가 비어 있습니다.",
     "watchTutorial": "해법 영상 보기",
-    "signOut": "로그아웃",
-    "adminDashboard": "관리자 대시보드",
-    "browseProducts": "상품 보러가기",
-    "noTutorials": "아직 해법 영상이 없습니다. 상품을 구매하면 영상이 잠금 해제됩니다.",
-    "orderNumber": "주문번호",
-    "trackShipment": "배송 추적",
-    "trackingPending": "운송장 번호 준비 중...",
-    "status": {
-      "pending": "결제 대기",
-      "paid": "결제 완료",
-      "shipped": "배송중",
-      "completed": "배송 완료",
-      "refunded": "환불"
-    },
-    "steps": {
-      "paid": "결제 완료",
-      "shipped": "배송중",
-      "completed": "배송 완료"
-    }
+    "addresses": "배송지",
+    "noAddresses": "저장된 배송지가 없습니다."
   },
   "unlock": {
     "title": "해법 영상 잠금 해제",
@@ -143,10 +133,12 @@
       "about": "소개",
       "contact": "문의",
       "privacy": "개인정보처리방침",
-      "terms": "",
-      "refundPolicy": "환불 정책",
+      "terms": "이용약관",
+      "refundPolicy": "환불정책",
       "shipping": "배송 안내"
     },
+    "sectionExplore": "탐색",
+    "sectionLegal": "법적 정보",
     "copyright": "© {year} Mystic Lab. All rights reserved."
   },
   "common": {
@@ -159,5 +151,21 @@
     "cancel": "취소",
     "confirm": "확인",
     "currency": "USD"
+  },
+  "signUp": {
+    "consent": {
+      "terms": "<link>이용약관</link>에 동의합니다 (필수)",
+      "privacy": "<link>개인정보처리방침</link>에 동의합니다 (필수)",
+      "marketing": "Mystic Lab의 마케팅 이메일 수신에 동의합니다 (선택)",
+      "age": "만 14세 이상임을 확인합니다 (필수)",
+      "required": "필수 항목에 모두 동의해주세요."
+    }
+  },
+  "auth": {
+    "inAppBrowserError": "Google 로그인은 카카오톡, 인스타그램, LINE 등 앱 내 브라우저에서 지원되지 않습니다. 주소를 복사해 Safari 또는 Chrome에서 열어주세요.",
+    "authFailed": "인증에 실패했습니다. 다시 시도해주세요.",
+    "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다.",
+    "emailNotConfirmed": "이메일을 확인하고 계정을 먼저 인증해주세요.",
+    "tooManyRequests": "시도 횟수가 초과되었습니다. 잠시 후 다시 시도해주세요."
   }
 }

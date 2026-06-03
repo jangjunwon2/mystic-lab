@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient, createClient } from "@/lib/supabase/server";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any).from("profiles").select("role").eq("id", user.id).single();
-  return (data as { role?: string } | null)?.role === "admin" ? user : null;
-}
+import { requireAdmin } from "@/lib/admin-auth";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function GET() {
   const admin = await requireAdmin();

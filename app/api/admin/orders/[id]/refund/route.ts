@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient, createClient } from "@/lib/supabase/server";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any).from("profiles").select("role").eq("id", user.id).single();
-  return (data as { role?: string } | null)?.role === "admin" ? user : null;
-}
+import { requireAdmin } from "@/lib/admin-auth";
+import { createAdminClient } from "@/lib/supabase/server";
+import { sendRefundConfirmation } from "@/lib/resend";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -25,7 +18,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const supabase = await createAdminClient() as any;
   const { data: order, error: fetchErr } = await supabase
     .from("orders")
-    .select("id, status, total_usd, stripe_payment_intent_id")
+    .select("id, status, total_usd, customer_email, stripe_payment_intent_id")
     .eq("id", id)
     .single();
 
@@ -37,6 +30,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     id: string;
     status: string;
     total_usd: number;
+    customer_email: string | null;
     stripe_payment_intent_id: string | null;
   };
 
@@ -74,7 +68,43 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
   } else if (ref.startsWith("lemon_")) {
     const lsId = ref.slice(6);
-    gatewayMessage = `Lemon Squeezy 주문 ID: ${lsId} — LS 대시보드에서 수동 환불 처리 필요`;
+    const isSyntheticId = lsId.startsWith("lemon-success-");
+    const lsKey = process.env.LEMON_SQUEEZY_API_KEY;
+
+    if (isSyntheticId) {
+      // 웹훅 미수신으로 실제 LS 주문 ID가 없음 — LS 대시보드에서 수동 환불 필요
+      gatewayMessage = "⚠️ LS 주문 ID 미확인 — LemonSqueezy 대시보드에서 수동 환불 후 진행하세요";
+    } else if (lsKey) {
+      // 주문 상태 확인 (테스트 모드 여부)
+      const orderInfoRes = await fetch(`https://api.lemonsqueezy.com/v1/orders/${lsId}`, {
+        headers: { Authorization: `Bearer ${lsKey}`, Accept: "application/vnd.api+json" },
+      });
+      const orderInfo = orderInfoRes.ok ? await orderInfoRes.json() : null;
+      const isTestMode = orderInfo?.data?.attributes?.test_mode === true;
+
+      if (isTestMode) {
+        // 테스트 주문은 API 환불 불가 — DB만 업데이트
+        gatewayMessage = "ℹ️ 테스트 주문 — DB 상태만 환불로 변경 (LS 테스트 주문은 API 환불 불가)";
+      } else {
+        const lsRes = await fetch(`https://api.lemonsqueezy.com/v1/orders/${lsId}/refund`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${lsKey}`,
+            "Content-Type": "application/vnd.api+json",
+            Accept: "application/vnd.api+json",
+          },
+          body: JSON.stringify({ data: { type: "orders", id: lsId, attributes: {} } }),
+        });
+        if (!lsRes.ok) {
+          const err = await lsRes.json().catch(() => ({})) as Record<string, unknown>;
+          const detail = (err.errors as { detail?: string }[])?.[0]?.detail ?? "unknown";
+          return NextResponse.json({ error: `LemonSqueezy 환불 실패: ${detail}` }, { status: 400 });
+        }
+        gatewayMessage = "LemonSqueezy 환불 완료";
+      }
+    } else {
+      gatewayMessage = `LS 주문 ID: ${lsId} — API 키 미설정, 대시보드에서 수동 환불`;
+    }
   } else {
     gatewayMessage = "수동 주문 — 별도 결제 게이트웨이 없음";
   }
@@ -87,6 +117,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   if (updateErr) {
     return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  }
+
+  // 환불 완료 이메일 자동 발송
+  if (orderRow.status !== "refunded") {
+    sendRefundConfirmation({
+      to: orderRow.customer_email ?? "",
+      orderId: id,
+      totalUsd: orderRow.total_usd,
+    }).catch((err) => console.error("[refund] email failed:", err));
   }
 
   return NextResponse.json({ ok: true, message: gatewayMessage });

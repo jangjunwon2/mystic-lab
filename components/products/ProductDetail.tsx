@@ -169,7 +169,7 @@ export default function ProductDetail({
 
             {/* Short description */}
             {translation.short_description && (
-              <p className="text-[#9CA3AF] text-base leading-relaxed mb-4">
+              <p className="text-[#9CA3AF] text-base leading-relaxed mb-4" style={{ whiteSpace: "pre-wrap" }}>
                 {translation.short_description}
               </p>
             )}
@@ -252,10 +252,9 @@ export default function ProductDetail({
 
         {/* ── Description ── */}
         <Section title="Description">
-          <div
-            className="text-[#9CA3AF] leading-relaxed [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_li]:text-[#9CA3AF]"
-            dangerouslySetInnerHTML={{ __html: translation.description }}
-          />
+          <p className="text-[#9CA3AF] leading-relaxed" style={{ whiteSpace: "pre-wrap" }}>
+            {translation.description}
+          </p>
         </Section>
 
         {/* ── Demo Video ── */}

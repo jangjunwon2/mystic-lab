@@ -19,7 +19,12 @@
     },
     "featured": {
       "title": "精选幻术",
-      "subtitle": "由专业魔术师亲自甄选"
+      "subtitle": "由专业魔术师亲自甄选",
+      "viewAll": "查看全部商品",
+      "empty": "暂无精选商品。"
+    },
+    "categories": {
+      "title": "按分类浏览"
     },
     "customSection": {
       "title": "定制电子设备",
@@ -104,27 +109,12 @@
     "title": "我的账户",
     "orders": "我的订单",
     "tutorials": "我的教程",
+    "wishlist": "心愿单",
     "noOrders": "暂无订单。",
+    "noWishlist": "心愿单为空。",
     "watchTutorial": "观看教程",
-    "signOut": "退出登录",
-    "adminDashboard": "管理后台",
-    "browseProducts": "浏览商品",
-    "noTutorials": "暂无教程。购买商品即可解锁教程。",
-    "orderNumber": "订单号",
-    "trackShipment": "物流追踪",
-    "trackingPending": "运单号准备中...",
-    "status": {
-      "pending": "待付款",
-      "paid": "已付款",
-      "shipped": "配送中",
-      "completed": "已送达",
-      "refunded": "已退款"
-    },
-    "steps": {
-      "paid": "已付款",
-      "shipped": "配送中",
-      "completed": "已送达"
-    }
+    "addresses": "收货地址",
+    "noAddresses": "没有保存的地址。"
   },
   "unlock": {
     "title": "解锁教程",
@@ -143,10 +133,12 @@
       "about": "关于我们",
       "contact": "联系我们",
       "privacy": "隐私政策",
-      "terms": "",
+      "terms": "服务条款",
       "refundPolicy": "退款政策",
-      "shipping": "配送说明"
+      "shipping": "配送政策"
     },
+    "sectionExplore": "探索",
+    "sectionLegal": "法律信息",
     "copyright": "© {year} Mystic Lab. 版权所有。"
   },
   "common": {
@@ -159,5 +151,21 @@
     "cancel": "取消",
     "confirm": "确认",
     "currency": "USD"
+  },
+  "signUp": {
+    "consent": {
+      "terms": "我同意<link>服务条款</link>（必填）",
+      "privacy": "我同意<link>隐私政策</link>（必填）",
+      "marketing": "我同意接收Mystic Lab的推广邮件（选填）",
+      "age": "我确认我已年满14周岁（必填）",
+      "required": "请同意所有必填项后继续。"
+    }
+  },
+  "auth": {
+    "inAppBrowserError": "Google登录不支持在应用内浏览器（KakaoTalk、Instagram、LINE等）中使用。请复制链接，在Safari或Chrome中打开。",
+    "authFailed": "身份验证失败，请重试。",
+    "invalidCredentials": "邮箱或密码不正确。",
+    "emailNotConfirmed": "请查收邮件并先验证您的账户。",
+    "tooManyRequests": "尝试次数过多，请稍后再试。"
   }
 }

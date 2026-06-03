@@ -6,7 +6,7 @@ import type { CartItem } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const { paymentKey, orderId, amount, items, customerEmail, totalUsd } =
+    const { paymentKey, orderId, amount, items, customerEmail, totalUsd, shippingAddress } =
       await request.json();
 
     if (!paymentKey || !orderId || !amount) {
@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       customerEmail: resolvedEmail,
       totalUsd: totalUsd ?? 0,
       totalKrw: amount,
+      shippingAddress: shippingAddress ?? undefined,
     });
 
     if (resolvedEmail && resolvedItems.length > 0) {

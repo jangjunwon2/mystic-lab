@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyLemonWebhook } from "@/lib/payments/lemon";
 import { saveOrderToSupabase } from "@/lib/payments/save-order";
-import { sendOrderConfirmation } from "@/lib/resend";
+import { sendOrderConfirmation, sendRefundConfirmation } from "@/lib/resend";
+import { getUsdToKrw } from "@/lib/payments/exchange-rate";
 import type { CartItem } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
@@ -20,30 +21,81 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  // Only handle successful orders
-  const eventName = event.meta && (event.meta as Record<string, unknown>).event_name;
+  const eventName = (event.meta as Record<string, unknown> | undefined)?.event_name as string | undefined;
+
+  // order_refunded — DB 상태 업데이트 + 환불 이메일
+  if (eventName === "order_refunded") {
+    const data = event.data as Record<string, unknown> | undefined;
+    const attributes = data?.attributes as Record<string, unknown> | undefined;
+    const lsOrderId = data?.id as string | undefined;
+    const email = attributes?.user_email as string | undefined;
+    const totalKrwCents = (attributes?.total as number) ?? 0;
+    const krwRate = await getUsdToKrw();
+    const totalUsd = totalKrwCents / 100 / krwRate;
+
+    if (lsOrderId) {
+      const { createAdminClient } = await import("@/lib/supabase/server");
+      const supabase = await createAdminClient() as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      const { data: orderRow } = await supabase
+        .from("orders")
+        .select("id, customer_email, total_usd")
+        .eq("stripe_payment_intent_id", `lemon_${lsOrderId}`)
+        .maybeSingle();
+
+      if (orderRow) {
+        await supabase.from("orders").update({ status: "refunded" }).eq("id", orderRow.id);
+        sendRefundConfirmation({
+          to: orderRow.customer_email ?? email ?? "",
+          orderId: orderRow.id,
+          totalUsd: orderRow.total_usd ?? totalUsd,
+        }).catch((err) => console.error("[lemon-webhook/refund] email:", err));
+      }
+    }
+    return NextResponse.json({ received: true });
+  }
+
+  // Only handle order_created below
   if (eventName !== "order_created") {
     return NextResponse.json({ received: true });
   }
 
   const data = event.data as Record<string, unknown> | undefined;
   const attributes = data?.attributes as Record<string, unknown> | undefined;
-  const customData = attributes?.first_order_item as Record<string, unknown> | undefined;
 
   const email = (attributes?.user_email as string) ?? "";
   const orderId = (data?.id as string) ?? "";
-  const totalUsd = ((attributes?.total as number) ?? 0) / 100;
+  // Store is KRW: total is in KRW "cents" (×100). Convert to USD.
+  const totalKrwCents = (attributes?.total as number) ?? 0;
+  const krwRate = await getUsdToKrw();
+  const totalUsd = totalKrwCents / 100 / krwRate;
 
   // Decode cart items from custom metadata
   let items: CartItem[] = [];
+  let appliedDiscountCode: string | undefined;
   try {
     const meta = event.meta as Record<string, unknown> | undefined;
     const custom = (meta?.custom_data as Record<string, string>) ?? {};
     if (custom.order_items) {
       items = JSON.parse(custom.order_items);
     }
+    if (custom.discount_code) {
+      appliedDiscountCode = custom.discount_code;
+    }
   } catch {
-    console.error("[lemon-webhook] Failed to parse order_items from custom_data");
+    console.error("[lemon-webhook] Failed to parse custom_data");
+  }
+
+  const webhookMeta = event.meta as Record<string, unknown> | undefined;
+  const webhookCustom = (webhookMeta?.custom_data as Record<string, string>) ?? {};
+  const shippingMethod = webhookCustom.shipping_method ?? undefined;
+
+  let shippingAddress: Record<string, string> | undefined;
+  if (webhookCustom.shipping_address) {
+    try {
+      shippingAddress = JSON.parse(webhookCustom.shipping_address);
+    } catch {
+      console.error("[lemon-webhook] Failed to parse shipping_address");
+    }
   }
 
   const dbOrderId = await saveOrderToSupabase({
@@ -52,9 +104,10 @@ export async function POST(request: NextRequest) {
     items,
     customerEmail: email,
     totalUsd,
+    appliedDiscountCode,
+    shippingMethod,
+    shippingAddress,
   });
-
-  void customData; // suppress unused warning
 
   if (email && items.length > 0) {
     await sendOrderConfirmation({ to: email, items, totalUsd, orderId: dbOrderId }).catch(

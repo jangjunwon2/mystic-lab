@@ -1,15 +1,6 @@
+import { requireAdmin } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { createClient } from "@/lib/supabase/server";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any).from("profiles").select("role").eq("id", user.id).single();
-  return (profile as { role?: string } | null)?.role === "admin" ? user : null;
-}
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -24,7 +15,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
-  const { slug, category, price_usd, stock, is_active, is_featured, thumbnail_url, demo_video_cloudflare_id, translations } = body;
+  const { slug, category, price_usd, stock, is_active, is_featured, thumbnail_url, demo_video_cloudflare_id, image_urls, translations } = body;
 
   const updatePayload: Record<string, unknown> = {};
   if (slug !== undefined) updatePayload.slug = slug;
@@ -35,6 +26,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (is_featured !== undefined) updatePayload.is_featured = is_featured;
   if (thumbnail_url !== undefined) updatePayload.thumbnail_url = thumbnail_url;
   if (demo_video_cloudflare_id !== undefined) updatePayload.demo_video_cloudflare_id = demo_video_cloudflare_id;
+  if (image_urls !== undefined) updatePayload.image_urls = image_urls;
 
   if (Object.keys(updatePayload).length > 0) {
     const { error } = await supabase.from("products").update(updatePayload).eq("id", id);

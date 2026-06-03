@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       discountCodeId?: string | null;
     };
 
-    const { items, customerEmail, totalUsd } = body;
+    const { items, customerEmail, totalUsd, shippingMethod, shippingAddress, discountCode } = body;
 
     if (!customerEmail || !items?.length) {
       return NextResponse.json({ error: "Invalid request." }, { status: 400 });
@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
       items,
       customerEmail,
       totalUsd,
+      appliedDiscountCode: discountCode ?? undefined,
+      shippingMethod,
+      shippingAddress,
     });
 
     if (customerEmail && items.length > 0) {

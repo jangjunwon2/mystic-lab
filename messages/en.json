@@ -19,7 +19,12 @@
     },
     "featured": {
       "title": "Featured Illusions",
-      "subtitle": "Hand-selected by professional magicians"
+      "subtitle": "Hand-selected by professional magicians",
+      "viewAll": "View All Products",
+      "empty": "No featured products yet."
+    },
+    "categories": {
+      "title": "Browse by Category"
     },
     "customSection": {
       "title": "Custom Electronic Devices",
@@ -104,27 +109,12 @@
     "title": "My Account",
     "orders": "My Orders",
     "tutorials": "My Tutorials",
+    "wishlist": "Wishlist",
     "noOrders": "No orders yet.",
+    "noWishlist": "Your wishlist is empty.",
     "watchTutorial": "Watch Tutorial",
-    "signOut": "Sign Out",
-    "adminDashboard": "Admin Dashboard",
-    "browseProducts": "Browse Products",
-    "noTutorials": "No tutorials yet. Purchase a product to unlock tutorials.",
-    "orderNumber": "Order",
-    "trackShipment": "Track Shipment",
-    "trackingPending": "Tracking number pending...",
-    "status": {
-      "pending": "Payment Pending",
-      "paid": "Paid",
-      "shipped": "Shipped",
-      "completed": "Delivered",
-      "refunded": "Refunded"
-    },
-    "steps": {
-      "paid": "Paid",
-      "shipped": "Shipped",
-      "completed": "Delivered"
-    }
+    "addresses": "Addresses",
+    "noAddresses": "No saved addresses."
   },
   "unlock": {
     "title": "Unlock Tutorial",
@@ -145,8 +135,10 @@
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
       "refundPolicy": "Refund Policy",
-      "shipping": "Shipping"
+      "shipping": "Shipping Policy"
     },
+    "sectionExplore": "Explore",
+    "sectionLegal": "Legal",
     "copyright": "© {year} Mystic Lab. All rights reserved."
   },
   "common": {
@@ -159,5 +151,21 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "currency": "USD"
+  },
+  "signUp": {
+    "consent": {
+      "terms": "I agree to the <link>Terms of Service</link> (required)",
+      "privacy": "I agree to the <link>Privacy Policy</link> (required)",
+      "marketing": "I agree to receive promotional emails from Mystic Lab (optional)",
+      "age": "I confirm I am at least 14 years old (required)",
+      "required": "Please accept the required agreements to continue."
+    }
+  },
+  "auth": {
+    "inAppBrowserError": "Google Sign-In is not supported in in-app browsers (KakaoTalk, Instagram, LINE, etc.). Please copy the URL and open it in Safari or Chrome.",
+    "authFailed": "Authentication failed. Please try again.",
+    "invalidCredentials": "Invalid email or password.",
+    "emailNotConfirmed": "Please check your email and confirm your account first.",
+    "tooManyRequests": "Too many attempts. Please try again later."
   }
 }

@@ -1,15 +1,7 @@
+import { requireAdmin } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { createClient } from "@/lib/supabase/server";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any).from("profiles").select("role").eq("id", user.id).single();
-  return (profile as { role?: string } | null)?.role === "admin" ? user : null;
-}
+import { sendShippingNotification, sendReviewRequestEmail } from "@/lib/resend";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -26,31 +18,77 @@ export async function PATCH(request: Request, context: RouteContext) {
     tracking_carrier?: string;
   };
 
-  const update: Record<string, string> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createAdminClient() as any;
 
+  // Status update
   if (body.status !== undefined) {
     const valid = ["pending", "paid", "shipped", "completed", "refunded"];
     if (!valid.includes(body.status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
-    update.status = body.status;
+    const { error } = await supabase.from("orders").update({ status: body.status }).eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // completed 전환 시 리뷰 요청 이메일 자동 발송
+    if (body.status === "completed") {
+      const { data: orderDetail } = await supabase
+        .from("orders")
+        .select("customer_email, order_items(quantity, products(slug, product_translations(name, language)))")
+        .eq("id", id)
+        .single();
+
+      if (orderDetail?.customer_email) {
+        const items = ((orderDetail.order_items ?? []) as {
+          products: { slug: string; product_translations: { name: string; language: string }[] } | null;
+        }[])
+          .filter((i) => i.products)
+          .map((i) => ({
+            slug: i.products!.slug,
+            name: i.products!.product_translations.find((t) => t.language === "en")?.name
+              ?? i.products!.product_translations[0]?.name
+              ?? i.products!.slug,
+          }));
+
+        sendReviewRequestEmail({
+          to: orderDetail.customer_email,
+          orderId: id,
+          items,
+          siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app",
+        }).catch((err) => console.error("[completed] review email failed:", err));
+      }
+    }
   }
 
+  // Tracking update
   if (body.tracking_number !== undefined) {
-    update.tracking_number = body.tracking_number.trim();
-  }
-  if (body.tracking_carrier !== undefined) {
-    update.tracking_carrier = body.tracking_carrier.trim();
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        tracking_number: body.tracking_number || null,
+        tracking_carrier: body.tracking_carrier || null,
+        ...(body.tracking_number ? { status: "shipped" } : {}),
+      })
+      .eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Send shipping email if tracking number added
+    if (body.tracking_number) {
+      const { data: order } = await supabase
+        .from("orders")
+        .select("customer_email")
+        .eq("id", id)
+        .single();
+      if (order?.customer_email) {
+        await sendShippingNotification({
+          to: order.customer_email,
+          orderId: id,
+          trackingNumber: body.tracking_number,
+          carrier: body.tracking_carrier ?? null,
+        }).catch(() => { /* non-critical */ });
+      }
+    }
   }
 
-  if (!Object.keys(update).length) {
-    return NextResponse.json({ error: "No valid fields" }, { status: 400 });
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createAdminClient() as any;
-  const { error } = await supabase.from("orders").update(update).eq("id", id);
-
-  if (error) return NextResponse.json({ error: "주문 업데이트 중 오류가 발생했습니다." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

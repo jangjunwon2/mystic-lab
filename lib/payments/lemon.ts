@@ -20,7 +20,10 @@ interface LemonCheckoutResponse {
 export async function createLemonCheckout(
   payload: OrderPayload,
   amountCents: number,
-  discountCodeId?: string
+  discountCodeId?: string,
+  discountCode?: string,
+  shippingMethod?: string,
+  shippingAddress?: Record<string, string>
 ): Promise<string> {
   const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
   const storeId = process.env.LEMON_SQUEEZY_STORE_ID;
@@ -63,6 +66,9 @@ export async function createLemonCheckout(
                 }))
               ),
               ...(discountCodeId ? { discount_code_id: discountCodeId } : {}),
+              ...(discountCode ? { discount_code: discountCode } : {}),
+              ...(shippingMethod ? { shipping_method: shippingMethod } : {}),
+              ...(shippingAddress ? { shipping_address: JSON.stringify(shippingAddress) } : {}),
             },
           },
           product_options: {
@@ -72,8 +78,8 @@ export async function createLemonCheckout(
             receipt_button_text: "View at Mystic Lab",
             receipt_link_url: `${process.env.NEXT_PUBLIC_SITE_URL}/${payload.locale}/account`,
           },
-          // Custom price in cents — requires the variant to allow custom pricing
-          price: amountCents,
+          // Custom price in cents — requires the variant to have "Pay what you want" enabled
+          custom_price: amountCents,
         },
         relationships: {
           store: { data: { type: "stores", id: storeId } },
@@ -86,7 +92,14 @@ export async function createLemonCheckout(
   if (!res.ok) {
     const err = await res.text();
     console.error("Lemon Squeezy checkout creation failed:", err);
-    throw new Error("Failed to create Lemon Squeezy checkout.");
+    // Parse API error for more actionable message
+    let detail = "";
+    try {
+      const parsed = JSON.parse(err);
+      const firstError = parsed?.errors?.[0];
+      if (firstError) detail = ` — ${firstError.title ?? ""}: ${firstError.detail ?? ""}`.trim();
+    } catch { /* ignore parse error */ }
+    throw new Error(`Lemon Squeezy API error${detail}`);
   }
 
   const json: LemonCheckoutResponse = await res.json();

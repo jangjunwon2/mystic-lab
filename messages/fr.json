@@ -19,7 +19,12 @@
     },
     "featured": {
       "title": "Illusions en Vedette",
-      "subtitle": "Sélectionnées par des magiciens professionnels"
+      "subtitle": "Sélectionnées par des magiciens professionnels",
+      "viewAll": "Voir tous les produits",
+      "empty": "Aucun produit vedette pour le moment."
+    },
+    "categories": {
+      "title": "Parcourir par catégorie"
     },
     "customSection": {
       "title": "Appareils Électroniques Personnalisés",
@@ -104,27 +109,12 @@
     "title": "Mon Compte",
     "orders": "Mes Commandes",
     "tutorials": "Mes Tutoriels",
+    "wishlist": "Liste de Souhaits",
     "noOrders": "Aucune commande pour l'instant.",
+    "noWishlist": "Votre liste de souhaits est vide.",
     "watchTutorial": "Voir le Tutoriel",
-    "signOut": "Déconnexion",
-    "adminDashboard": "Tableau de Bord Admin",
-    "browseProducts": "Voir les Produits",
-    "noTutorials": "Aucun tutoriel pour l'instant. Achetez un produit pour les débloquer.",
-    "orderNumber": "Commande",
-    "trackShipment": "Suivre l'Envoi",
-    "trackingPending": "Numéro de suivi en attente...",
-    "status": {
-      "pending": "Paiement en Attente",
-      "paid": "Payé",
-      "shipped": "Expédié",
-      "completed": "Livré",
-      "refunded": "Remboursé"
-    },
-    "steps": {
-      "paid": "Payé",
-      "shipped": "Expédié",
-      "completed": "Livré"
-    }
+    "addresses": "Adresses",
+    "noAddresses": "Aucune adresse enregistrée."
   },
   "unlock": {
     "title": "Déverrouiller le Tutoriel",
@@ -143,10 +133,12 @@
       "about": "À Propos",
       "contact": "Contact",
       "privacy": "Politique de Confidentialité",
-      "terms": "",
-      "refundPolicy": "Politique de remboursement",
-      "shipping": "Livraison"
+      "terms": "Conditions d'Utilisation",
+      "refundPolicy": "Politique de Remboursement",
+      "shipping": "Politique d'expédition"
     },
+    "sectionExplore": "Explorer",
+    "sectionLegal": "Légal",
     "copyright": "© {year} Mystic Lab. Tous droits réservés."
   },
   "common": {
@@ -159,5 +151,21 @@
     "cancel": "Annuler",
     "confirm": "Confirmer",
     "currency": "USD"
+  },
+  "signUp": {
+    "consent": {
+      "terms": "J'accepte les <link>Conditions d'Utilisation</link> (obligatoire)",
+      "privacy": "J'accepte la <link>Politique de Confidentialité</link> (obligatoire)",
+      "marketing": "J'accepte de recevoir des emails promotionnels de Mystic Lab (facultatif)",
+      "age": "Je confirme avoir au moins 16 ans (obligatoire)",
+      "required": "Veuillez accepter les accords obligatoires pour continuer."
+    }
+  },
+  "auth": {
+    "inAppBrowserError": "La connexion Google n'est pas prise en charge dans les navigateurs intégrés aux applications (KakaoTalk, Instagram, LINE, etc.). Veuillez copier l'URL et l'ouvrir dans Safari ou Chrome.",
+    "authFailed": "L'authentification a échoué. Veuillez réessayer.",
+    "invalidCredentials": "Email ou mot de passe incorrect.",
+    "emailNotConfirmed": "Veuillez vérifier votre email et confirmer votre compte d'abord.",
+    "tooManyRequests": "Trop de tentatives. Veuillez réessayer plus tard."
   }
 }

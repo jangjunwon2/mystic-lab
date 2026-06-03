@@ -19,7 +19,12 @@
     },
     "featured": {
       "title": "Ausgewählte Illusionen",
-      "subtitle": "Handverlesen von professionellen Zauberkünstlern"
+      "subtitle": "Handverlesen von professionellen Zauberkünstlern",
+      "viewAll": "Alle Produkte ansehen",
+      "empty": "Noch keine Produkte vorhanden."
+    },
+    "categories": {
+      "title": "Nach Kategorie durchsuchen"
     },
     "customSection": {
       "title": "Individuelle Elektronische Geräte",
@@ -104,27 +109,12 @@
     "title": "Mein Konto",
     "orders": "Meine Bestellungen",
     "tutorials": "Meine Tutorials",
+    "wishlist": "Wunschliste",
     "noOrders": "Noch keine Bestellungen.",
+    "noWishlist": "Ihre Wunschliste ist leer.",
     "watchTutorial": "Tutorial Ansehen",
-    "signOut": "Abmelden",
-    "adminDashboard": "Admin-Dashboard",
-    "browseProducts": "Produkte Ansehen",
-    "noTutorials": "Noch keine Tutorials. Kaufen Sie ein Produkt, um Tutorials freizuschalten.",
-    "orderNumber": "Bestellung",
-    "trackShipment": "Sendung Verfolgen",
-    "trackingPending": "Sendungsnummer ausstehend...",
-    "status": {
-      "pending": "Zahlung Ausstehend",
-      "paid": "Bezahlt",
-      "shipped": "Versendet",
-      "completed": "Geliefert",
-      "refunded": "Erstattet"
-    },
-    "steps": {
-      "paid": "Bezahlt",
-      "shipped": "Versendet",
-      "completed": "Geliefert"
-    }
+    "addresses": "Adressen",
+    "noAddresses": "Keine gespeicherten Adressen."
   },
   "unlock": {
     "title": "Tutorial Freischalten",
@@ -143,10 +133,12 @@
       "about": "Über Uns",
       "contact": "Kontakt",
       "privacy": "Datenschutzerklärung",
-      "terms": "",
-      "refundPolicy": "Rückgabe & Erstattung",
-      "shipping": "Versand"
+      "terms": "Nutzungsbedingungen",
+      "refundPolicy": "Rückgaberichtlinie",
+      "shipping": "Versandrichtlinie"
     },
+    "sectionExplore": "Entdecken",
+    "sectionLegal": "Rechtliches",
     "copyright": "© {year} Mystic Lab. Alle Rechte vorbehalten."
   },
   "common": {
@@ -159,5 +151,21 @@
     "cancel": "Abbrechen",
     "confirm": "Bestätigen",
     "currency": "USD"
+  },
+  "signUp": {
+    "consent": {
+      "terms": "Ich stimme den <link>Nutzungsbedingungen</link> zu (erforderlich)",
+      "privacy": "Ich stimme der <link>Datenschutzerklärung</link> zu (erforderlich)",
+      "marketing": "Ich stimme dem Erhalt von Werbe-E-Mails von Mystic Lab zu (optional)",
+      "age": "Ich bestätige, dass ich mindestens 16 Jahre alt bin (erforderlich)",
+      "required": "Bitte stimme den erforderlichen Vereinbarungen zu, um fortzufahren."
+    }
+  },
+  "auth": {
+    "inAppBrowserError": "Google-Anmeldung wird in In-App-Browsern (KakaoTalk, Instagram, LINE usw.) nicht unterstützt. Bitte kopiere die URL und öffne sie in Safari oder Chrome.",
+    "authFailed": "Authentifizierung fehlgeschlagen. Bitte versuche es erneut.",
+    "invalidCredentials": "Ungültige E-Mail-Adresse oder falsches Passwort.",
+    "emailNotConfirmed": "Bitte überprüfe deine E-Mail und bestätige zuerst dein Konto.",
+    "tooManyRequests": "Zu viele Versuche. Bitte versuche es später erneut."
   }
 }
