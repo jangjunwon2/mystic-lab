@@ -108,6 +108,8 @@ export default function CheckoutPage({ params }: Props) {
   const [saveIntlAddress, setSaveIntlAddress] = useState(false);
   const [saveKrAddress, setSaveKrAddress] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [pointsBalance, setPointsBalance] = useState(0);
+  const [pointsInput, setPointsInput] = useState("");
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
@@ -129,6 +131,11 @@ export default function CheckoutPage({ params }: Props) {
       if (!user) return;
       setIsLoggedIn(true);
       if (user.email) setEmail(user.email);
+      // 마일리지 잔액 로드
+      fetch("/api/account/points")
+        .then((r) => r.json())
+        .then((d) => setPointsBalance(typeof d.balance === "number" ? d.balance : 0))
+        .catch(() => { /* ignore */ });
       const meta = user.user_metadata?.default_address as Record<string, string> | undefined;
 
       // Load saved addresses; if found, use default; else fall back to metadata
@@ -203,7 +210,13 @@ export default function CheckoutPage({ params }: Props) {
 
   const SHIPPING_COSTS = { standard: 0, express: 15 } as const;
   const subtotalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
-  const discountedUsd = Math.max(0, subtotalUsd - (appliedDiscount?.discountAmount ?? 0));
+  const couponDiscountUsd = appliedDiscount?.discountAmount ?? 0;
+  // 마일리지: 100P = $1. 쿠폰 차감 후 잔여 금액까지만, 보유 잔액까지만 사용 가능
+  const afterCouponUsd = Math.max(0, subtotalUsd - couponDiscountUsd);
+  const maxUsablePoints = Math.min(pointsBalance, Math.floor(afterCouponUsd * 100));
+  const pointsUsed = Math.max(0, Math.min(parseInt(pointsInput, 10) || 0, maxUsablePoints));
+  const pointsDiscountUsd = pointsUsed / 100;
+  const discountedUsd = Math.max(0, subtotalUsd - couponDiscountUsd - pointsDiscountUsd);
   const shippingCostUsd = track === "international" ? SHIPPING_COSTS[shippingMethod] : 0;
   const totalUsd = discountedUsd + shippingCostUsd;
   const totalKrw = usdToKrw(discountedUsd, krwRate);
@@ -321,6 +334,7 @@ export default function CheckoutPage({ params }: Props) {
           discountAmount: appliedDiscount?.discountAmount ?? 0,
           discountCodeId: appliedDiscount?.id ?? null,
           discountCode: appliedDiscount?.code ?? null,
+          pointsUsed,
           shippingMethod,
           shippingAddress: {
             name: intlName.trim(),
@@ -517,6 +531,40 @@ export default function CheckoutPage({ params }: Props) {
                   <p className="text-xs text-[#EF4444] mt-1.5">{couponError}</p>
                 )}
               </div>
+
+              {/* Mileage (points) */}
+              {isLoggedIn && pointsBalance > 0 && (
+                <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-[#9CA3AF] uppercase tracking-wider">마일리지 사용 (선택)</span>
+                    <span className="text-xs text-[#9CA3AF]">보유 <b className="text-[#A855F7]">{pointsBalance.toLocaleString()}P</b> (100P = $1)</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={maxUsablePoints}
+                      value={pointsInput}
+                      onChange={(e) => setPointsInput(e.target.value)}
+                      placeholder="0"
+                      className="flex-1 bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] transition-colors placeholder:text-[#4B5563]"
+                    />
+                    <button
+                      onClick={() => setPointsInput(String(maxUsablePoints))}
+                      className="px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-80"
+                      style={{ background: "#1A1A2E", color: "#A855F7", border: "1px solid #2D2D4E" }}
+                    >
+                      전액
+                    </button>
+                  </div>
+                  {pointsUsed > 0 && (
+                    <p className="text-xs text-[#10B981] mt-1.5">−${pointsDiscountUsd.toFixed(2)} 할인 ({pointsUsed.toLocaleString()}P 사용)</p>
+                  )}
+                  {pointsBalance > 0 && maxUsablePoints < pointsBalance && (
+                    <p className="text-xs text-[#6B7280] mt-1">결제 금액 한도까지 최대 {maxUsablePoints.toLocaleString()}P 사용 가능</p>
+                  )}
+                </div>
+              )}
 
               {/* Payment Section */}
               <AnimatePresence mode="wait">
@@ -799,6 +847,7 @@ export default function CheckoutPage({ params }: Props) {
                       email={email}
                       items={items}
                       totalUsd={totalUsd}
+                      pointsUsed={pointsUsed}
                       shippingAddress={shippingName ? {
                         name: shippingName,
                         phone: shippingPhone,

@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
   const webhookMeta = event.meta as Record<string, unknown> | undefined;
   const webhookCustom = (webhookMeta?.custom_data as Record<string, string>) ?? {};
   const shippingMethod = webhookCustom.shipping_method ?? undefined;
+  const pointsSpent = webhookCustom.points_used ? parseInt(webhookCustom.points_used, 10) || 0 : 0;
 
   let shippingAddress: Record<string, string> | undefined;
   if (webhookCustom.shipping_address) {
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
     appliedDiscountCode,
     shippingMethod,
     shippingAddress,
+    pointsSpent,
   });
 
   if (email && items.length > 0) {

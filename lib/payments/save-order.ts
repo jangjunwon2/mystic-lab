@@ -73,6 +73,22 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     console.error(`[${input.gateway}] saveOrderItems error:`, itemsError);
   }
 
+  // 마일리지 사용(차감) — 회원이 결제 시 포인트를 사용했을 때. 잔액 초과분은 보정
+  if (userId && input.pointsSpent && input.pointsSpent > 0) {
+    const { getPointsBalance } = await import("@/lib/points");
+    const balance = await getPointsBalance(supabase, userId);
+    const spend = Math.min(input.pointsSpent, balance);
+    if (spend > 0) {
+      await addPointTransaction(supabase, {
+        userId,
+        amount: -spend,
+        type: "spend",
+        orderId: order.id,
+        note: `주문 사용 (${input.gateway})`,
+      }).catch(() => { /* 차감 실패는 주문에 영향 없음 */ });
+    }
+  }
+
   // 마일리지 적립 — 회원이며 결제 금액이 있을 때 (5%)
   if (userId && input.totalUsd > 0) {
     const earned = earnPointsForUsd(input.totalUsd);

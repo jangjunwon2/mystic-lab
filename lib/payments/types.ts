@@ -33,6 +33,7 @@ export interface SaveOrderInput {
   customerNote?: string;
   shippingAddress?: ShippingAddress;
   shippingMethod?: string;
+  pointsSpent?: number; // 결제 시 사용한 마일리지(포인트) — 결제 성공 후 차감 기록
 }
 
 export type PaymentGateway = "lemon" | "toss";
