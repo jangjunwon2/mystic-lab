@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // 1. 해당 코드 존재 여부 및 productId와 일치하는지 조회
     const { data: unlockCode, error: queryError } = await supabase
       .from("product_unlock_codes")
-      .select("id, product_id, first_used_at")
+      .select("id, product_id")
       .eq("code_hash", codeHash)
       .eq("product_id", productId)
       .maybeSingle();
@@ -51,21 +51,13 @@ export async function POST(request: NextRequest) {
     const newDeviceToken = randomBytes(32).toString("hex");
     const newDeviceTokenHash = createHash("sha256").update(newDeviceToken).digest("hex");
 
-    const now = new Date().toISOString();
-    const updateData: Record<string, string> = {
-      active_token_hash: newDeviceTokenHash,
-      last_activated_at: now,
-    };
-
-    // 최초 사용 등록 기록
-    if (!unlockCode.first_used_at) {
-      updateData.first_used_at = now;
-    }
-
     // DB에 활성 토큰 해시 및 마지막 활성화 시각 업데이트
     const { error: updateError } = await supabase
       .from("product_unlock_codes")
-      .update(updateData)
+      .update({
+        active_token_hash: newDeviceTokenHash,
+        last_activated_at: new Date().toISOString(),
+      })
       .eq("id", unlockCode.id);
 
     if (updateError) {
