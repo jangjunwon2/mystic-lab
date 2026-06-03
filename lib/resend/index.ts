@@ -16,11 +16,21 @@ function escapeHtmlWithLineBreaks(str: string): string {
   return escapeHtml(str).replace(/\n/g, "<br>");
 }
 
-const FROM = process.env.RESEND_FROM_EMAIL ?? "Mystic Lab <noreply@mysticlab.com>";
+// 검증된 발신 도메인이 없을 때를 대비한 기본값 — Resend 테스트 발신주소(onboarding@resend.dev)는
+// 별도 도메인 검증 없이 발송 가능하나, Resend 계정 가입 이메일로만 수신됩니다.
+const FROM = process.env.RESEND_FROM_EMAIL ?? "Mystic Lab <onboarding@resend.dev>";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
 
 function isConfigured(): boolean {
   return !!(process.env.RESEND_API_KEY && ADMIN_EMAIL);
+}
+
+// Resend SDK는 발송 실패 시 throw 대신 { error }를 반환하므로 명시적으로 로깅한다.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function logSendResult(tag: string, res: any): void {
+  if (res?.error) {
+    console.error(`[resend:${tag}] 발송 실패:`, res.error?.message ?? res.error);
+  }
 }
 
 export async function sendOrderConfirmation({
@@ -368,13 +378,14 @@ export async function sendContactInquiry({
 </body>
 </html>`;
 
-  await resend.emails.send({
+  const res = await resend.emails.send({
     from: FROM,
     to: ADMIN_EMAIL,
     replyTo: email,
     subject: `[Mystic Lab] Contact: ${type} from ${name}`,
     html,
   });
+  logSendResult("contact", res);
 }
 
 export async function sendShippingNotification({
