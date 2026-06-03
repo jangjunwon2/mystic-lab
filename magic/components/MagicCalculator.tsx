@@ -359,6 +359,16 @@ export default function MagicCalculator({ locale, productId }: Props) {
         return `${DD}${MM}${YYYY}${HH}${Min}`;
       case "YYMMDDHHMM":
         return `${YY}${MM}${DD}${HH}${Min}`;
+      case "YYMMDD":
+        return `${YY}${MM}${DD}`;       // 예: 250603
+      case "YYYYMMDD":
+        return `${YYYY}${MM}${DD}`;     // 예: 20250603
+      case "MMDDYY":
+        return `${MM}${DD}${YY}`;       // 예: 060325
+      case "DDMMYY":
+        return `${DD}${MM}${YY}`;       // 예: 030625
+      case "MMDD":
+        return `${MM}${DD}`;            // 예: 0603
       case "HHMM":
         return `${HH}${Min}`;
       default:
@@ -419,9 +429,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
   // AC상태에서 `=` 터치 시 이전 결과값 복원
   const handleEqualsClick = () => {
     if (display === "0" && equation === "" && lastResult !== "") {
+      // 디밍 없이 즉시 복원 → 뒤 히스토리가 비쳐 겹쳐 보이는 현상 방지
       setDisplay(lastResult);
       setEquation(lastResult);
-      triggerDimmingFeedback();
     } else {
       calculateResult();
     }
@@ -1208,22 +1218,36 @@ export default function MagicCalculator({ locale, productId }: Props) {
                         onChange={(e) => saveConfig({ ...config, timeFormat: e.target.value as any })}
                         className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white px-3 py-2 text-sm focus:outline-none"
                       >
-                        <option value="YYYYMMDDHHMM">YYYYMMDDHHMM (ex: 202606031530)</option>
-                        <option value="MMDDYYYYHHMM">MMDDYYYYHHMM (ex: 060320261530)</option>
-                        <option value="DDMMYYYYHHMM">DDMMYYYYHHMM (ex: 030620261530)</option>
-                        <option value="YYMMDDHHMM">YYMMDDHHMM (ex: 2606031530)</option>
+                        <option value="YYYYMMDDHHMM">YYYYMMDDHHMM (ex: 202506031530)</option>
+                        <option value="MMDDYYYYHHMM">MMDDYYYYHHMM (ex: 060320251530)</option>
+                        <option value="DDMMYYYYHHMM">DDMMYYYYHHMM (ex: 030620251530)</option>
+                        <option value="YYMMDDHHMM">YYMMDDHHMM (ex: 2506031530)</option>
+                        <option value="YYYYMMDD">YYYYMMDD (ex: 20250603)</option>
+                        <option value="YYMMDD">YYMMDD (ex: 250603)</option>
+                        <option value="MMDDYY">MMDDYY (ex: 060325)</option>
+                        <option value="DDMMYY">DDMMYY (ex: 030625)</option>
+                        <option value="MMDD">MMDD (ex: 0603)</option>
                         <option value="HHMM">HHMM (ex: 1530)</option>
                       </select>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs text-[#9CA3AF]">Minutes Offset (+/- minutes)</label>
+                      <label className="text-xs text-[#9CA3AF] flex items-center justify-between">
+                        <span>분 오프셋 (Minutes Offset)</span>
+                        <span className="text-[#A855F7] font-semibold">+{config.timeOffset}분</span>
+                      </label>
                       <input
-                        type="number"
-                        value={config.timeOffset}
-                        onChange={(e) => saveConfig({ ...config, timeOffset: parseInt(e.target.value) || 0 })}
-                        className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white px-3 py-2 text-sm focus:outline-none"
+                        type="range"
+                        min={0}
+                        max={10}
+                        step={1}
+                        value={Math.min(10, Math.max(0, config.timeOffset))}
+                        onChange={(e) => saveConfig({ ...config, timeOffset: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full accent-[#7C3AED]"
                       />
+                      <div className="flex justify-between text-[10px] text-[#6B7280]">
+                        <span>0</span><span>5</span><span>10</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1390,7 +1414,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
 interface MagicConfig {
   forceType: "static" | "time";
   staticNumber: string;
-  timeFormat: "YYYYMMDDHHMM" | "MMDDYYYYHHMM" | "DDMMYYYYHHMM" | "YYMMDDHHMM" | "HHMM";
+  timeFormat: "YYYYMMDDHHMM" | "MMDDYYYYHHMM" | "DDMMYYYYHHMM" | "YYMMDDHHMM" | "YYMMDD" | "YYYYMMDD" | "MMDDYY" | "DDMMYY" | "MMDD" | "HHMM";
   timeOffset: number;
   forceMode: "one-time" | "continuous";
   osTheme: "auto" | "ios" | "android";
