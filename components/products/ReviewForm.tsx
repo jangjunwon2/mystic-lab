@@ -25,7 +25,7 @@ export default function ReviewForm({ productId, hasPurchased }: Props) {
         style={{ background: "rgba(16,185,129,0.08)", borderColor: "rgba(16,185,129,0.3)", color: "#10B981" }}
       >
         <CheckCircle2 className="w-4 h-4 shrink-0" />
-        Thank you! Your review has been submitted and will appear after approval.
+        Thank you! Your review has been posted.
       </div>
     );
   }

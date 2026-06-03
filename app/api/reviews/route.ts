@@ -68,7 +68,8 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       rating,
       comment: comment?.trim() || null,
-      is_approved: false,
+      // 게시 후 관리(post-moderation): 작성 즉시 공개, 어드민이 사후에 미노출/삭제
+      is_approved: true,
     })
     .select("id")
     .single();
