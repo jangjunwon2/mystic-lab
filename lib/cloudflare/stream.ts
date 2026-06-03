@@ -22,6 +22,10 @@ export async function generateSignedUrl(
   streamId: string,
   expirySeconds = 3600
 ): Promise<string> {
+  // 임베드 코드/플레이어 URL을 직접 넣은 경우 — 전체 URL을 그대로 사용 (파라미터 보존)
+  if (streamId.startsWith("vimeoembed:")) {
+    return streamId.slice("vimeoembed:".length);
+  }
   // 외부 플랫폼(Vimeo / YouTube)은 서명 없이 임베드 URL로 변환
   if (streamId.startsWith("vimeo:")) {
     // 형식: "vimeo:ID" 또는 "vimeo:ID:HASH" (비공개/링크 전용 영상의 개인정보 해시)
