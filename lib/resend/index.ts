@@ -3,6 +3,19 @@ import type { CartItem } from "@/lib/payments/types";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeHtmlWithLineBreaks(str: string): string {
+  return escapeHtml(str).replace(/\n/g, "<br>");
+}
+
 const FROM = process.env.RESEND_FROM_EMAIL ?? "Mystic Lab <noreply@mysticlab.com>";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
 
@@ -179,8 +192,8 @@ export async function sendCustomOrderReply({
         </tr>
         <tr>
           <td style="padding:32px;">
-            <p style="color:#F0E6FF;font-size:15px;margin:0 0 16px;">Hi ${customerName},</p>
-            <div style="color:#D1D5DB;font-size:14px;line-height:1.8;white-space:pre-wrap;">${message.replace(/\n/g, "<br>")}</div>
+            <p style="color:#F0E6FF;font-size:15px;margin:0 0 16px;">Hi ${escapeHtml(customerName)},</p>
+            <div style="color:#D1D5DB;font-size:14px;line-height:1.8;white-space:pre-wrap;">${escapeHtmlWithLineBreaks(message)}</div>
           </td>
         </tr>
         <tr>
@@ -332,19 +345,19 @@ export async function sendContactInquiry({
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr><td style="padding:8px 0;border-bottom:1px solid #2D2D4E;">
                 <div style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">From</div>
-                <div style="color:#F0E6FF;font-size:14px;">${name} &lt;<a href="mailto:${email}" style="color:#A855F7;">${email}</a>&gt;</div>
+                <div style="color:#F0E6FF;font-size:14px;">${escapeHtml(name)} &lt;<a href="mailto:${escapeHtml(email)}" style="color:#A855F7;">${escapeHtml(email)}</a>&gt;</div>
               </td></tr>
               <tr><td style="padding:8px 0;border-bottom:1px solid #2D2D4E;">
                 <div style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Topic</div>
-                <div style="color:#F59E0B;font-size:14px;font-weight:600;">${type}</div>
+                <div style="color:#F59E0B;font-size:14px;font-weight:600;">${escapeHtml(type)}</div>
               </td></tr>
               <tr><td style="padding:8px 0;border-bottom:1px solid #2D2D4E;">
                 <div style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Locale</div>
-                <div style="color:#D1D5DB;font-size:14px;">${locale}</div>
+                <div style="color:#D1D5DB;font-size:14px;">${escapeHtml(locale)}</div>
               </td></tr>
               <tr><td style="padding:8px 0;">
                 <div style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Message</div>
-                <div style="color:#D1D5DB;font-size:14px;line-height:1.6;background:#13131F;border-radius:8px;padding:12px;">${message.replace(/\n/g, "<br>")}</div>
+                <div style="color:#D1D5DB;font-size:14px;line-height:1.6;background:#13131F;border-radius:8px;padding:12px;">${escapeHtmlWithLineBreaks(message)}</div>
               </td></tr>
             </table>
           </td>
@@ -561,32 +574,32 @@ function customOrderAdminHtml({
               <tr>
                 <td style="padding:10px 0;border-bottom:1px solid #2D2D4E;">
                   <div style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Customer</div>
-                  <div style="color:#F0E6FF;font-size:14px;">${customerName}</div>
+                  <div style="color:#F0E6FF;font-size:14px;">${escapeHtml(customerName)}</div>
                 </td>
               </tr>
               <tr>
                 <td style="padding:10px 0;border-bottom:1px solid #2D2D4E;">
                   <div style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Email</div>
-                  <div style="color:#A855F7;font-size:14px;"><a href="mailto:${customerEmail}" style="color:#A855F7;">${customerEmail}</a></div>
+                  <div style="color:#A855F7;font-size:14px;"><a href="mailto:${escapeHtml(customerEmail)}" style="color:#A855F7;">${escapeHtml(customerEmail)}</a></div>
                 </td>
               </tr>
               <tr>
                 <td style="padding:10px 0;border-bottom:1px solid #2D2D4E;">
                   <div style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Budget Range</div>
-                  <div style="color:#F59E0B;font-size:14px;font-weight:600;">${budgetRange}</div>
+                  <div style="color:#F59E0B;font-size:14px;font-weight:600;">${escapeHtml(budgetRange)}</div>
                 </td>
               </tr>
               ${desiredDeadline ? `
               <tr>
                 <td style="padding:10px 0;border-bottom:1px solid #2D2D4E;">
                   <div style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Desired Deadline</div>
-                  <div style="color:#D1D5DB;font-size:14px;">${desiredDeadline}</div>
+                  <div style="color:#D1D5DB;font-size:14px;">${escapeHtml(desiredDeadline)}</div>
                 </td>
               </tr>` : ""}
               <tr>
                 <td style="padding:10px 0;">
                   <div style="color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Description</div>
-                  <div style="color:#D1D5DB;font-size:14px;line-height:1.6;background:#13131F;border-radius:8px;padding:12px;">${description.replace(/\n/g, "<br>")}</div>
+                  <div style="color:#D1D5DB;font-size:14px;line-height:1.6;background:#13131F;border-radius:8px;padding:12px;">${escapeHtmlWithLineBreaks(description)}</div>
                 </td>
               </tr>
             </table>

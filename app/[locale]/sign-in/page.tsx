@@ -31,6 +31,18 @@ export default function SignInPage({ params }: Props) {
     if (err === "auth_error") setError("Authentication failed. Please try again.");
   }, [params, searchParams]);
 
+  const mapAuthError = (msg: string): string => {
+    if (msg.includes("Invalid login credentials") || msg.includes("User not found"))
+      return "이메일 또는 비밀번호가 올바르지 않습니다.";
+    if (msg.includes("Email not confirmed"))
+      return "이메일 인증을 완료해주세요. 받은편지함을 확인해주세요.";
+    if (msg.includes("Too many requests") || msg.includes("rate limit"))
+      return "요청 횟수가 초과되었습니다. 잠시 후 다시 시도해주세요.";
+    if (msg.includes("Account not found"))
+      return "등록되지 않은 이메일입니다.";
+    return "로그인 중 오류가 발생했습니다. 다시 시도해주세요.";
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -43,12 +55,16 @@ export default function SignInPage({ params }: Props) {
     });
 
     if (authError) {
-      setError(authError.message);
+      setError(mapAuthError(authError.message));
       setLoading(false);
       return;
     }
 
-    const redirect = searchParams.get("redirect") ?? `/${locale}/account`;
+    const rawRedirect = searchParams.get("redirect");
+    const redirect =
+      rawRedirect?.startsWith("/") && !rawRedirect.startsWith("//")
+        ? rawRedirect
+        : `/${locale}/account`;
     router.push(redirect);
     router.refresh();
   };
@@ -142,6 +158,15 @@ export default function SignInPage({ params }: Props) {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Link
+                href={`/${locale}/forgot-password`}
+                className="text-xs text-[#6B7280] hover:text-[#A855F7] transition-colors"
+              >
+                비밀번호를 잊으셨나요?
+              </Link>
             </div>
 
             <button

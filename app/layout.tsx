@@ -32,6 +32,20 @@ export const metadata: Metadata = {
     siteName: "Mystic Lab",
     title: "Mystic Lab — Professional Magic Shop",
     description: "Premium magic props and custom electronic devices for professional magicians worldwide.",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app"}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "Mystic Lab — Professional Magic Shop",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mystic Lab — Professional Magic Shop",
+    description: "Premium magic props and custom electronic devices for professional magicians worldwide.",
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app"}/og-image.png`],
   },
 };
 

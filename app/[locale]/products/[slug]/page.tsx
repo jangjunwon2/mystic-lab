@@ -120,9 +120,44 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const sample = SAMPLE[slug];
   const t = sample?.product_translations[0];
+
+  let product: ProductWithTranslations | null = null;
+  let translation: ProductTranslation | null = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("products")
+      .select("*, product_translations(*)")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .single();
+    if (data) {
+      product = data as unknown as ProductWithTranslations;
+      translation = product.product_translations.find((tr) => tr.language === "en") ?? product.product_translations[0] ?? null;
+    }
+  } catch {
+    // fallback to sample
+  }
+
+  const name = translation?.name ?? t?.name ?? "Product";
+  const description = translation?.short_description ?? t?.short_description ?? undefined;
+  const image = product?.thumbnail_url ?? undefined;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
+
   return {
-    title: t?.name ?? "Product",
-    description: t?.short_description ?? undefined,
+    title: name,
+    description,
+    openGraph: {
+      title: `${name} | Mystic Lab`,
+      description,
+      images: image ? [{ url: image, width: 1200, height: 630, alt: name }] : [`${siteUrl}/og-image.png`],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${name} | Mystic Lab`,
+      description,
+      images: image ? [image] : [`${siteUrl}/og-image.png`],
+    },
   };
 }
 
@@ -214,17 +249,50 @@ export default async function ProductPage({ params }: Props) {
       created_at: "",
     };
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: translation.name,
+    description: translation.short_description ?? translation.description,
+    image: product.thumbnail_url ?? `${siteUrl}/og-image.png`,
+    url: `${siteUrl}/${locale}/products/${product.slug}`,
+    brand: { "@type": "Brand", name: "Mystic Lab" },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "USD",
+      price: product.price_usd.toFixed(2),
+      availability: product.stock > 0
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      seller: { "@type": "Organization", name: "Mystic Lab" },
+    },
+    aggregateRating: reviews.length > 0
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1),
+          reviewCount: reviews.length,
+        }
+      : undefined,
+  };
+
   return (
-    <ProductDetail
-      product={product}
-      translation={translation}
-      locale={locale}
-      reviews={reviews}
-      isLoggedIn={isLoggedIn}
-      isAdmin={isAdmin}
-      hasPurchased={hasPurchased}
-      solutionVideo={solutionVideo}
-      signedVideoUrl={signedVideoUrl}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ProductDetail
+        product={product}
+        translation={translation}
+        locale={locale}
+        reviews={reviews}
+        isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
+        hasPurchased={hasPurchased}
+        solutionVideo={solutionVideo}
+        signedVideoUrl={signedVideoUrl}
+      />
+    </>
   );
 }
