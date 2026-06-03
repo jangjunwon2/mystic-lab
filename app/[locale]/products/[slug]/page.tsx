@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
 import ProductDetail from "@/components/products/ProductDetail";
 import type { ProductCategory } from "@/lib/supabase/types";
@@ -171,6 +171,7 @@ export default async function ProductPage({ params }: Props) {
   let isLoggedIn = false;
   let isAdmin = false;
   let hasPurchased = false;
+  let hasDelivered = false;
 
   try {
     const supabase = await createClient();
@@ -185,13 +186,31 @@ export default async function ProductPage({ params }: Props) {
     if (error) throw error;
     product = data as unknown as ProductWithTranslations;
 
+    // 리뷰 조회 — profiles 조인은 anon RLS에 막히므로 분리: reviews(anon) + profiles(service-role 배치)
     const { data: reviewData } = await supabase
       .from("reviews")
-      .select("*, profiles(display_name, avatar_url)")
+      .select("id, product_id, user_id, rating, comment, is_approved, created_at")
       .eq("product_id", product.id)
       .eq("is_approved", true)
       .order("created_at", { ascending: false });
-    reviews = (reviewData ?? []) as ReviewWithProfile[];
+
+    const reviewRows = (reviewData ?? []) as Omit<ReviewWithProfile, "profiles">[];
+    if (reviewRows.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const admin = (await createAdminClient()) as any;
+      const userIds = [...new Set(reviewRows.map((r) => r.user_id))];
+      const { data: profs } = await admin
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", userIds);
+      const profMap = new Map(
+        ((profs ?? []) as { id: string; display_name: string | null; avatar_url: string | null }[]).map((p) => [p.id, p])
+      );
+      reviews = reviewRows.map((r) => ({
+        ...r,
+        profiles: profMap.get(r.user_id) ?? null,
+      })) as ReviewWithProfile[];
+    }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -214,9 +233,9 @@ export default async function ProductPage({ params }: Props) {
 
       if (isAdmin) {
         hasPurchased = true;
-      } else if (solutionVideo) {
-        hasPurchased = true;
+        hasDelivered = true;
       } else {
+        // 구매 여부 (해법영상·앱코드 접근 — 결제완료부터)
         const { data: orderItem } = await supabase
           .from("order_items")
           .select("id, orders!inner(user_id, status)")
@@ -225,7 +244,18 @@ export default async function ProductPage({ params }: Props) {
           .in("orders.status", ["paid", "shipped", "completed"])
           .limit(1)
           .maybeSingle();
-        hasPurchased = !!orderItem;
+        hasPurchased = !!orderItem || !!solutionVideo;
+
+        // 배송완료 여부 (리뷰 작성 — 배송완료 주문만)
+        const { data: deliveredItem } = await supabase
+          .from("order_items")
+          .select("id, orders!inner(user_id, status)")
+          .eq("product_id", product.id)
+          .eq("orders.user_id", user.id)
+          .eq("orders.status", "completed")
+          .limit(1)
+          .maybeSingle();
+        hasDelivered = !!deliveredItem;
       }
 
       // Generate signed playback URL server-side (avoids exposing raw stream IDs)
@@ -290,6 +320,7 @@ export default async function ProductPage({ params }: Props) {
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
         hasPurchased={hasPurchased}
+        hasDelivered={hasDelivered}
         solutionVideo={solutionVideo}
         signedVideoUrl={signedVideoUrl}
       />

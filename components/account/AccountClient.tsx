@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Package, Play, Heart, LogOut, ChevronRight, Pencil, Check, X, Star, MessageSquare, ExternalLink, MapPin, Trash2, BookmarkCheck, Plus, ChevronDown } from "lucide-react";
 import { COUNTRIES } from "@/lib/constants/countries";
 import { createClient } from "@/lib/supabase/client";
+import MagicMemberAccess from "@/components/products/MagicMemberAccess";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
@@ -522,11 +523,15 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
   const date = new Date(order.created_at).toLocaleDateString("en-US", {
     year: "numeric", month: "short", day: "numeric",
   });
-  const eligible = ["paid", "shipped", "completed"].includes(order.status);
+  // 리뷰는 배송완료(completed) 주문만 작성 가능
+  const eligible = order.status === "completed";
   const gateway = getGatewayLabel(order.stripe_payment_intent_id);
   const trackingUrl = order.tracking_carrier && order.tracking_number
     ? (CARRIER_URLS[order.tracking_carrier] ?? null)
     : null;
+  // 마술 계산기(앱) 구매 항목 — 인증 코드 표시용
+  const magicItem = order.order_items.find((i) => i.products?.slug === "magic-calculator");
+  const magicProductId = magicItem?.products?.id ?? null;
 
   return (
     <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
@@ -637,6 +642,11 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
           );
         })}
       </div>
+
+      {/* 마술 계산기(앱) 인증 코드 — 해당 상품 구매 주문에 표시 */}
+      {magicProductId && (
+        <MagicMemberAccess productId={magicProductId} locale={locale} />
+      )}
     </div>
   );
 }
@@ -663,7 +673,7 @@ function ReviewInlineForm({
     cancel: locale === "ko" ? "취소" : locale === "ja" ? "キャンセル" : locale === "zh-CN" ? "取消" : "Cancel",
     duplicate: locale === "ko" ? "이미 리뷰를 작성하셨습니다." : "You've already reviewed this product.",
     error: locale === "ko" ? "제출에 실패했습니다." : "Submission failed. Try again.",
-    success: locale === "ko" ? "리뷰가 제출되었습니다! 검토 후 게시됩니다." : "Review submitted! It will appear after approval.",
+    success: locale === "ko" ? "리뷰가 등록되었습니다! 감사합니다." : "Review posted! Thank you.",
   };
 
   async function handleSubmit() {

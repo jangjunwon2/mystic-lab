@@ -19,32 +19,22 @@ export async function POST(request: NextRequest) {
   const admin = await createAdminClient();
 
   // Verify purchase
+  // 리뷰는 배송완료(completed) 주문에 대해서만 작성 가능
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: orderItem } = await (admin as any)
     .from("order_items")
     .select("id, orders!inner(user_id, status)")
     .eq("product_id", product_id)
     .eq("orders.user_id", user.id)
-    .in("orders.status", ["paid", "shipped", "completed"])
+    .eq("orders.status", "completed")
     .limit(1)
     .maybeSingle();
 
-  // Check manual grant too
-  let hasAccess = !!orderItem;
-  if (!hasAccess) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: grant } = await (admin as any)
-      .from("manual_video_grants")
-      .select("id")
-      .eq("product_id", product_id)
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle();
-    hasAccess = !!grant;
-  }
-
-  if (!hasAccess) {
-    return NextResponse.json({ error: "Purchase required to leave a review." }, { status: 403 });
+  if (!orderItem) {
+    return NextResponse.json(
+      { error: "배송 완료된 주문에 대해서만 리뷰를 작성할 수 있습니다." },
+      { status: 403 }
+    );
   }
 
   // Check for existing review

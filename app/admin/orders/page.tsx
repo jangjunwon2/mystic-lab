@@ -12,6 +12,7 @@ export default async function AdminOrdersPage() {
     .from("orders")
     .select(`
       id, customer_email, total_usd, status, created_at, updated_at,
+      shipped_at, completed_at,
       tracking_number, tracking_carrier, shipping_address, shipping_method,
       stripe_payment_intent_id,
       order_items(

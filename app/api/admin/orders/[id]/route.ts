@@ -27,7 +27,11 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!valid.includes(body.status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
-    const { error } = await supabase.from("orders").update({ status: body.status }).eq("id", id);
+    const nowIso = new Date().toISOString();
+    const statusUpdate: Record<string, string> = { status: body.status };
+    if (body.status === "shipped") statusUpdate.shipped_at = nowIso;
+    if (body.status === "completed") statusUpdate.completed_at = nowIso;
+    const { error } = await supabase.from("orders").update(statusUpdate).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     // completed 전환 시 리뷰 요청 이메일 자동 발송
@@ -67,7 +71,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       .update({
         tracking_number: body.tracking_number || null,
         tracking_carrier: body.tracking_carrier || null,
-        ...(body.tracking_number ? { status: "shipped" } : {}),
+        ...(body.tracking_number ? { status: "shipped", shipped_at: new Date().toISOString() } : {}),
       })
       .eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

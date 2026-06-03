@@ -35,6 +35,8 @@ interface Order {
   total_usd: number;
   status: string;
   created_at: string;
+  shipped_at: string | null;
+  completed_at: string | null;
   tracking_number: string | null;
   tracking_carrier: string | null;
   shipping_address: Record<string, string> | null;
@@ -262,8 +264,23 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                           {STATUS_LABELS[order.status as OrderStatus] ?? order.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
-                        {new Date(order.created_at).toLocaleDateString()}
+                      <td className="px-6 py-4 text-xs leading-relaxed" style={{ color: "#9CA3AF" }}>
+                        <div>
+                          <span style={{ color: "#6B7280" }}>주문 </span>
+                          {new Date(order.created_at).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" })}
+                        </div>
+                        {order.shipped_at && (
+                          <div>
+                            <span style={{ color: "#3B82F6" }}>발송 </span>
+                            {new Date(order.shipped_at).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" })}
+                          </div>
+                        )}
+                        {order.completed_at && (
+                          <div>
+                            <span style={{ color: "#10B981" }}>완료 </span>
+                            {new Date(order.completed_at).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" })}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-2">

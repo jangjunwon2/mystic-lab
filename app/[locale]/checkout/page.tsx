@@ -21,6 +21,7 @@ import {
   BookmarkCheck,
 } from "lucide-react";
 import { COUNTRIES } from "@/lib/constants/countries";
+import CountrySelect from "@/components/ui/CountrySelect";
 import { usdToKrw, USD_TO_KRW } from "@/lib/payments/toss";
 import { createClient } from "@/lib/supabase/client";
 import type { CartItem } from "@/lib/payments/types";
@@ -614,16 +615,12 @@ export default function CheckoutPage({ params }: Props) {
                           onChange={(e) => setIntlPhone(e.target.value)}
                           className="bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] placeholder:text-[#4B5563] focus:outline-none focus:border-[#7C3AED]/60"
                         />
-                        <select
+                        <CountrySelect
                           value={intlCountry}
-                          onChange={(e) => setIntlCountry(e.target.value)}
-                          className="bg-[#13131F] border border-[#2D2D4E] rounded-lg px-3 py-2 text-sm text-[#F0E6FF] focus:outline-none focus:border-[#7C3AED]/60"
-                        >
-                          <option value="">Country *</option>
-                          {COUNTRIES.map((c) => (
-                            <option key={c.code} value={c.code}>{c.name}</option>
-                          ))}
-                        </select>
+                          onChange={(c) => setIntlCountry(c.code)}
+                          placeholder="국가 선택 *"
+                          required
+                        />
                         <input
                           placeholder="Address line 1 *"
                           value={intlLine1}

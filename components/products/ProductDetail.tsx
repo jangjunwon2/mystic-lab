@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
@@ -37,6 +38,7 @@ interface Props {
   isLoggedIn: boolean;
   isAdmin: boolean;
   hasPurchased: boolean;
+  hasDelivered?: boolean;
   solutionVideo: SolutionVideo | null;
   signedVideoUrl: string | null;
 }
@@ -49,11 +51,28 @@ export default function ProductDetail({
   isLoggedIn,
   isAdmin,
   hasPurchased,
+  hasDelivered = false,
   solutionVideo,
   signedVideoUrl,
 }: Props) {
   const t = useTranslations("products");
+  const router = useRouter();
   const [addedToCart, setAddedToCart] = useState(false);
+
+  const handleBuyNow = () => {
+    try {
+      const item = {
+        id: product.id,
+        slug: product.slug,
+        name: translation.name,
+        price_usd: product.price_usd,
+        quantity: 1,
+      };
+      localStorage.setItem("ml_cart", JSON.stringify([item]));
+      window.dispatchEvent(new Event("storage"));
+    } catch { /* storage may be unavailable */ }
+    router.push(`/${locale}/checkout`);
+  };
 
   const avgRating = reviews.length
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
@@ -227,13 +246,13 @@ export default function ProductDetail({
               </button>
 
               {product.stock > 0 && (
-                <Link
-                  href={`/${locale}/checkout?product=${product.slug}`}
+                <button
+                  onClick={handleBuyNow}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:opacity-90 active:scale-95 transition-all duration-150"
                 >
                   <Zap className="w-4 h-4" />
                   {t("buyNow")}
-                </Link>
+                </button>
               )}
 
               {/* Wishlist — right of Buy Now */}
@@ -295,7 +314,7 @@ export default function ProductDetail({
 
         {/* ── Reviews ── */}
         <Section title={`${t("reviews.title")} (${reviews.length})`}>
-          <ReviewForm productId={product.id} hasPurchased={hasPurchased} />
+          <ReviewForm productId={product.id} hasPurchased={hasDelivered} />
           {reviews.length === 0 ? (
             <div className="text-center py-10 text-[#9CA3AF] text-sm">
               {t("reviews.noReviews")}
