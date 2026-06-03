@@ -166,6 +166,19 @@
     "authFailed": "L'authentification a échoué. Veuillez réessayer.",
     "invalidCredentials": "Email ou mot de passe incorrect.",
     "emailNotConfirmed": "Veuillez vérifier votre email et confirmer votre compte d'abord.",
-    "tooManyRequests": "Trop de tentatives. Veuillez réessayer plus tard."
+    "tooManyRequests": "Trop de tentatives. Veuillez réessayer plus tard.",
+    "subtitle": "Accédez à vos tutoriels et à l'historique des commandes",
+    "emailLabel": "E-mail",
+    "passwordLabel": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "signingIn": "Connexion...",
+    "orDivider": "ou",
+    "continueWithGoogle": "Continuer avec Google",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "signUpLink": "S'inscrire",
+    "haveDeviceCode": "Vous avez un code d'appareil ?",
+    "unlockTutorial": "Débloquer le tutoriel",
+    "notRegistered": "Cet e-mail n'est pas enregistré.",
+    "signInError": "Une erreur s'est produite lors de la connexion. Veuillez réessayer."
   }
 }

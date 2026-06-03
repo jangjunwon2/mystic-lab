@@ -14,6 +14,7 @@ interface Props {
 
 export default function SignInPage({ params }: Props) {
   const t = useTranslations("nav");
+  const ta = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [locale, setLocale] = useState("en");
@@ -28,19 +29,19 @@ export default function SignInPage({ params }: Props) {
     params.then(({ locale: l }) => setLocale(l));
 
     const err = searchParams.get("error");
-    if (err === "auth_error") setError("Authentication failed. Please try again.");
-  }, [params, searchParams]);
+    if (err === "auth_error") setError(ta("authFailed"));
+  }, [params, searchParams, ta]);
 
   const mapAuthError = (msg: string): string => {
     if (msg.includes("Invalid login credentials") || msg.includes("User not found"))
-      return "이메일 또는 비밀번호가 올바르지 않습니다.";
+      return ta("invalidCredentials");
     if (msg.includes("Email not confirmed"))
-      return "이메일 인증을 완료해주세요. 받은편지함을 확인해주세요.";
+      return ta("emailNotConfirmed");
     if (msg.includes("Too many requests") || msg.includes("rate limit"))
-      return "요청 횟수가 초과되었습니다. 잠시 후 다시 시도해주세요.";
+      return ta("tooManyRequests");
     if (msg.includes("Account not found"))
-      return "등록되지 않은 이메일입니다.";
-    return "로그인 중 오류가 발생했습니다. 다시 시도해주세요.";
+      return ta("notRegistered");
+    return ta("signInError");
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -105,7 +106,7 @@ export default function SignInPage({ params }: Props) {
             {t("signIn")}
           </h1>
           <p className="text-sm text-[#9CA3AF]">
-            Access your tutorials and order history
+            {ta("subtitle")}
           </p>
         </div>
 
@@ -121,7 +122,7 @@ export default function SignInPage({ params }: Props) {
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                Email
+                {ta("emailLabel")}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
@@ -138,7 +139,7 @@ export default function SignInPage({ params }: Props) {
 
             <div>
               <label className="block text-xs font-medium text-[#9CA3AF] mb-1.5 uppercase tracking-wide">
-                Password
+                {ta("passwordLabel")}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
@@ -165,7 +166,7 @@ export default function SignInPage({ params }: Props) {
                 href={`/${locale}/forgot-password`}
                 className="text-xs text-[#6B7280] hover:text-[#A855F7] transition-colors"
               >
-                비밀번호를 잊으셨나요?
+                {ta("forgotPassword")}
               </Link>
             </div>
 
@@ -179,14 +180,14 @@ export default function SignInPage({ params }: Props) {
               ) : (
                 <LogIn className="w-4 h-4" />
               )}
-              {loading ? "Signing in..." : t("signIn")}
+              {loading ? ta("signingIn") : t("signIn")}
             </button>
           </form>
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-[#2D2D4E]" />
-            <span className="text-xs text-[#4B5563]">or</span>
+            <span className="text-xs text-[#4B5563]">{ta("orDivider")}</span>
             <div className="flex-1 h-px bg-[#2D2D4E]" />
           </div>
 
@@ -201,21 +202,21 @@ export default function SignInPage({ params }: Props) {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Continue with Google
+            {ta("continueWithGoogle")}
           </button>
         </div>
 
         {/* Footer links */}
         <p className="text-center text-sm text-[#6B7280] mt-6">
-          Don&apos;t have an account?{" "}
+          {ta("noAccount")}{" "}
           <Link href={`/${locale}/sign-up`} className="text-[#A855F7] hover:text-[#C084FC] transition-colors">
-            Sign up
+            {ta("signUpLink")}
           </Link>
         </p>
         <p className="text-center text-sm text-[#6B7280] mt-2">
-          Have a device code?{" "}
+          {ta("haveDeviceCode")}{" "}
           <Link href={`/${locale}/unlock`} className="text-[#A855F7] hover:text-[#C084FC] transition-colors">
-            Unlock tutorial
+            {ta("unlockTutorial")}
           </Link>
         </p>
       </motion.div>

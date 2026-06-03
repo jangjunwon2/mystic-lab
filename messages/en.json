@@ -166,6 +166,19 @@
     "authFailed": "Authentication failed. Please try again.",
     "invalidCredentials": "Invalid email or password.",
     "emailNotConfirmed": "Please check your email and confirm your account first.",
-    "tooManyRequests": "Too many attempts. Please try again later."
+    "tooManyRequests": "Too many attempts. Please try again later.",
+    "subtitle": "Access your tutorials and order history",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "forgotPassword": "Forgot your password?",
+    "signingIn": "Signing in...",
+    "orDivider": "or",
+    "continueWithGoogle": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "signUpLink": "Sign up",
+    "haveDeviceCode": "Have a device code?",
+    "unlockTutorial": "Unlock tutorial",
+    "notRegistered": "This email is not registered.",
+    "signInError": "An error occurred during sign-in. Please try again."
   }
 }

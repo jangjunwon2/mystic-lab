@@ -166,6 +166,19 @@
     "authFailed": "La autenticación falló. Por favor, inténtalo de nuevo.",
     "invalidCredentials": "Correo electrónico o contraseña incorrectos.",
     "emailNotConfirmed": "Por favor, revisa tu correo y confirma tu cuenta primero.",
-    "tooManyRequests": "Demasiados intentos. Por favor, inténtalo más tarde."
+    "tooManyRequests": "Demasiados intentos. Por favor, inténtalo más tarde.",
+    "subtitle": "Accede a tus tutoriales e historial de pedidos",
+    "emailLabel": "Correo electrónico",
+    "passwordLabel": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "signingIn": "Iniciando sesión...",
+    "orDivider": "o",
+    "continueWithGoogle": "Continuar con Google",
+    "noAccount": "¿No tienes una cuenta?",
+    "signUpLink": "Regístrate",
+    "haveDeviceCode": "¿Tienes un código de dispositivo?",
+    "unlockTutorial": "Desbloquear tutorial",
+    "notRegistered": "Este correo no está registrado.",
+    "signInError": "Ocurrió un error al iniciar sesión. Inténtalo de nuevo."
   }
 }

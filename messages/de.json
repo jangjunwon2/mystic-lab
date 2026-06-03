@@ -166,6 +166,19 @@
     "authFailed": "Authentifizierung fehlgeschlagen. Bitte versuche es erneut.",
     "invalidCredentials": "Ungültige E-Mail-Adresse oder falsches Passwort.",
     "emailNotConfirmed": "Bitte überprüfe deine E-Mail und bestätige zuerst dein Konto.",
-    "tooManyRequests": "Zu viele Versuche. Bitte versuche es später erneut."
+    "tooManyRequests": "Zu viele Versuche. Bitte versuche es später erneut.",
+    "subtitle": "Greifen Sie auf Ihre Tutorials und Bestellhistorie zu",
+    "emailLabel": "E-Mail",
+    "passwordLabel": "Passwort",
+    "forgotPassword": "Passwort vergessen?",
+    "signingIn": "Anmeldung...",
+    "orDivider": "oder",
+    "continueWithGoogle": "Mit Google fortfahren",
+    "noAccount": "Noch kein Konto?",
+    "signUpLink": "Registrieren",
+    "haveDeviceCode": "Haben Sie einen Gerätecode?",
+    "unlockTutorial": "Tutorial freischalten",
+    "notRegistered": "Diese E-Mail ist nicht registriert.",
+    "signInError": "Bei der Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
   }
 }

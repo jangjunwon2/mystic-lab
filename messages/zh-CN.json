@@ -166,6 +166,19 @@
     "authFailed": "身份验证失败，请重试。",
     "invalidCredentials": "邮箱或密码不正确。",
     "emailNotConfirmed": "请查收邮件并先验证您的账户。",
-    "tooManyRequests": "尝试次数过多，请稍后再试。"
+    "tooManyRequests": "尝试次数过多，请稍后再试。",
+    "subtitle": "查看您的教程和订单记录",
+    "emailLabel": "邮箱",
+    "passwordLabel": "密码",
+    "forgotPassword": "忘记密码？",
+    "signingIn": "登录中...",
+    "orDivider": "或",
+    "continueWithGoogle": "使用 Google 继续",
+    "noAccount": "还没有账户？",
+    "signUpLink": "注册",
+    "haveDeviceCode": "有设备代码？",
+    "unlockTutorial": "解锁教程",
+    "notRegistered": "该邮箱未注册。",
+    "signInError": "登录时发生错误，请重试。"
   }
 }
