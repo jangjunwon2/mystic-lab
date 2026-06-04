@@ -32,14 +32,16 @@ function glyph(size, inset) {
 <svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2E2E31"/>
-      <stop offset="100%" stop-color="#161618"/>
+      <stop offset="0%" stop-color="#3C3C3E"/>
+      <stop offset="100%" stop-color="#2A2A2C"/>
     </linearGradient>
-    <linearGradient id="cam" gradientUnits="userSpaceOnUse" x1="${camX}" y1="${camTop}" x2="${camBottom}" y2="${camBottom}">
-      <stop offset="0%" stop-color="#9C2FCE"/>
-      <stop offset="30%" stop-color="#D62976"/>
-      <stop offset="62%" stop-color="#F77737"/>
-      <stop offset="100%" stop-color="#FEDA77"/>
+    <!-- 카메라 글리프 그라디언트: 위(보라)→아래(쨍한 노랑), 거의 수직 + 약간 대각 -->
+    <linearGradient id="cam" gradientUnits="userSpaceOnUse" x1="${cx - camW * 0.15}" y1="${camTop}" x2="${cx + camW * 0.15}" y2="${camBottom}">
+      <stop offset="0%" stop-color="#9B30C9"/>
+      <stop offset="22%" stop-color="#C32E91"/>
+      <stop offset="46%" stop-color="#E5365A"/>
+      <stop offset="70%" stop-color="#F77035"/>
+      <stop offset="100%" stop-color="#FFC83C"/>
     </linearGradient>
   </defs>
   <rect x="${r}" y="${r}" width="${w}" height="${w}" rx="${radius}" fill="url(#bg)"/>
