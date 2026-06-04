@@ -63,6 +63,12 @@ export default function RootLayout({
       className={`${cinzel.variable} ${inter.variable} h-full`}
     >
       <head>
+        {/* iOS Safari 성능 복구 — iOS는 PWA 설치에 SW가 불필요한데 scope "/" SW가
+            전체 사이트 요청을 가로채 느려지므로, iOS에서는 등록된 SW를 해제한다. */}
+        <Script id="ios-sw-cleanup" strategy="afterInteractive">
+          {`try{var u=navigator.userAgent.toLowerCase();if((u.indexOf('iphone')>-1||u.indexOf('ipad')>-1||u.indexOf('ipod')>-1)&&'serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});}).catch(function(){});}}catch(e){}`}
+        </Script>
+
         {/* Google Analytics 4 */}
         {GA_ID && (
           <>

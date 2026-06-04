@@ -134,7 +134,8 @@ export default function ClientPwaWrapper({ children, locale, appName }: Props) {
 
     // 2. OS 플랫폼 + 인앱 브라우저 확인
     const ua = navigator.userAgent.toLowerCase();
-    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) {
+    const isIOS = ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod");
+    if (isIOS) {
       setOsType("ios");
     } else if (ua.includes("android")) {
       setOsType("android");
@@ -144,9 +145,16 @@ export default function ClientPwaWrapper({ children, locale, appName }: Props) {
     checkStandalone();
     setChecked(true);
 
-    // 3. 서비스 워커 등록 — Android Chrome 설치 가능 요건 충족
+    // 3. 서비스 워커 — Android Chrome 설치 요건용. iOS Safari는 SW가 설치에 불필요하고
+    //    scope "/" SW가 전체 사이트 요청을 가로채 느려지므로, iOS에선 등록하지 않고 기존 것도 해제한다.
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => { /* 등록 실패는 무시 */ });
+      if (isIOS) {
+        navigator.serviceWorker.getRegistrations()
+          .then((regs) => regs.forEach((r) => r.unregister()))
+          .catch(() => { /* ignore */ });
+      } else {
+        navigator.serviceWorker.register("/sw.js").catch(() => { /* 등록 실패는 무시 */ });
+      }
     }
 
     // 4. 네이티브 설치 프롬프트 캡처 (Android Chrome 등)
