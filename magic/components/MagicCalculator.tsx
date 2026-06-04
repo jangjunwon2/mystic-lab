@@ -847,30 +847,37 @@ export default function MagicCalculator({ locale, productId }: Props) {
           }}
         >
           <div
-            className="w-full text-right font-light text-white select-none whitespace-nowrap overflow-hidden"
+            className="w-full text-right font-light text-white select-none whitespace-nowrap overflow-hidden flex items-center justify-end"
             style={{
               fontFamily: theme === "android" ? "Roboto, sans-serif" : "-apple-system, BlinkMacSystemFont, sans-serif",
               fontSize: `${Math.max(2, 5.5 - (display.length > 6 ? (display.length - 6) * 0.5 : 0))}rem`,
               lineHeight: "1.2",
             }}
           >
-            {display}
+            {/* 삼성 위장: 입력 전(빈 상태)엔 숫자 대신 가는 커서만 표시 */}
+            {theme === "android" && display === "0" && !equation && !currentInputNumber ? (
+              <span className="inline-block w-[3px] h-[3.5rem] bg-[#8E8E93] animate-pulse" />
+            ) : (
+              display
+            )}
           </div>
         </div>
 
         {/* ── 삼성 One UI 상단 툴바 (Android 전용 위장) ── */}
         {theme === "android" && (
           <>
-            <div className="flex items-center justify-between px-7 pb-3">
-              <Clock className="w-6 h-6 text-[#8E8E93]" strokeWidth={1.8} />
-              <Ruler className="w-6 h-6 text-[#8E8E93]" strokeWidth={1.8} />
-              <div className="w-7 h-7 rounded-lg border border-[#8E8E93] flex items-center justify-center text-[#8E8E93] text-[9px] font-semibold leading-none">
-                <span>√π<br />e=</span>
+            <div className="flex items-center px-7 pb-3">
+              <div className="flex items-center gap-9">
+                <Clock className="w-6 h-6 text-[#8E8E93]" strokeWidth={1.8} />
+                <Ruler className="w-6 h-6 text-[#8E8E93]" strokeWidth={1.8} />
+                <div className="w-7 h-7 rounded-md border border-[#8E8E93] flex items-center justify-center text-[#8E8E93] text-[8px] font-semibold leading-[1.1] text-center">
+                  <span>√π<br />e=</span>
+                </div>
               </div>
               <button
                 onTouchStart={(e) => { e.preventDefault(); handleBackspace(); }}
                 onClick={handleBackspace}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-[#8E8E93] active:bg-[#2E2E30] transition-colors"
+                className="ml-auto w-9 h-9 rounded-full flex items-center justify-center text-[#8E8E93] active:bg-[#2E2E30] transition-colors"
                 aria-label="backspace"
               >
                 <Delete className="w-6 h-6" strokeWidth={1.8} />
@@ -1179,7 +1186,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
               <button
                 onTouchStart={handleEqualStart}
                 onTouchEnd={handleEqualEnd}
-                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#A0916D] text-[#1C1C1E] active:bg-[#8C7D5B] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#988E73] text-[#1C1C1E] active:bg-[#847B63] transition-colors"
               >
                 =
               </button>

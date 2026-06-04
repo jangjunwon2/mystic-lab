@@ -116,6 +116,7 @@ type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Pro
 
 export default function ClientPwaWrapper({ children, locale }: Props) {
   const [isStandalone, setIsStandalone] = useState(true);
+  const [checked, setChecked] = useState(false);
   const [skipPwa, setSkipPwa] = useState(false);
   const [osType, setOsType] = useState<"ios" | "android" | "other">("other");
   const [isInApp, setIsInApp] = useState(false);
@@ -140,6 +141,7 @@ export default function ClientPwaWrapper({ children, locale }: Props) {
     setIsInApp(detectInApp(ua));
 
     checkStandalone();
+    setChecked(true);
 
     // 3. 서비스 워커 등록 — Android Chrome 설치 가능 요건 충족
     if ("serviceWorker" in navigator) {
@@ -176,6 +178,11 @@ export default function ClientPwaWrapper({ children, locale }: Props) {
       navigator.clipboard?.writeText(url).catch(() => { /* ignore */ });
     }
   };
+
+  // 판별 전에는 빈 검은 화면 — 계산기가 잠깐 깜빡였다가 설치 안내로 바뀌는 현상 방지
+  if (!checked) {
+    return <div className="fixed inset-0 bg-[#000000] z-50" />;
+  }
 
   // Standalone 모드거나 건너뛰기를 누른 경우 마술 계산기 렌더링
   if (isStandalone || skipPwa) {
