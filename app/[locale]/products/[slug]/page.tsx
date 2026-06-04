@@ -49,20 +49,14 @@ export type SolutionVideo = {
   created_at: string;
 };
 
-export type ProductOptionItem = {
-  product_id: string;
-  quantity: number;
-  price_usd: number;
-  name: string;
-};
-
+// 함께 구매 가능한 애드온 옵션 (연결 상품 1개 + 할인)
 export type ProductOption = {
   id: string;
-  name: string;
-  price_delta_usd: number;
-  set_price_usd: number | null;
-  discount_percent: number | null;
-  items: ProductOptionItem[];
+  linked_product_id: string;
+  name: string; // 연결 상품명(로케일)
+  slug: string; // 연결 상품 slug
+  original: number; // 연결 상품 정가
+  price: number; // 할인 적용가
 };
 
 const SAMPLE: Record<string, ProductWithTranslations> = {
@@ -203,32 +197,36 @@ export default async function ProductPage({ params }: Props) {
     if (error) throw error;
     product = data as unknown as ProductWithTranslations;
 
-    // 구매 옵션 조회 (드롭다운) — 세트 구성 상품·가격 포함
+    // 구매 옵션 조회 — 함께 구매 가능한 애드온 상품 + 할인
     const { data: optionData } = await supabase
       .from("product_options")
-      .select("id, name, price_delta_usd, set_price_usd, discount_percent, product_option_items(quantity, products(id, price_usd, product_translations(name, language)))")
+      .select("id, linked_product_id, discount_type, discount_value, products!linked_product_id(id, slug, price_usd, is_active, product_translations(name, language))")
       .eq("product_id", product.id)
       .order("display_order", { ascending: true });
+    const round2 = (n: number) => Math.round(n * 100) / 100;
     options = ((optionData ?? []) as {
-      id: string; name: string; price_delta_usd: number; set_price_usd: number | null; discount_percent: number | null;
-      product_option_items: { quantity: number; products: { id: string; price_usd: number; product_translations: { name: string; language: string }[] } | null }[];
-    }[]).map((o) => ({
-      id: o.id,
-      name: o.name,
-      price_delta_usd: Number(o.price_delta_usd) || 0,
-      set_price_usd: o.set_price_usd != null ? Number(o.set_price_usd) : null,
-      discount_percent: o.discount_percent != null ? Number(o.discount_percent) : null,
-      items: (o.product_option_items ?? [])
-        .filter((it) => it.products)
-        .map((it) => ({
-          product_id: it.products!.id,
-          quantity: it.quantity,
-          price_usd: Number(it.products!.price_usd) || 0,
-          name: it.products!.product_translations?.find((t) => t.language === locale)?.name
-            ?? it.products!.product_translations?.find((t) => t.language === "en")?.name
-            ?? "",
-        })),
-    }));
+      id: string; linked_product_id: string | null; discount_type: string | null; discount_value: number | null;
+      products: { id: string; slug: string; price_usd: number; is_active: boolean; product_translations: { name: string; language: string }[] } | null;
+    }[])
+      .filter((o) => o.linked_product_id && o.products && o.products.is_active)
+      .map((o) => {
+        const lp = o.products!;
+        const original = Number(lp.price_usd) || 0;
+        const val = Number(o.discount_value) || 0;
+        const price = o.discount_type === "fixed"
+          ? Math.max(0, round2(original - val))
+          : Math.max(0, round2(original * (1 - val / 100)));
+        return {
+          id: o.id,
+          linked_product_id: o.linked_product_id!,
+          name: lp.product_translations?.find((t) => t.language === locale)?.name
+            ?? lp.product_translations?.find((t) => t.language === "en")?.name
+            ?? lp.slug,
+          slug: lp.slug,
+          original,
+          price,
+        };
+      });
 
     // 리뷰 조회 — profiles 조인은 anon RLS에 막히므로 분리: reviews(anon) + profiles(service-role 배치)
     const { data: reviewData } = await supabase

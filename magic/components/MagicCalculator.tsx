@@ -857,19 +857,19 @@ export default function MagicCalculator({ locale, productId }: Props) {
           <>
             <div className="flex items-center px-6 pb-3">
               <div className="flex items-center gap-10">
-                <Clock className="w-[26px] h-[26px] text-[#8E8E93]" strokeWidth={1.7} />
-                <Ruler className="w-[26px] h-[26px] text-[#8E8E93]" strokeWidth={1.7} />
-                <div className="w-[26px] h-[26px] rounded-md border-[1.5px] border-[#8E8E93] flex items-center justify-center text-[#8E8E93] text-[8px] font-semibold leading-[1.05] text-center">
+                <Clock className="w-[26px] h-[26px] text-[#9A9A9F]" strokeWidth={2} />
+                <Ruler className="w-[26px] h-[26px] text-[#9A9A9F]" strokeWidth={2} />
+                <div className="w-[26px] h-[26px] rounded-md border-[1.5px] border-[#9A9A9F] flex items-center justify-center text-[#9A9A9F] text-[8px] font-semibold leading-[1.05] text-center">
                   <span>√π<br />e=</span>
                 </div>
               </div>
               <button
                 onTouchStart={(e) => { e.preventDefault(); handleBackspace(); }}
                 onClick={handleBackspace}
-                className="ml-auto w-10 h-10 rounded-full flex items-center justify-center text-[#8E8E93] active:bg-[#2E2E30] transition-colors"
+                className="ml-auto w-10 h-10 rounded-full flex items-center justify-center text-[#9A9A9F] active:bg-[#2E2E30] transition-colors"
                 aria-label="backspace"
               >
-                <Delete className="w-[27px] h-[27px]" strokeWidth={1.7} />
+                <Delete className="w-[27px] h-[27px]" strokeWidth={2} />
               </button>
             </div>
             <div className="mx-7 mb-3 h-px bg-[#2E2E30]" />
@@ -878,8 +878,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
         {/* ── 계산기 키패드 키보드 영역 ── */}
         <div
-          className={`grid grid-cols-4 pb-8 ${theme === "android" ? "gap-4 px-3.5" : "gap-3.5 px-5"}`}
-          style={{ height: "60vh" }}
+          className={`grid grid-cols-4 pb-8 ${theme === "android" ? "gap-x-4 gap-y-2.5 px-3.5" : "gap-3.5 px-5"}`}
+          style={theme === "android" ? undefined : { height: "60vh" }}
         >
           {theme === "ios" ? (
             // ── iOS 계산기 디자인 키패드 ──

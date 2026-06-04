@@ -43,7 +43,7 @@ export default async function EditProductPage({ params }: Props) {
 
   const { data: optionRows } = await supabase
     .from("product_options")
-    .select("id, name, price_delta_usd, set_price_usd, discount_percent, product_option_items(product_id, quantity)")
+    .select("linked_product_id, discount_type, discount_value")
     .eq("product_id", id)
     .order("display_order", { ascending: true });
 
@@ -69,15 +69,14 @@ export default async function EditProductPage({ params }: Props) {
       short_description: t.short_description ?? "",
     })),
     options: ((optionRows ?? []) as {
-      name: string; price_delta_usd: number; set_price_usd: number | null; discount_percent: number | null;
-      product_option_items: { product_id: string; quantity: number }[];
-    }[]).map((o) => ({
-      name: o.name,
-      price_delta_usd: Number(o.price_delta_usd) || 0,
-      set_price_usd: o.set_price_usd != null ? Number(o.set_price_usd) : null,
-      discount_percent: o.discount_percent != null ? Number(o.discount_percent) : null,
-      items: (o.product_option_items ?? []).map((it) => ({ product_id: it.product_id, quantity: it.quantity })),
-    })),
+      linked_product_id: string | null; discount_type: string | null; discount_value: number | null;
+    }[])
+      .filter((o) => o.linked_product_id)
+      .map((o) => ({
+        linked_product_id: o.linked_product_id!,
+        discount_type: (o.discount_type === "fixed" ? "fixed" : "percent") as "percent" | "fixed",
+        discount_value: Number(o.discount_value) || 0,
+      })),
   };
 
   const enName = initial.translations.find((t) => t.language === "en")?.name ?? p.slug;

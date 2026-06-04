@@ -1,7 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendLowStockAlert } from "@/lib/resend";
 import { earnPointsForUsd, addPointTransaction } from "@/lib/points";
-import { loadOptionDefs } from "./option-pricing";
 import type { SaveOrderInput } from "./types";
 
 const LOW_STOCK_THRESHOLD = 3;
@@ -61,36 +60,15 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     return null;
   }
 
-  // 세트 옵션은 구성 상품별로 분리 — 호스트(세트가 1줄) + 구성 상품들(0원, 묶음 표시).
-  // 재고도 호스트·구성 상품 각각 차감되도록 expandedItems 로 펼친다.
-  const optionDefs = await loadOptionDefs(supabase, input.items.map((i) => i.option_id).filter(Boolean) as string[]);
-  const expandedItems: { product_id: string; quantity: number; price_usd: number; option_name: string | null; option_id: string | null }[] = [];
-  for (const item of input.items) {
-    const def = item.option_id ? optionDefs.get(item.option_id) : undefined;
-    if (def && def.items.length > 0 && def.productId === item.id) {
-      expandedItems.push({ product_id: item.id, quantity: item.quantity, price_usd: item.price_usd, option_name: item.option_name ?? null, option_id: item.option_id ?? null });
-      for (const comp of def.items) {
-        expandedItems.push({
-          product_id: comp.productId,
-          quantity: comp.quantity * item.quantity,
-          price_usd: 0,
-          option_name: `↳ ${item.option_name ?? "세트"}`,
-          option_id: item.option_id ?? null,
-        });
-      }
-    } else {
-      expandedItems.push({ product_id: item.id, quantity: item.quantity, price_usd: item.price_usd, option_name: item.option_name ?? null, option_id: item.option_id ?? null });
-    }
-  }
-
+  // 호스트·애드온 모두 개별 라인으로 저장 (애드온은 옵션 할인가, option_id 로 그룹/검증).
   const { error: itemsError } = await supabase.from("order_items").insert(
-    expandedItems.map((item) => ({
+    input.items.map((item) => ({
       order_id: order.id,
-      product_id: item.product_id,
+      product_id: item.id,
       quantity: item.quantity,
       price_usd: item.price_usd,
-      option_name: item.option_name,
-      option_id: item.option_id,
+      option_name: item.option_name ?? null,
+      option_id: item.option_id ?? null,
     }))
   );
 
@@ -131,8 +109,8 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
   // Decrement stock for each ordered product (세트 구성 상품 포함) and collect low-stock alerts.
   // 같은 상품이 여러 줄(개별+세트구성)일 수 있으므로 product_id 기준으로 수량 합산 후 1회 차감.
   const qtyByProduct = new Map<string, number>();
-  for (const ex of expandedItems) {
-    qtyByProduct.set(ex.product_id, (qtyByProduct.get(ex.product_id) ?? 0) + ex.quantity);
+  for (const it of input.items) {
+    qtyByProduct.set(it.id, (qtyByProduct.get(it.id) ?? 0) + it.quantity);
   }
 
   const lowStockItems: { productName: string; stock: number }[] = [];

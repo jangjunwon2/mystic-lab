@@ -21,14 +21,14 @@ import type {
   SolutionVideo,
 } from "@/app/[locale]/products/[slug]/page";
 
-const OPTION_LABELS: Record<string, { heading: string; standard: string }> = {
-  en: { heading: "Purchase option", standard: "Standard" },
-  ko: { heading: "구매 옵션", standard: "기본 구성" },
-  ja: { heading: "購入オプション", standard: "標準構成" },
-  "zh-CN": { heading: "购买选项", standard: "标准配置" },
-  es: { heading: "Opción de compra", standard: "Estándar" },
-  fr: { heading: "Option d'achat", standard: "Standard" },
-  de: { heading: "Kaufoption", standard: "Standard" },
+const OPTION_LABELS: Record<string, { together: string; totalLabel: string }> = {
+  en: { together: "Buy together & save", totalLabel: "Total" },
+  ko: { together: "함께 구매하고 할인받기", totalLabel: "합계" },
+  ja: { together: "まとめ買いで割引", totalLabel: "合計" },
+  "zh-CN": { together: "一起购买更优惠", totalLabel: "合计" },
+  es: { together: "Compra junto y ahorra", totalLabel: "Total" },
+  fr: { together: "Achetez ensemble et économisez", totalLabel: "Total" },
+  de: { together: "Zusammen kaufen & sparen", totalLabel: "Gesamt" },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -70,42 +70,34 @@ export default function ProductDetail({
   const t = useTranslations("products");
   const router = useRouter();
   const [addedToCart, setAddedToCart] = useState(false);
-  const [selectedOptionId, setSelectedOptionId] = useState("");
+  const [selectedOptionIds, setSelectedOptionIds] = useState<Set<string>>(new Set());
 
   const ol = OPTION_LABELS[locale] ?? OPTION_LABELS.en;
 
-  // 옵션 가격 계산: 세트(구성 상품 있음)는 고정가 우선, 없으면 (기본가+구성합계)×(1-할인%);
-  // 단순 추가옵션은 기본가 + 가격차
-  const round2 = (n: number) => Math.round(n * 100) / 100;
-  const optionPrice = (o: ProductOption): number => {
-    if (!o.items || o.items.length === 0) {
-      return Math.max(0, round2(product.price_usd + o.price_delta_usd));
-    }
-    const comp = o.items.reduce((s, it) => s + it.price_usd * it.quantity, 0);
-    const base = product.price_usd + comp;
-    if (o.set_price_usd != null) return Math.max(0, round2(o.set_price_usd));
-    return Math.max(0, round2(base * (1 - (o.discount_percent ?? 0) / 100)));
-  };
+  const toggleOption = (id: string) =>
+    setSelectedOptionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
-  // 드롭다운 선택지: 기본 구성 + 옵션들
-  const choices = [
-    { id: "", name: ol.standard, price: product.price_usd, items: [] as ProductOption["items"] },
-    ...options.map((o) => ({ id: o.id, name: o.name, price: optionPrice(o), items: o.items ?? [] })),
+  const selectedOptions = options.filter((o) => selectedOptionIds.has(o.id));
+  const addonsTotal = selectedOptions.reduce((s, o) => s + o.price, 0);
+  const combinedTotal = Math.round((product.price_usd + addonsTotal) * 100) / 100;
+
+  // 호스트 상품 + 선택한 애드온들을 각각 개별 장바구니 라인으로 구성
+  interface CartLine { id: string; slug: string; name: string; price_usd: number; quantity: number; option_id?: string; option_name?: string }
+  const buildCartLines = (): CartLine[] => [
+    { id: product.id, slug: product.slug, name: translation.name, price_usd: product.price_usd, quantity: 1 },
+    ...selectedOptions.map((o) => ({
+      id: o.linked_product_id, slug: o.slug, name: o.name, price_usd: o.price, quantity: 1, option_id: o.id, option_name: o.name,
+    })),
   ];
-  const selected = choices.find((c) => c.id === selectedOptionId) ?? choices[0];
-
-  const buildCartItem = () => ({
-    id: product.id,
-    slug: product.slug,
-    name: translation.name,
-    price_usd: selected.price,
-    quantity: 1,
-    ...(selected.id ? { option_id: selected.id, option_name: selected.name } : {}),
-  });
 
   const handleBuyNow = () => {
     try {
-      localStorage.setItem("ml_cart", JSON.stringify([buildCartItem()]));
+      localStorage.setItem("ml_cart", JSON.stringify(buildCartLines()));
       window.dispatchEvent(new Event("storage"));
     } catch { /* storage may be unavailable */ }
     router.push(`/${locale}/checkout`);
@@ -118,15 +110,13 @@ export default function ProductDetail({
   const handleAddToCart = () => {
     try {
       const cart = JSON.parse(localStorage.getItem("ml_cart") ?? "[]");
-      // 같은 상품이라도 옵션이 다르면 별도 항목으로 취급
-      const existing = cart.find(
-        (item: { id: string; option_id?: string }) =>
-          item.id === product.id && (item.option_id ?? "") === selected.id
-      );
-      if (existing) {
-        existing.quantity += 1;
-      } else {
-        cart.push(buildCartItem());
+      for (const line of buildCartLines()) {
+        const existing = cart.find(
+          (item: { id: string; option_id?: string }) =>
+            item.id === line.id && (item.option_id ?? "") === (line.option_id ?? "")
+        );
+        if (existing) existing.quantity += 1;
+        else cart.push(line);
       }
       localStorage.setItem("ml_cart", JSON.stringify(cart));
       window.dispatchEvent(new Event("storage"));
@@ -242,7 +232,7 @@ export default function ProductDetail({
             {/* Price */}
             <div className="flex items-baseline gap-2 mb-5">
               <span className="text-4xl font-bold text-[#F59E0B]">
-                ${selected.price.toLocaleString()}
+                ${product.price_usd.toLocaleString()}
               </span>
               <span className="text-sm text-[#6B7280]">USD</span>
             </div>
@@ -264,31 +254,41 @@ export default function ProductDetail({
               )}
             </div>
 
-            {/* Purchase Option dropdown */}
+            {/* 함께 구매 (애드온 다중 선택) */}
             {options.length > 0 && product.stock > 0 && (
-              <div className="mb-6">
-                <label className="block text-xs text-[#9CA3AF] mb-1.5">{ol.heading}</label>
-                <div className="relative">
-                  <select
-                    value={selectedOptionId}
-                    onChange={(e) => setSelectedOptionId(e.target.value)}
-                    className="appearance-none w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-4 py-3 pr-10 rounded-xl cursor-pointer hover:border-[#7C3AED] focus:outline-none focus:border-[#7C3AED]"
-                  >
-                    {choices.map((c) => (
-                      <option key={c.id || "standard"} value={c.id}>
-                        {c.name} — ${c.price.toLocaleString()}
-                      </option>
-                    ))}
-                  </select>
-                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+              <div className="mb-6 rounded-xl border border-[#2D2D4E] bg-[#13131F] p-4">
+                <p className="text-sm font-semibold text-[#A855F7] mb-3">{ol.together}</p>
+                <div className="space-y-2">
+                  {options.map((o) => {
+                    const checked = selectedOptionIds.has(o.id);
+                    const off = o.original > 0 ? Math.round((1 - o.price / o.original) * 100) : 0;
+                    return (
+                      <label
+                        key={o.id}
+                        className={`flex items-center gap-3 rounded-lg border p-2.5 cursor-pointer transition-colors ${
+                          checked ? "border-[#7C3AED] bg-[#7C3AED]/10" : "border-[#2D2D4E] hover:border-[#7C3AED]/50"
+                        }`}
+                      >
+                        <input type="checkbox" checked={checked} onChange={() => toggleOption(o.id)} className="w-4 h-4 accent-[#7C3AED] shrink-0" />
+                        <span className="flex-1 text-sm text-[#F0E6FF] line-clamp-1">{o.name}</span>
+                        {off > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full shrink-0" style={{ background: "#10B98122", color: "#10B981" }}>-{off}%</span>
+                        )}
+                        <span className="text-right shrink-0">
+                          {o.price < o.original && (
+                            <span className="text-xs text-[#6B7280] line-through mr-1.5">${o.original.toLocaleString()}</span>
+                          )}
+                          <span className="text-sm font-semibold text-[#F59E0B]">${o.price.toLocaleString()}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
-                {/* 선택한 세트의 구성 상품 표시 */}
-                {selected.items.length > 0 && (
-                  <p className="mt-2 text-xs text-[#9CA3AF]">
-                    <span className="text-[#A855F7]">{locale === "ko" ? "구성" : "Includes"}:</span>{" "}
-                    {translation.name}
-                    {selected.items.map((it) => ` + ${it.name}${it.quantity > 1 ? `×${it.quantity}` : ""}`).join("")}
-                  </p>
+                {selectedOptions.length > 0 && (
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#2D2D4E]">
+                    <span className="text-sm text-[#9CA3AF]">{ol.totalLabel}</span>
+                    <span className="text-lg font-bold text-[#F59E0B]">${combinedTotal.toLocaleString()}</span>
+                  </div>
                 )}
               </div>
             )}
