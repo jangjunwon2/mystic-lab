@@ -1,5 +1,5 @@
-// 인스타그램 PWA 아이콘 생성 — 흰 배경 문제 수정용.
-// 실제 인스타 글리프(2-그라디언트 + 카메라)를 full-bleed로 그려 maskable에서 흰 박스가 안 보이게 한다.
+// 인스타그램 PWA 아이콘 생성 — 실제 아이콘 디자인(어두운 차콜 배경 + 그라디언트 카메라 글리프).
+// 참고 디자인: 다크 스퀴클 위에 보라→핑크→주황→노랑 그라디언트로 그려진 카메라(외곽 사각·렌즈·점).
 // 실행: node scripts/gen-insta-icons.mjs
 import sharp from "sharp";
 import { fileURLToPath } from "url";
@@ -7,43 +7,47 @@ import { dirname, join } from "path";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "images", "magic");
 
-// 카메라 글리프 + 인스타 그라디언트 (좌하단→우상단). size 기준 좌표 자동 스케일.
 function glyph(size, inset) {
   const s = size;
-  const r = inset; // 사각형 시작(여백). maskable=0(풀블리드), any=라운드 여백
+  const r = inset; // 0 = full-bleed(maskable/apple), >0 = 라운드 스퀴클 여백(any)
   const w = s - r * 2;
-  // maskable(여백 0)은 런처가 자체 마스킹하므로 모서리 라운드 없이 꽉 채운 정사각형(투명 모서리 금지).
-  const radius = r === 0 ? 0 : w * 0.255; // 스퀴클 모서리(any 전용)
-  // 카메라: 캔버스 중앙 안전영역에 배치
-  const camW = s * 0.46;
+  // maskable/apple(여백 0)은 모서리 없는 꽉 찬 정사각형(런처/iOS가 자체 라운딩) → 투명·흰 박스 방지
+  const radius = r === 0 ? 0 : w * 0.235;
+
+  // 카메라 글리프 — 캔버스 중앙
+  const camW = s * 0.48;
   const camX = (s - camW) / 2;
-  const camR = camW * 0.29;
-  const stroke = s * 0.052;
-  const lens = camW * 0.26;
-  const dotR = s * 0.032;
-  const dotX = s / 2 + camW * 0.34;
-  const dotY = s / 2 - camW * 0.34;
+  const camTop = camX;
+  const camBottom = camX + camW;
+  const cx = s / 2;
+  const camR = camW * 0.30;     // 외곽 사각 모서리
+  const stroke = s * 0.072;     // 카메라 선 두께(실제 아이콘처럼 도톰하게)
+  const lens = camW * 0.255;    // 렌즈 반지름
+  const dotR = s * 0.036;       // 우상단 점
+  const dotX = cx + camW * 0.335;
+  const dotY = cy0() - camW * 0.335;
+  function cy0() { return s / 2; }
+
   return `
 <svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="g1" cx="30%" cy="107%" r="150%">
-      <stop offset="0%" stop-color="#FFDD55"/>
-      <stop offset="10%" stop-color="#FFDD55"/>
-      <stop offset="50%" stop-color="#FF543E"/>
-      <stop offset="100%" stop-color="#C837AB"/>
-    </radialGradient>
-    <linearGradient id="g2" x1="0%" y1="100%" x2="35%" y2="65%">
-      <stop offset="0%" stop-color="#3771C8"/>
-      <stop offset="100%" stop-color="#3771C8" stop-opacity="0"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2E2E31"/>
+      <stop offset="100%" stop-color="#161618"/>
+    </linearGradient>
+    <linearGradient id="cam" gradientUnits="userSpaceOnUse" x1="${camX}" y1="${camTop}" x2="${camBottom}" y2="${camBottom}">
+      <stop offset="0%" stop-color="#9C2FCE"/>
+      <stop offset="30%" stop-color="#D62976"/>
+      <stop offset="62%" stop-color="#F77737"/>
+      <stop offset="100%" stop-color="#FEDA77"/>
     </linearGradient>
   </defs>
-  <rect x="${r}" y="${r}" width="${w}" height="${w}" rx="${radius}" fill="url(#g1)"/>
-  <rect x="${r}" y="${r}" width="${w}" height="${w}" rx="${radius}" fill="url(#g2)"/>
-  <g fill="none" stroke="#fff" stroke-width="${stroke}">
+  <rect x="${r}" y="${r}" width="${w}" height="${w}" rx="${radius}" fill="url(#bg)"/>
+  <g fill="none" stroke="url(#cam)" stroke-width="${stroke}">
     <rect x="${camX}" y="${camX}" width="${camW}" height="${camW}" rx="${camR}"/>
-    <circle cx="${s / 2}" cy="${s / 2}" r="${lens}"/>
+    <circle cx="${cx}" cy="${s / 2}" r="${lens}"/>
   </g>
-  <circle cx="${dotX}" cy="${dotY}" r="${dotR}" fill="#fff"/>
+  <circle cx="${dotX}" cy="${dotY}" r="${dotR}" fill="url(#cam)"/>
 </svg>`;
 }
 
@@ -52,13 +56,11 @@ async function render(svg, size, file) {
   console.log("wrote", file);
 }
 
-// maskable: full-bleed(여백 0). 런처가 원/스퀴클로 마스킹해도 그라디언트로 꽉 참 → 흰 박스 없음
+// maskable: full-bleed 다크 정사각형(런처가 마스킹) → 흰 박스 없음
 await render(glyph(512, 0), 512, "insta-maskable-512.png");
-// any: 라운드 스퀴클(투명 여백). 홈 아이콘이 인스타 squircle 그대로 보임
+// any: 다크 라운드 스퀴클(투명 모서리)
 await render(glyph(512, 26), 512, "insta-512.png");
 await render(glyph(512, 26), 192, "insta-192.png");
-// 일부 매니페스트가 참조하는 단일 instagram-icon.png 도 갱신
 await render(glyph(512, 26), 512, "instagram-icon.png");
-// iOS apple-touch-icon — iOS 홈 화면은 매니페스트 아이콘이 아닌 이 아이콘을 사용한다.
-// 반드시 투명 없는 불투명 정사각형(iOS가 모서리를 자동 라운딩) → 흰 박스/스크린샷 폴백 방지.
+// iOS apple-touch-icon — 불투명 정사각형(iOS가 모서리 자동 라운딩)
 await render(glyph(512, 0), 180, "insta-apple-180.png");
