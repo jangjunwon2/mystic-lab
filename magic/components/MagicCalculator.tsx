@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Settings, Wifi, Check, AlertTriangle, BookOpen, RefreshCw, X, ChevronRight
+  Settings, Wifi, Check, AlertTriangle, BookOpen, RefreshCw, X, ChevronRight,
+  Clock, Ruler, Delete
 } from "lucide-react";
 
 // Google Fonts 동적 로드용 링크 컴포넌트
@@ -477,6 +478,30 @@ export default function MagicCalculator({ locale, productId }: Props) {
     setCurrentInputNumber("");
   };
 
+  // ( ) 버튼 (삼성 레이아웃) - 직전 문맥에 따라 여는/닫는 괄호 자동 선택. eval이 괄호를 처리한다.
+  const handleParen = () => {
+    setIsCalculated(false);
+    setEquation((prev) => {
+      const opens = (prev.match(/\(/g) || []).length;
+      const closes = (prev.match(/\)/g) || []).length;
+      const last = prev.slice(-1);
+      const shouldClose = opens > closes && /[0-9)]/.test(last);
+      return prev + (shouldClose ? ")" : "(");
+    });
+  };
+
+  // 백스페이스(⌫, 삼성 툴바) - 마지막 글자 1개 삭제
+  const handleBackspace = () => {
+    setIsCalculated(false);
+    setEquation((prev) => prev.slice(0, -1));
+    setCurrentInputNumber((prev) => prev.slice(0, -1));
+    setDisplay((prev) => {
+      if (prev === "Error") return "0";
+      const next = prev.slice(0, -1);
+      return next === "" ? "0" : next;
+    });
+  };
+
   // C 버튼 홀드 (3초) - 포스 모드 온오프
   const handleCStart = () => {
     holdTimerRef.current = setTimeout(() => {
@@ -763,7 +788,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
       <motion.div
         className="absolute inset-0 w-full h-full z-10 flex flex-col justify-end bg-black shadow-2xl"
         style={{
-          background: theme === "android" ? "#13131F" : "#000000",
+          background: "#000000",
           x: dragOffset, // Peeking 시 손가락을 따라 이동 / 열림 고정
         }}
         // 끄는 중엔 transition 없이 손가락 1:1 추종, 놓으면 스프링으로 복귀
@@ -832,6 +857,28 @@ export default function MagicCalculator({ locale, productId }: Props) {
             {display}
           </div>
         </div>
+
+        {/* ── 삼성 One UI 상단 툴바 (Android 전용 위장) ── */}
+        {theme === "android" && (
+          <>
+            <div className="flex items-center justify-between px-7 pb-3">
+              <Clock className="w-6 h-6 text-[#8E8E93]" strokeWidth={1.8} />
+              <Ruler className="w-6 h-6 text-[#8E8E93]" strokeWidth={1.8} />
+              <div className="w-7 h-7 rounded-lg border border-[#8E8E93] flex items-center justify-center text-[#8E8E93] text-[9px] font-semibold leading-none">
+                <span>√π<br />e=</span>
+              </div>
+              <button
+                onTouchStart={(e) => { e.preventDefault(); handleBackspace(); }}
+                onClick={handleBackspace}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[#8E8E93] active:bg-[#2E2E30] transition-colors"
+                aria-label="backspace"
+              >
+                <Delete className="w-6 h-6" strokeWidth={1.8} />
+              </button>
+            </div>
+            <div className="mx-7 mb-3 h-px bg-[#2E2E30]" />
+          </>
+        )}
 
         {/* ── 계산기 키패드 키보드 영역 ── */}
         <div className="grid grid-cols-4 gap-3.5 px-5 pb-8" style={{ height: "60vh" }}>
@@ -984,135 +1031,147 @@ export default function MagicCalculator({ locale, productId }: Props) {
               </button>
             </>
           ) : (
-            // ── Android 계산기 디자인 키패드 (Material 둥근 사각형) ──
+            // ── Android 계산기 디자인 키패드 (삼성 One UI · 원형 버튼) ──
             <>
+              {/* Row 1 — C, ( ), %, ÷ */}
               <button
                 onTouchStart={handleCStart}
                 onTouchEnd={handleCEnd}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl font-semibold bg-[#2D2D4E] text-[#A855F7] active:bg-[#3D3D6E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#2E2E30] text-[#E6E6E6] active:bg-[#3A3A3C] transition-colors"
               >
-                {equation ? "C" : "AC"}
+                C
               </button>
               <button
-                onTouchStart={() => (isPressingKeyRef.current = "+/-")}
-                onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl font-semibold transition-colors bg-[#2D2D4E] text-[#A855F7] active:bg-[#3D3D6E]"
+                onTouchStart={() => (isPressingKeyRef.current = "()")}
+                onTouchEnd={() => isPressingKeyRef.current === "()" && handleParen()}
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#2E2E30] text-[#E6E6E6] active:bg-[#3A3A3C] transition-colors"
               >
-                {isEraseLeftActive ? "-/+" : "+/-"}
+                ( )
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "%")}
                 onTouchEnd={() => isPressingKeyRef.current === "%" && handlePercent()}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl font-semibold bg-[#2D2D4E] text-[#A855F7] active:bg-[#3D3D6E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#2E2E30] text-[#E6E6E6] active:bg-[#3A3A3C] transition-colors"
               >
                 %
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "÷")}
                 onTouchEnd={() => isPressingKeyRef.current === "÷" && handleKeyPress("÷")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl font-semibold bg-[#7C3AED]/20 text-[#A855F7] border border-[#7C3AED]/40 active:bg-[#7C3AED]/40 transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#E6C99B] text-[#1C1C1E] active:bg-[#D9B884] transition-colors"
               >
                 ÷
               </button>
 
+              {/* Row 2 — 7, 8, 9, × */}
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "7")}
                 onTouchEnd={() => isPressingKeyRef.current === "7" && handleKeyPress("7")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 7
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "8")}
                 onTouchEnd={() => isPressingKeyRef.current === "8" && handleKeyPress("8")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 8
               </button>
               <button
                 onTouchStart={handle9Start}
                 onTouchEnd={handle9End}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 9
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "×")}
                 onTouchEnd={() => isPressingKeyRef.current === "×" && handleKeyPress("×")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#7C3AED]/20 text-[#A855F7] border border-[#7C3AED]/40 active:bg-[#7C3AED]/40 transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#E6C99B] text-[#1C1C1E] active:bg-[#D9B884] transition-colors"
               >
                 ×
               </button>
 
+              {/* Row 3 — 4, 5, 6, − */}
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "4")}
                 onTouchEnd={() => isPressingKeyRef.current === "4" && handleKeyPress("4")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 4
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "5")}
                 onTouchEnd={() => isPressingKeyRef.current === "5" && handleKeyPress("5")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 5
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "6")}
                 onTouchEnd={() => isPressingKeyRef.current === "6" && handleKeyPress("6")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 6
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "-")}
                 onTouchEnd={() => isPressingKeyRef.current === "-" && handleKeyPress("-")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#7C3AED]/20 text-[#A855F7] border border-[#7C3AED]/40 active:bg-[#7C3AED]/40 transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#E6C99B] text-[#1C1C1E] active:bg-[#D9B884] transition-colors"
               >
-                -
+                −
               </button>
 
+              {/* Row 4 — 1, 2, 3, + */}
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "1")}
                 onTouchEnd={() => isPressingKeyRef.current === "1" && handleKeyPress("1")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 1
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "2")}
                 onTouchEnd={() => isPressingKeyRef.current === "2" && handleKeyPress("2")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 2
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "3")}
                 onTouchEnd={() => isPressingKeyRef.current === "3" && handleKeyPress("3")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 3
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "+")}
                 onTouchEnd={() => isPressingKeyRef.current === "+" && handleKeyPress("+")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#7C3AED]/20 text-[#A855F7] border border-[#7C3AED]/40 active:bg-[#7C3AED]/40 transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#E6C99B] text-[#1C1C1E] active:bg-[#D9B884] transition-colors"
               >
                 +
               </button>
 
+              {/* Row 5 — +/−, 0, ., = */}
+              <button
+                onTouchStart={() => (isPressingKeyRef.current = "+/-")}
+                onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#2E2E30] text-[#E6E6E6] active:bg-[#3A3A3C] transition-colors"
+              >
+                {isEraseLeftActive ? "-/+" : "+/−"}
+              </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "0")}
                 onTouchEnd={() => isPressingKeyRef.current === "0" && handleKeyPress("0")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 0
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = ".")}
                 onTouchEnd={() => isPressingKeyRef.current === "." && handleKeyPress(".")}
-                className="w-full aspect-square rounded-2xl flex items-center justify-center text-2xl bg-[#1A1A2E] text-white active:bg-[#2D2D4E] border border-[#2D2D4E] transition-colors"
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
                 {/* 포스 모드 ON이면 점이 가운데(·)로 올라와 동작 표시, 평소엔 일반 소수점(.) */}
                 {isForceActive ? "·" : "."}
@@ -1120,8 +1179,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
               <button
                 onTouchStart={handleEqualStart}
                 onTouchEnd={handleEqualEnd}
-                className="col-span-2 rounded-2xl flex items-center justify-center text-2xl font-bold bg-[#7C3AED] text-white active:bg-[#5B21B6] transition-colors"
-                style={{ height: "100%", width: "100%" }}
+                className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#A0916D] text-[#1C1C1E] active:bg-[#8C7D5B] transition-colors"
               >
                 =
               </button>
@@ -1237,8 +1295,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
                     <div className="space-y-2">
                       <label className="text-xs text-[#9CA3AF] flex items-center justify-between">
-                        <span>분 오프셋 (Minutes Offset)</span>
-                        <span className="text-[#A855F7] font-semibold">+{config.timeOffset}분</span>
+                        <span>Minutes Offset</span>
+                        <span className="text-[#A855F7] font-semibold">+{config.timeOffset} min</span>
                       </label>
                       <input
                         type="range"

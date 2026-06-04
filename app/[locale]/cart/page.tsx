@@ -12,6 +12,8 @@ interface CartItem {
   name: string;
   price_usd: number;
   quantity: number;
+  option_id?: string;
+  option_name?: string;
 }
 
 interface Props {
@@ -41,18 +43,22 @@ export default function CartPage({ params }: Props) {
     localStorage.setItem("ml_cart", JSON.stringify(updated));
   };
 
-  const updateQty = (id: string, delta: number) => {
+  // 같은 상품이라도 옵션이 다르면 별도 라인 → id + option_id 로 식별
+  const matches = (item: CartItem, id: string, optionId: string) =>
+    item.id === id && (item.option_id ?? "") === optionId;
+
+  const updateQty = (id: string, optionId: string, delta: number) => {
     saveCart(
       items
         .map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity + delta } : item
+          matches(item, id, optionId) ? { ...item, quantity: item.quantity + delta } : item
         )
         .filter((item) => item.quantity > 0)
     );
   };
 
-  const remove = (id: string) => {
-    saveCart(items.filter((item) => item.id !== id));
+  const remove = (id: string, optionId: string) => {
+    saveCart(items.filter((item) => !matches(item, id, optionId)));
   };
 
   const subtotal = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
@@ -96,7 +102,7 @@ export default function CartPage({ params }: Props) {
               <AnimatePresence>
                 {items.map((item) => (
                   <motion.div
-                    key={item.id}
+                    key={`${item.id}-${item.option_id ?? ""}`}
                     layout
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -115,6 +121,9 @@ export default function CartPage({ params }: Props) {
                       >
                         {item.name}
                       </Link>
+                      {item.option_name && (
+                        <p className="text-xs text-[#A855F7] line-clamp-1">{item.option_name}</p>
+                      )}
                       <p className="text-sm text-[#F59E0B] font-semibold mt-0.5">
                         ${item.price_usd.toLocaleString()}
                       </p>
@@ -123,7 +132,7 @@ export default function CartPage({ params }: Props) {
                     {/* Quantity */}
                     <div className="flex items-center gap-2 shrink-0">
                       <button
-                        onClick={() => updateQty(item.id, -1)}
+                        onClick={() => updateQty(item.id, item.option_id ?? "", -1)}
                         className="w-7 h-7 rounded-lg bg-[#2D2D4E] text-[#9CA3AF] hover:bg-[#7C3AED]/30 hover:text-[#A855F7] text-sm font-bold transition-colors flex items-center justify-center"
                       >
                         −
@@ -132,7 +141,7 @@ export default function CartPage({ params }: Props) {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateQty(item.id, +1)}
+                        onClick={() => updateQty(item.id, item.option_id ?? "", +1)}
                         className="w-7 h-7 rounded-lg bg-[#2D2D4E] text-[#9CA3AF] hover:bg-[#7C3AED]/30 hover:text-[#A855F7] text-sm font-bold transition-colors flex items-center justify-center"
                       >
                         +
@@ -144,7 +153,7 @@ export default function CartPage({ params }: Props) {
                     </span>
 
                     <button
-                      onClick={() => remove(item.id)}
+                      onClick={() => remove(item.id, item.option_id ?? "")}
                       className="ml-1 text-[#4B5563] hover:text-red-400 transition-colors shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />

@@ -15,7 +15,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
-  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations } = body;
+  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations, options } = body;
 
   const updatePayload: Record<string, unknown> = {};
   if (slug !== undefined) updatePayload.slug = slug;
@@ -47,6 +47,20 @@ export async function PATCH(request: Request, context: RouteContext) {
         { onConflict: "product_id,language" }
       );
     }
+  }
+
+  // 옵션은 전달 시 전체 교체(삭제 후 재삽입). undefined면 건드리지 않음.
+  if (options !== undefined) {
+    await supabase.from("product_options").delete().eq("product_id", id);
+    const optionRows = (options as { name: string; price_delta_usd: number }[])
+      .filter((o) => o.name?.trim())
+      .map((o, idx) => ({
+        product_id: id,
+        name: o.name.trim(),
+        price_delta_usd: Number(o.price_delta_usd) || 0,
+        display_order: idx,
+      }));
+    if (optionRows.length > 0) await supabase.from("product_options").insert(optionRows);
   }
 
   return NextResponse.json({ ok: true });

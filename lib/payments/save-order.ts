@@ -66,6 +66,7 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
       product_id: item.id,
       quantity: item.quantity,
       price_usd: item.price_usd,
+      option_name: item.option_name ?? null,
     }))
   );
 

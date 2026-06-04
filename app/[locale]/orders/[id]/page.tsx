@@ -75,7 +75,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
       id, status, total_usd, created_at, customer_email, shipping_address,
       tracking_number, tracking_carrier,
       order_items(
-        id, quantity, price_usd,
+        id, quantity, price_usd, option_name,
         products(id, slug, thumbnail_url, product_translations(name, language))
       )
     `)
@@ -225,7 +225,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </h2>
           <div className="space-y-4">
             {order.order_items.map((item: {
-              id: string; quantity: number; price_usd: number;
+              id: string; quantity: number; price_usd: number; option_name: string | null;
               products: { id: string; slug: string; thumbnail_url: string | null; product_translations: { name: string; language: string }[] } | null;
             }) => {
               const name =
@@ -255,6 +255,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                     >
                       {name}
                     </Link>
+                    {item.option_name && <p className="text-xs text-[#A855F7] line-clamp-1">{item.option_name}</p>}
                     <p className="text-xs text-[#6B7280]">× {item.quantity}</p>
                   </div>
                   <p className="text-sm font-semibold text-[#F59E0B] flex-shrink-0">

@@ -32,6 +32,12 @@ export default function Header({ isAdmin = false }: { isAdmin?: boolean }) {
     if (searchOpen) searchInputRef.current?.focus();
   }, [searchOpen]);
 
+  // 페이지 이동 시 모바일 메뉴·검색창을 자동으로 닫아 새 페이지가 온전히 보이게 한다
+  useEffect(() => {
+    setIsMobileOpen(false);
+    setSearchOpen(false);
+  }, [pathname]);
+
   function submitSearch() {
     const q = searchQuery.trim();
     if (!q) { setSearchOpen(false); return; }

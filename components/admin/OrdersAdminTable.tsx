@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 
 const ORDER_STATUSES = ["pending", "paid", "shipped", "completed", "refunded"] as const;
 type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -26,6 +26,7 @@ interface OrderItem {
   id: string;
   quantity: number;
   price_usd: number;
+  option_name: string | null;
   products: { slug: string; product_translations: { name: string; language: string }[] } | null;
 }
 
@@ -88,8 +89,50 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
   const [refundReason, setRefundReason] = useState("");
   const [trackingInputs, setTrackingInputs] = useState<Record<string, { number: string; carrier: string }>>({});
   const [trackingMsg, setTrackingMsg] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
+
+  function toggleSelect(orderId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelected((prev) =>
+      prev.size === filtered.length && filtered.length > 0
+        ? new Set()
+        : new Set(filtered.map((o) => o.id))
+    );
+  }
+
+  async function deleteSelected() {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (!confirm(`선택한 주문 ${ids.length}건을 영구 삭제합니다. 되돌릴 수 없습니다. 계속할까요?`)) return;
+    setBulkDeleting(true);
+    setRefundMsg(null);
+    const results = await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/admin/orders/${id}`, { method: "DELETE" }).then((r) => ({ id, ok: r.ok }))
+      )
+    );
+    const deletedIds = new Set(results.filter((r) => r.ok).map((r) => r.id));
+    const failCount = results.length - deletedIds.size;
+    setOrders((prev) => prev.filter((o) => !deletedIds.has(o.id)));
+    setSelected(new Set());
+    setBulkDeleting(false);
+    setRefundMsg(
+      failCount > 0
+        ? `❌ ${deletedIds.size}건 삭제, ${failCount}건 실패`
+        : `🗑️ 주문 ${deletedIds.size}건 삭제 완료`
+    );
+  }
 
   async function updateStatus(orderId: string, status: OrderStatus) {
     setLoadingId(orderId);
@@ -207,13 +250,26 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
             </button>
           ))}
         </div>
-        <button
-          onClick={() => downloadOrdersCSV(orders)}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 flex items-center gap-1.5"
-          style={{ background: "#1A1A2E", border: "1px solid #2D2D4E", color: "#9CA3AF" }}
-        >
-          ↓ CSV
-        </button>
+        <div className="flex items-center gap-2">
+          {selected.size > 0 && (
+            <button
+              onClick={deleteSelected}
+              disabled={bulkDeleting}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50 flex items-center gap-1.5"
+              style={{ background: "#EF444422", border: "1px solid #EF444444", color: "#EF4444" }}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {bulkDeleting ? "삭제 중…" : `선택 삭제 (${selected.size})`}
+            </button>
+          )}
+          <button
+            onClick={() => downloadOrdersCSV(orders)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 flex items-center gap-1.5"
+            style={{ background: "#1A1A2E", border: "1px solid #2D2D4E", color: "#9CA3AF" }}
+          >
+            ↓ CSV
+          </button>
+        </div>
       </div>
 
       <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
@@ -221,6 +277,15 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
+                <th className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    aria-label="전체 선택"
+                    className="w-4 h-4 cursor-pointer"
+                    checked={selected.size === filtered.length && filtered.length > 0}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 {["주문 ID", "고객", "합계", "상태", "날짜", "관리"].map((h) => (
                   <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                     {h}
@@ -231,7 +296,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
+                  <td colSpan={7} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
                     주문이 없습니다.
                   </td>
                 </tr>
@@ -244,6 +309,15 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                       style={{ borderColor: "#2D2D4E", opacity: loadingId === order.id ? 0.5 : 1 }}
                       onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
                     >
+                      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          aria-label="주문 선택"
+                          className="w-4 h-4 cursor-pointer"
+                          checked={selected.has(order.id)}
+                          onChange={() => toggleSelect(order.id)}
+                        />
+                      </td>
                       <td className="px-6 py-4 font-mono text-xs" style={{ color: "#9CA3AF" }}>
                         {order.id.slice(0, 8)}…
                       </td>
@@ -314,7 +388,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                     {/* Expanded detail row */}
                     {expandedId === order.id && (
                       <tr key={`${order.id}-detail`} style={{ background: "#13131F" }}>
-                        <td colSpan={6} className="px-6 py-4 space-y-4">
+                        <td colSpan={7} className="px-6 py-4 space-y-4">
 
                           {/* Gateway + shipping method */}
                           <div className="flex items-center gap-3 flex-wrap">
@@ -392,7 +466,11 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                                     className="flex justify-between text-sm"
                                     style={{ color: "#F0E6FF" }}
                                   >
-                                    <span>{name} × {item.quantity}</span>
+                                    <span>
+                                      {name}
+                                      {item.option_name && <span style={{ color: "#A855F7" }}> · {item.option_name}</span>}
+                                      {" "}× {item.quantity}
+                                    </span>
                                     <span style={{ color: "#A855F7" }}>
                                       ${(item.price_usd * item.quantity).toFixed(2)}
                                     </span>

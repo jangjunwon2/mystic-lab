@@ -30,6 +30,11 @@ interface Translation {
   short_description: string;
 }
 
+interface ProductOptionRow {
+  name: string;
+  price_delta_usd: string;
+}
+
 interface ProductFormProps {
   productId?: string;
   initial?: {
@@ -44,6 +49,7 @@ interface ProductFormProps {
     demo_video_cloudflare_id: string;
     image_urls: string[];
     translations: Translation[];
+    options?: { name: string; price_delta_usd: number }[];
   };
 }
 
@@ -111,6 +117,9 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
   const [isDigital, setIsDigital] = useState(initial?.is_digital ?? false);
   const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnail_url ?? "");
   const [imageUrls, setImageUrls] = useState<string[]>(initial?.image_urls ?? []);
+  const [options, setOptions] = useState<ProductOptionRow[]>(
+    initial?.options?.map((o) => ({ name: o.name, price_delta_usd: o.price_delta_usd.toString() })) ?? []
+  );
   const [translations, setTranslations] = useState<Translation[]>(
     initial?.translations?.length
       ? ALL_LANGUAGES.map((l) => {
@@ -242,6 +251,9 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
       })(),
       image_urls: imageUrls.filter((u) => u.trim()),
       translations: translations.filter((t) => t.name.trim()),
+      options: options
+        .filter((o) => o.name.trim())
+        .map((o) => ({ name: o.name.trim(), price_delta_usd: parseFloat(o.price_delta_usd) || 0 })),
     };
 
     const url = isEdit ? `/api/admin/products/${productId}` : "/api/admin/products";
@@ -522,6 +534,62 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* Purchase Options */}
+      <section className="rounded-xl p-6 border space-y-4" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>구매 옵션 (추가 구성·세트)</h2>
+            <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
+              상품 상세에 드롭다운으로 노출됩니다. 기본가에 가격차가 더해집니다(음수=할인). 비워두면 옵션 없이 기본 구성만 판매됩니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOptions((prev) => [...prev, { name: "", price_delta_usd: "0" }])}
+            className="flex items-center gap-1 text-xs px-2 py-1 rounded transition-opacity hover:opacity-80 shrink-0"
+            style={{ background: "rgba(124,58,237,0.1)", color: "#A855F7" }}
+          >
+            <Plus className="w-3 h-3" /> 옵션 추가
+          </button>
+        </div>
+
+        {options.length === 0 ? (
+          <p className="text-xs" style={{ color: "#6B7280" }}>등록된 옵션이 없습니다. (구매 시 &lsquo;기본 구성&rsquo;만 표시)</p>
+        ) : (
+          <div className="space-y-2">
+            {options.map((o, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  value={o.name}
+                  onChange={(e) => setOptions((prev) => prev.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                  placeholder="옵션명 (예: 전용 케이스 추가, 프리미엄 패키지)"
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <div className="flex items-center gap-1 shrink-0" style={{ width: "140px" }}>
+                  <span className="text-xs" style={{ color: "#9CA3AF" }}>+$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={o.price_delta_usd}
+                    onChange={(e) => setOptions((prev) => prev.map((x, j) => (j === i ? { ...x, price_delta_usd: e.target.value } : x)))}
+                    placeholder="0"
+                    style={inputStyle}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOptions((prev) => prev.filter((_, j) => j !== i))}
+                  className="p-1.5 rounded transition-opacity hover:opacity-80 shrink-0"
+                  style={{ color: "#EF4444" }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Translations */}

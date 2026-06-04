@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations } = body;
+  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations, options } = body;
 
   if (!slug || !category || price_usd == null) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -46,6 +46,18 @@ export async function POST(request: Request) {
       short_description: t.short_description ?? null,
     }));
     await supabase.from("product_translations").insert(rows);
+  }
+
+  if (Array.isArray(options) && options.length > 0) {
+    const optionRows = (options as { name: string; price_delta_usd: number }[])
+      .filter((o) => o.name?.trim())
+      .map((o, idx) => ({
+        product_id: (product as { id: string }).id,
+        name: o.name.trim(),
+        price_delta_usd: Number(o.price_delta_usd) || 0,
+        display_order: idx,
+      }));
+    if (optionRows.length > 0) await supabase.from("product_options").insert(optionRows);
   }
 
   return NextResponse.json({ id: (product as { id: string }).id }, { status: 201 });

@@ -40,6 +40,12 @@ export default async function EditProductPage({ params }: Props) {
 
   if (!product) notFound();
 
+  const { data: optionRows } = await supabase
+    .from("product_options")
+    .select("name, price_delta_usd")
+    .eq("product_id", id)
+    .order("display_order", { ascending: true });
+
   const p = product as RawProduct;
 
   const initial = {
@@ -58,6 +64,10 @@ export default async function EditProductPage({ params }: Props) {
       name: t.name,
       description: t.description,
       short_description: t.short_description ?? "",
+    })),
+    options: ((optionRows ?? []) as { name: string; price_delta_usd: number }[]).map((o) => ({
+      name: o.name,
+      price_delta_usd: Number(o.price_delta_usd) || 0,
     })),
   };
 

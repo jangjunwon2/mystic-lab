@@ -5,6 +5,8 @@ export interface CartItem {
   price_usd: number;
   quantity: number;
   bundle_id?: string; // 세트 구성품일 경우 해당 세트 ID (서버 가격 재계산용)
+  option_id?: string; // 선택한 구매 옵션 ID (서버 가격 재계산용)
+  option_name?: string; // 선택한 옵션명 (주문 기록·배송용)
 }
 
 export interface OrderPayload {

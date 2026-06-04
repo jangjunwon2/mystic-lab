@@ -103,3 +103,19 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   return NextResponse.json({ ok: true });
 }
+
+// 주문 영구 삭제 (테스트 주문 정리용). order_items는 ON DELETE CASCADE,
+// point_transactions.order_id는 ON DELETE SET NULL 로 자동 정리된다.
+export async function DELETE(_request: Request, context: RouteContext) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await context.params;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createAdminClient() as any;
+
+  const { error } = await supabase.from("orders").delete().eq("id", id);
+  if (error) return NextResponse.json({ error: "주문 삭제에 실패했습니다." }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}

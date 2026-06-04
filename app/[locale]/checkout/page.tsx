@@ -891,12 +891,13 @@ export default function CheckoutPage({ params }: Props) {
 
                 <div className="space-y-3 mb-4">
                   {items.map((item) => (
-                    <div key={item.id} className="flex items-start gap-3">
+                    <div key={`${item.id}-${item.option_id ?? ""}`} className="flex items-start gap-3">
                       <div className="w-9 h-9 rounded-lg bg-[#13131F] border border-[#2D2D4E] flex items-center justify-center shrink-0">
                         <div className="w-3.5 h-3.5 rounded-full bg-[#7C3AED]/40" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-[#F0E6FF] line-clamp-1">{item.name}</p>
+                        {item.option_name && <p className="text-[11px] text-[#A855F7] line-clamp-1">{item.option_name}</p>}
                         <p className="text-[11px] text-[#9CA3AF]">{t("qty", { n: item.quantity })}</p>
                       </div>
                       <span className="text-xs font-semibold text-[#F0E6FF] shrink-0">

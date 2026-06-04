@@ -49,6 +49,12 @@ export type SolutionVideo = {
   created_at: string;
 };
 
+export type ProductOption = {
+  id: string;
+  name: string;
+  price_delta_usd: number;
+};
+
 const SAMPLE: Record<string, ProductWithTranslations> = {
   "phantom-deck": {
     id: "1", slug: "phantom-deck", category: "card_magic", price_usd: 120,
@@ -165,6 +171,7 @@ export default async function ProductPage({ params }: Props) {
   const { locale, slug } = await params;
 
   let product: ProductWithTranslations | null = null;
+  let options: ProductOption[] = [];
   let reviews: ReviewWithProfile[] = [];
   let solutionVideo: SolutionVideo | null = null;
   let signedVideoUrl: string | null = null;
@@ -185,6 +192,18 @@ export default async function ProductPage({ params }: Props) {
 
     if (error) throw error;
     product = data as unknown as ProductWithTranslations;
+
+    // 구매 옵션 조회 (드롭다운)
+    const { data: optionData } = await supabase
+      .from("product_options")
+      .select("id, name, price_delta_usd")
+      .eq("product_id", product.id)
+      .order("display_order", { ascending: true });
+    options = ((optionData ?? []) as { id: string; name: string; price_delta_usd: number }[]).map((o) => ({
+      id: o.id,
+      name: o.name,
+      price_delta_usd: Number(o.price_delta_usd) || 0,
+    }));
 
     // 리뷰 조회 — profiles 조인은 anon RLS에 막히므로 분리: reviews(anon) + profiles(service-role 배치)
     const { data: reviewData } = await supabase
@@ -315,6 +334,7 @@ export default async function ProductPage({ params }: Props) {
       <ProductDetail
         product={product}
         translation={translation}
+        options={options}
         locale={locale}
         reviews={reviews}
         isLoggedIn={isLoggedIn}

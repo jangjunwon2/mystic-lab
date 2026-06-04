@@ -16,9 +16,20 @@ import MagicMemberAccess from "@/components/products/MagicMemberAccess";
 import type {
   ProductWithTranslations,
   ProductTranslation,
+  ProductOption,
   ReviewWithProfile,
   SolutionVideo,
 } from "@/app/[locale]/products/[slug]/page";
+
+const OPTION_LABELS: Record<string, { heading: string; standard: string }> = {
+  en: { heading: "Purchase option", standard: "Standard" },
+  ko: { heading: "구매 옵션", standard: "기본 구성" },
+  ja: { heading: "購入オプション", standard: "標準構成" },
+  "zh-CN": { heading: "购买选项", standard: "标准配置" },
+  es: { heading: "Opción de compra", standard: "Estándar" },
+  fr: { heading: "Option d'achat", standard: "Standard" },
+  de: { heading: "Kaufoption", standard: "Standard" },
+};
 
 const CATEGORY_LABELS: Record<string, string> = {
   card_magic: "Card Magic",
@@ -32,6 +43,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 interface Props {
   product: ProductWithTranslations;
   translation: ProductTranslation;
+  options?: ProductOption[];
   locale: string;
   reviews: ReviewWithProfile[];
   isLoggedIn: boolean;
@@ -45,6 +57,7 @@ interface Props {
 export default function ProductDetail({
   product,
   translation,
+  options = [],
   locale,
   reviews,
   isLoggedIn,
@@ -57,17 +70,33 @@ export default function ProductDetail({
   const t = useTranslations("products");
   const router = useRouter();
   const [addedToCart, setAddedToCart] = useState(false);
+  const [selectedOptionId, setSelectedOptionId] = useState("");
+
+  const ol = OPTION_LABELS[locale] ?? OPTION_LABELS.en;
+
+  // 드롭다운 선택지: 기본 구성 + 옵션들 (각 옵션은 기본가 + 가격차)
+  const choices = [
+    { id: "", name: ol.standard, price: product.price_usd },
+    ...options.map((o) => ({
+      id: o.id,
+      name: o.name,
+      price: Math.max(0, Math.round((product.price_usd + o.price_delta_usd) * 100) / 100),
+    })),
+  ];
+  const selected = choices.find((c) => c.id === selectedOptionId) ?? choices[0];
+
+  const buildCartItem = () => ({
+    id: product.id,
+    slug: product.slug,
+    name: translation.name,
+    price_usd: selected.price,
+    quantity: 1,
+    ...(selected.id ? { option_id: selected.id, option_name: selected.name } : {}),
+  });
 
   const handleBuyNow = () => {
     try {
-      const item = {
-        id: product.id,
-        slug: product.slug,
-        name: translation.name,
-        price_usd: product.price_usd,
-        quantity: 1,
-      };
-      localStorage.setItem("ml_cart", JSON.stringify([item]));
+      localStorage.setItem("ml_cart", JSON.stringify([buildCartItem()]));
       window.dispatchEvent(new Event("storage"));
     } catch { /* storage may be unavailable */ }
     router.push(`/${locale}/checkout`);
@@ -80,19 +109,18 @@ export default function ProductDetail({
   const handleAddToCart = () => {
     try {
       const cart = JSON.parse(localStorage.getItem("ml_cart") ?? "[]");
-      const existing = cart.find((item: { id: string }) => item.id === product.id);
+      // 같은 상품이라도 옵션이 다르면 별도 항목으로 취급
+      const existing = cart.find(
+        (item: { id: string; option_id?: string }) =>
+          item.id === product.id && (item.option_id ?? "") === selected.id
+      );
       if (existing) {
         existing.quantity += 1;
       } else {
-        cart.push({
-          id: product.id,
-          slug: product.slug,
-          name: translation.name,
-          price_usd: product.price_usd,
-          quantity: 1,
-        });
+        cart.push(buildCartItem());
       }
       localStorage.setItem("ml_cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("storage"));
     } catch { /* storage may be unavailable */ }
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
@@ -205,7 +233,7 @@ export default function ProductDetail({
             {/* Price */}
             <div className="flex items-baseline gap-2 mb-5">
               <span className="text-4xl font-bold text-[#F59E0B]">
-                ${product.price_usd.toLocaleString()}
+                ${selected.price.toLocaleString()}
               </span>
               <span className="text-sm text-[#6B7280]">USD</span>
             </div>
@@ -226,6 +254,27 @@ export default function ProductDetail({
                 </>
               )}
             </div>
+
+            {/* Purchase Option dropdown */}
+            {options.length > 0 && product.stock > 0 && (
+              <div className="mb-6">
+                <label className="block text-xs text-[#9CA3AF] mb-1.5">{ol.heading}</label>
+                <div className="relative">
+                  <select
+                    value={selectedOptionId}
+                    onChange={(e) => setSelectedOptionId(e.target.value)}
+                    className="appearance-none w-full bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-4 py-3 pr-10 rounded-xl cursor-pointer hover:border-[#7C3AED] focus:outline-none focus:border-[#7C3AED]"
+                  >
+                    {choices.map((c) => (
+                      <option key={c.id || "standard"} value={c.id}>
+                        {c.name} — ${c.price.toLocaleString()}
+                      </option>
+                    ))}
+                  </select>
+                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+                </div>
+              </div>
+            )}
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap items-center gap-3">

@@ -16,7 +16,7 @@ export default async function AdminOrdersPage() {
       tracking_number, tracking_carrier, shipping_address, shipping_method,
       stripe_payment_intent_id,
       order_items(
-        id, quantity, price_usd,
+        id, quantity, price_usd, option_name,
         products(slug, product_translations(name, language))
       )
     `)
