@@ -75,6 +75,32 @@ export default function FakeInstagramApp({ locale }: Props) {
     return () => window.removeEventListener("popstate", onPop);
   }, [goBack]);
 
+  // iOS 등에서 화면을 당길 때 웹뷰 고무줄(rubber-band)로 뒤 검정이 비치는 현상 차단 —
+  // 내부 스크롤러의 overscroll-contain만으론 iOS 스탠드얼론 웹뷰 자체 바운스를 못 막으므로
+  // html/body의 스크롤·오버스크롤을 잠그고 배경을 검정으로 고정한다(언마운트 시 원복).
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prev = {
+      htmlOverflow: html.style.overflow, htmlOverscroll: html.style.overscrollBehavior, htmlBg: html.style.background,
+      bodyOverflow: body.style.overflow, bodyOverscroll: body.style.overscrollBehavior, bodyBg: body.style.background,
+    };
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    html.style.background = "#000";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    body.style.background = "#000";
+    return () => {
+      html.style.overflow = prev.htmlOverflow;
+      html.style.overscrollBehavior = prev.htmlOverscroll;
+      html.style.background = prev.htmlBg;
+      body.style.overflow = prev.bodyOverflow;
+      body.style.overscrollBehavior = prev.bodyOverscroll;
+      body.style.background = prev.bodyBg;
+    };
+  }, []);
+
   if (!config) return <div className="w-full h-screen bg-black" />;
 
   const ui = UI[config.appLocale] ?? UI.en;
@@ -96,16 +122,19 @@ export default function FakeInstagramApp({ locale }: Props) {
   return (
     <div
       className="fixed inset-0 w-full bg-black text-white select-none overflow-hidden flex flex-col font-sans"
-      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", overscrollBehavior: "none" }}
     >
-      {/* 좌상단 비밀 설정 진입 (3초 홀드) */}
-      <div
-        className="absolute top-0 left-0 w-[22vw] h-[10vh] z-[60]"
-        onTouchStart={() => { holdRef.current = setTimeout(() => setSettingsOpen(true), 3000); }}
-        onTouchEnd={() => { if (holdRef.current) { clearTimeout(holdRef.current); holdRef.current = null; } }}
-        onMouseDown={() => { holdRef.current = setTimeout(() => setSettingsOpen(true), 3000); }}
-        onMouseUp={() => { if (holdRef.current) { clearTimeout(holdRef.current); holdRef.current = null; } }}
-      />
+      {/* 좌상단 비밀 설정 진입 (3초 홀드) — 뒤로가기 화살표가 있는 화면(게시물 상세·DM·스토리)에서는
+          숨겨 헤더 좌상단 뒤로가기 버튼 위를 덮지 않게 한다(탭바와 동일 조건). */}
+      {!openPostId && view !== "dm" && storyStart === null && (
+        <div
+          className="absolute top-0 left-0 w-[22vw] h-[10vh] z-[60]"
+          onTouchStart={() => { holdRef.current = setTimeout(() => setSettingsOpen(true), 3000); }}
+          onTouchEnd={() => { if (holdRef.current) { clearTimeout(holdRef.current); holdRef.current = null; } }}
+          onMouseDown={() => { holdRef.current = setTimeout(() => setSettingsOpen(true), 3000); }}
+          onMouseUp={() => { if (holdRef.current) { clearTimeout(holdRef.current); holdRef.current = null; } }}
+        />
+      )}
 
       {/* 로딩 스플래시 */}
       <AnimatePresence>
@@ -213,7 +242,7 @@ function FeedView({ config, ui, likes, likeCount, onLike, onOpenStory, onOpenDM 
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto pb-2">
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-2">
         <StoriesRing config={config} ui={ui} onOpenStory={onOpenStory} />
         {config.posts.map((post) => (
           <PostCard key={post.id} post={post} config={config} ui={ui} liked={!!likes[post.id]} likeCount={likeCount} onLike={onLike} />
@@ -311,7 +340,7 @@ function PostDetail({ post, config, ui, liked, likeCount, onBack, onLike }: {
         <button onClick={onBack} className="text-white active:opacity-60 p-1"><ChevronLeft className="w-6 h-6" /></button>
         <span className="font-semibold text-base ml-1">{ui.posts}</span>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         <PostCard post={post} config={config} ui={ui} liked={liked} likeCount={likeCount} onLike={onLike} />
       </div>
     </>
@@ -337,7 +366,7 @@ function ProfileView({ config, ui, onOpenSettings, onOpenPost }: { config: Insta
           <button onClick={onOpenSettings} className="active:opacity-60"><Menu className="w-6 h-6 text-white" strokeWidth={2} /></button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto pb-2">
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-2">
         <div className="px-4 pt-4">
           <div className="flex items-center gap-6">
             <div className="w-[88px] h-[88px] rounded-full p-[2px] bg-gradient-to-tr from-[#F9C900] via-[#E1306C] to-[#C13584] shrink-0">
@@ -454,7 +483,7 @@ function StoryViewer({ config, ui, startIndex, onClose }: {
 // ─── 릴스 ───
 function ReelsView({ config, ui }: { config: InstaConfig; ui: UiStrings }) {
   return (
-    <div className="flex-1 relative bg-black overflow-y-auto snap-y snap-mandatory no-scrollbar">
+    <div className="flex-1 relative bg-black overflow-y-auto overscroll-contain snap-y snap-mandatory no-scrollbar">
       <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 pointer-events-none">
         <span className="text-lg font-semibold text-white drop-shadow">{ui.reels}</span>
         <Camera className="w-6 h-6 text-white drop-shadow" />
@@ -522,7 +551,7 @@ function DMListView({ config, ui, onBack, onOpenThread }: {
           <Search className="w-4 h-4 text-gray-400" /><span className="text-sm text-gray-400">{ui.messages}</span>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         {config.dms.map((d) => {
           const last = d.messages[d.messages.length - 1];
           return (
@@ -573,7 +602,7 @@ function DMThreadView({ thread, ui, onBack }: {
         </div>
         <div className="ml-auto flex items-center gap-4"><Phone className="w-6 h-6 text-white" /><Video className="w-6 h-6 text-white" /></div>
       </div>
-      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-1.5">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 flex flex-col gap-1.5">
         {messages.map((m, i) => (
           <div key={i} className={`max-w-[72%] px-3.5 py-2 rounded-3xl text-sm leading-snug ${m.fromMe ? "self-end bg-[#3797F0] text-white" : "self-start bg-[#262626] text-white"}`}>
             {m.text}
@@ -676,7 +705,7 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-[#0D0D1A]/97 z-[100] overflow-y-auto p-5 select-text">
+      className="fixed inset-0 bg-[#0D0D1A]/97 z-[100] overflow-y-auto overscroll-contain p-5 select-text">
       <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={onAvatar} />
       <input ref={postFileRef} type="file" accept="image/*" className="hidden" onChange={onPostImage} />
       <input ref={storyFileRef} type="file" accept="image/*" className="hidden" onChange={onStoryImage} />
