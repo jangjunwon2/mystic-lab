@@ -369,6 +369,8 @@ export default function CheckoutPage({ params }: Props) {
           },
           discountCode: appliedDiscount?.code ?? null,
           discountCodeId: appliedDiscount?.id ?? null,
+          pointsSpent: data.pointsSpent ?? 0,
+          pointsHoldRef: data.pointsHoldRef ?? null,
         }));
       } catch { /* ignore */ }
 

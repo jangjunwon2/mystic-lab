@@ -68,7 +68,9 @@ export async function POST(request: NextRequest) {
       pointsHoldRef,
     );
 
-    return NextResponse.json({ url });
+    // pointsSpent·pointsHoldRef를 클라이언트에 반환 → 성공페이지 폴백(lemon-confirm)도 동일 포인트 정산 가능
+    // (웹훅·confirm 중 주문을 먼저 저장한 쪽만 정산, 나머지는 멱등 early-return → 정확히 1회 차감)
+    return NextResponse.json({ url, pointsSpent, pointsHoldRef: pointsHoldRef ?? null });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Server error.";
     console.error("[lemon-checkout]", err);

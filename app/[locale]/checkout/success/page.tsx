@@ -62,6 +62,8 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           shippingMethod?: string;
           shippingAddress?: Record<string, string>;
           discountCode?: string | null;
+          pointsSpent?: number;
+          pointsHoldRef?: string | null;
         } | null = null;
         try {
           const raw = sessionStorage.getItem("lemon_pending");
@@ -81,6 +83,8 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
               shippingMethod: pending.shippingMethod,
               shippingAddress: pending.shippingAddress,
               discountCode: pending.discountCode,
+              pointsSpent: pending.pointsSpent,
+              pointsHoldRef: pending.pointsHoldRef,
             }),
           }).catch((err) => console.error("[success/lemon]", err));
 
