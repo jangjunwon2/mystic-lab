@@ -1,68 +1,45 @@
-// 인스타그램 PWA 아이콘 생성 — 실제 아이콘 디자인(어두운 차콜 배경 + 그라디언트 카메라 글리프).
-// 참고 디자인: 다크 스퀴클 위에 보라→핑크→주황→노랑 그라디언트로 그려진 카메라(외곽 사각·렌즈·점).
+// 인스타그램 PWA 아이콘 생성 — 사용자가 제공한 그라디언트 카메라 글리프(insta-source.png, 투명 배경)를
+// 어두운 차콜 스퀴클 배경 위에 올려 실제 인스타 아이콘(다크 배경 + 그라디언트 카메라)으로 합성.
 // 실행: node scripts/gen-insta-icons.mjs
 import sharp from "sharp";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
-const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "images", "magic");
+const DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "images", "magic");
+const SRC = join(DIR, "insta-source.png");
 
-function glyph(size, inset) {
-  const s = size;
-  const r = inset; // 0 = full-bleed(maskable/apple), >0 = 라운드 스퀴클 여백(any)
-  const w = s - r * 2;
-  // maskable/apple(여백 0)은 모서리 없는 꽉 찬 정사각형(런처/iOS가 자체 라운딩) → 투명·흰 박스 방지
+const GLYPH_SCALE = 0.64; // 아이콘 폭 대비 카메라 글리프 크기(주변 여백 확보, 레퍼런스 톤)
+
+// 어두운 배경 SVG. inset 0 = full-bleed 정사각형(maskable/apple), >0 = 라운드 스퀴클(any, 투명 모서리)
+function darkBg(size, inset) {
+  const r = inset;
+  const w = size - r * 2;
   const radius = r === 0 ? 0 : w * 0.235;
-
-  // 카메라 글리프 — 캔버스 중앙
-  const camW = s * 0.48;
-  const camX = (s - camW) / 2;
-  const camTop = camX;
-  const camBottom = camX + camW;
-  const cx = s / 2;
-  const camR = camW * 0.30;     // 외곽 사각 모서리
-  const stroke = s * 0.072;     // 카메라 선 두께(실제 아이콘처럼 도톰하게)
-  const lens = camW * 0.255;    // 렌즈 반지름
-  const dotR = s * 0.036;       // 우상단 점
-  const dotX = cx + camW * 0.335;
-  const dotY = cy0() - camW * 0.335;
-  function cy0() { return s / 2; }
-
-  return `
-<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3C3C3E"/>
-      <stop offset="100%" stop-color="#2A2A2C"/>
-    </linearGradient>
-    <!-- 카메라 글리프 그라디언트: 위(보라)→아래(쨍한 노랑), 거의 수직 + 약간 대각 -->
-    <linearGradient id="cam" gradientUnits="userSpaceOnUse" x1="${cx - camW * 0.15}" y1="${camTop}" x2="${cx + camW * 0.15}" y2="${camBottom}">
-      <stop offset="0%" stop-color="#9B30C9"/>
-      <stop offset="22%" stop-color="#C32E91"/>
-      <stop offset="46%" stop-color="#E5365A"/>
-      <stop offset="70%" stop-color="#F77035"/>
-      <stop offset="100%" stop-color="#FFC83C"/>
-    </linearGradient>
-  </defs>
+  return Buffer.from(`
+<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#3C3C3E"/><stop offset="100%" stop-color="#2A2A2C"/>
+  </linearGradient></defs>
   <rect x="${r}" y="${r}" width="${w}" height="${w}" rx="${radius}" fill="url(#bg)"/>
-  <g fill="none" stroke="url(#cam)" stroke-width="${stroke}">
-    <rect x="${camX}" y="${camX}" width="${camW}" height="${camW}" rx="${camR}"/>
-    <circle cx="${cx}" cy="${s / 2}" r="${lens}"/>
-  </g>
-  <circle cx="${dotX}" cy="${dotY}" r="${dotR}" fill="url(#cam)"/>
-</svg>`;
+</svg>`);
 }
 
-async function render(svg, size, file) {
-  await sharp(Buffer.from(svg)).resize(size, size).png().toFile(join(OUT, file));
+async function make(size, file, inset, flattenDark = false) {
+  const bg = await sharp(darkBg(size, inset)).png().toBuffer();
+  const g = Math.round(size * GLYPH_SCALE);
+  const glyph = await sharp(SRC).resize(g, g).png().toBuffer();
+  const off = Math.round((size - g) / 2);
+  let img = sharp(bg).composite([{ input: glyph, left: off, top: off }]);
+  if (flattenDark) img = img.flatten({ background: "#000000" });
+  await img.png().toFile(join(DIR, file));
   console.log("wrote", file);
 }
 
-// maskable: full-bleed 다크 정사각형(런처가 마스킹) → 흰 박스 없음
-await render(glyph(512, 0), 512, "insta-maskable-512.png");
-// any: 다크 라운드 스퀴클(투명 모서리)
-await render(glyph(512, 26), 512, "insta-512.png");
-await render(glyph(512, 26), 192, "insta-192.png");
-await render(glyph(512, 26), 512, "instagram-icon.png");
-// iOS apple-touch-icon — 불투명 정사각형(iOS가 모서리 자동 라운딩)
-await render(glyph(512, 0), 180, "insta-apple-180.png");
+// any (라운드 스퀴클, 투명 모서리)
+await make(512, "insta-512.png", 26);
+await make(192, "insta-192.png", 26);
+await make(512, "instagram-icon.png", 26);
+// maskable (full-bleed 정사각형 — 런처가 마스킹)
+await make(512, "insta-maskable-512.png", 0);
+// iOS apple-touch-icon (불투명 정사각형 — iOS가 모서리 자동 라운딩)
+await make(180, "insta-apple-180.png", 0, true);
