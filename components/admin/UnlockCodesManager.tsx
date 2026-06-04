@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Trash2, Unlink, Smartphone } from "lucide-react";
+import { Copy, Check, Trash2, Unlink, Smartphone, Lock, LockOpen, RotateCcw } from "lucide-react";
 
 interface Product {
   id: string;
@@ -21,6 +21,9 @@ interface CodeRow {
   is_member: boolean;
   member_name: string | null;
   product_name: string;
+  activation_count: number;
+  max_activations: number | null;
+  is_locked: boolean;
 }
 
 interface Props {
@@ -74,6 +77,9 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
           is_member: false,
           member_name: null,
           product_name: productName,
+          activation_count: 0,
+          max_activations: 5,
+          is_locked: false,
         },
         ...prev,
       ]);
@@ -107,6 +113,45 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
       setError(d.error ?? "기기 해제에 실패했습니다.");
     }
     setBusyId(null);
+  }
+
+  async function patchCode(id: string, body: Record<string, unknown>, apply: (c: CodeRow) => CodeRow) {
+    setBusyId(id);
+    const res = await fetch("/api/admin/unlock-codes", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...body }),
+    });
+    if (res.ok) {
+      setCodes((prev) => prev.map((c) => (c.id === id ? apply(c) : c)));
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "처리에 실패했습니다.");
+    }
+    setBusyId(null);
+  }
+
+  async function toggleLock(code: CodeRow) {
+    const lock = !code.is_locked;
+    if (lock && !confirm("이 코드를 잠글까요? 등록된 기기 권한이 즉시 취소되고 더 이상 인증할 수 없습니다.")) return;
+    await patchCode(code.id, { action: lock ? "lock" : "unlock" }, (c) => ({
+      ...c,
+      is_locked: lock,
+      ...(lock ? { is_activated: false } : {}),
+    }));
+  }
+
+  async function resetActivations(id: string) {
+    if (!confirm("활성화 횟수를 0으로 리셋하고 잠금을 해제할까요?")) return;
+    await patchCode(id, { action: "reset" }, (c) => ({ ...c, activation_count: 0, is_locked: false }));
+  }
+
+  async function editMax(code: CodeRow) {
+    const input = prompt("활성화 한도 (비우면 무제한)", code.max_activations?.toString() ?? "");
+    if (input === null) return;
+    const trimmed = input.trim();
+    const value = trimmed === "" ? null : Math.max(1, parseInt(trimmed, 10) || 1);
+    await patchCode(code.id, { max_activations: value }, (c) => ({ ...c, max_activations: value }));
   }
 
   async function deleteCode(id: string) {
@@ -222,7 +267,7 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["상품", "코드", "발급 경로", "회원", "기기 등록", "마지막 활성화", "관리"].map((h) => (
+                {["상품", "코드", "발급 경로", "회원", "기기 등록", "활성화", "마지막 활성화", "관리"].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
@@ -232,7 +277,7 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
             <tbody>
               {visibleCodes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
+                  <td colSpan={8} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
                     발급된 코드가 없습니다.
                   </td>
                 </tr>
@@ -272,7 +317,11 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
                       {code.member_name ?? "—"}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      {code.is_activated ? (
+                      {code.is_locked ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: "#EF4444" }}>
+                          <Lock className="w-3.5 h-3.5" /> 잠김
+                        </span>
+                      ) : code.is_activated ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: "#10B981" }}>
                           <Smartphone className="w-3.5 h-3.5" /> 등록됨
                         </span>
@@ -280,11 +329,51 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
                         <span className="text-xs" style={{ color: "#6B7280" }}>미등록</span>
                       )}
                     </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-xs">
+                      {(() => {
+                        const max = code.max_activations;
+                        const over = max != null && code.activation_count >= max;
+                        return (
+                          <span style={{ color: over ? "#EF4444" : "#9CA3AF" }}>
+                            {code.activation_count}/{max ?? "∞"}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td className="px-4 py-4 whitespace-nowrap text-xs" style={{ color: "#9CA3AF" }}>
                       {fmt(code.last_activated_at) ?? "—"}
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => toggleLock(code)}
+                          disabled={busyId === code.id}
+                          title={code.is_locked ? "잠금 해제" : "코드 잠금"}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                          style={code.is_locked
+                            ? { background: "#10B98122", color: "#10B981", border: "1px solid #10B98144" }
+                            : { background: "#EF444422", color: "#EF4444", border: "1px solid #EF444444" }}
+                        >
+                          {code.is_locked ? <><LockOpen className="w-3.5 h-3.5" /> 잠금해제</> : <><Lock className="w-3.5 h-3.5" /> 잠금</>}
+                        </button>
+                        <button
+                          onClick={() => resetActivations(code.id)}
+                          disabled={busyId === code.id}
+                          title="활성화 횟수 리셋"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                          style={{ background: "#3B82F622", color: "#3B82F6", border: "1px solid #3B82F644" }}
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" /> 리셋
+                        </button>
+                        <button
+                          onClick={() => editMax(code)}
+                          disabled={busyId === code.id}
+                          title="활성화 한도 설정"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                          style={{ background: "#7C3AED22", color: "#A855F7", border: "1px solid #7C3AED44" }}
+                        >
+                          한도
+                        </button>
                         <button
                           onClick={() => releaseDevice(code.id)}
                           disabled={!code.is_activated || busyId === code.id}

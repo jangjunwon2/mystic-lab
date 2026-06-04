@@ -34,13 +34,13 @@ export async function PATCH(request: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id, action, product_id } = await request.json();
+  const { id, action, product_id, max_activations } = await request.json();
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
-  // 기기 바인딩 강제 해제 — 등록된 단말기 권한 즉시 취소
+  // 기기 바인딩 강제 해제 — 등록된 단말기 권한 즉시 취소 (횟수는 유지)
   if (action === "release") {
     const { error } = await supabase
       .from("product_unlock_codes")
@@ -48,6 +48,39 @@ export async function PATCH(request: NextRequest) {
       .eq("id", id);
     if (error) return NextResponse.json({ error: "기기 해제에 실패했습니다." }, { status: 500 });
     return NextResponse.json({ ok: true });
+  }
+
+  // 활성화 횟수 리셋 — 한도 초과로 막힌 코드를 다시 사용 가능하게 (잠금도 해제)
+  if (action === "reset") {
+    const { error } = await supabase
+      .from("product_unlock_codes")
+      .update({ activation_count: 0, is_locked: false })
+      .eq("id", id);
+    if (error) return NextResponse.json({ error: "횟수 리셋에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // 잠금 / 잠금 해제 — 잠금 시 등록된 기기 권한도 즉시 취소
+  if (action === "lock" || action === "unlock") {
+    const locked = action === "lock";
+    const { error } = await supabase
+      .from("product_unlock_codes")
+      .update(locked ? { is_locked: true, active_token_hash: null } : { is_locked: false })
+      .eq("id", id);
+    if (error) return NextResponse.json({ error: "잠금 상태 변경에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // 활성화 한도 설정 (빈값/0 이하 → 무제한)
+  if (max_activations !== undefined) {
+    const parsed = Number(max_activations);
+    const value = Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : null;
+    const { error } = await supabase
+      .from("product_unlock_codes")
+      .update({ max_activations: value })
+      .eq("id", id);
+    if (error) return NextResponse.json({ error: "한도 설정에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ ok: true, max_activations: value });
   }
 
   // 상품 재지정

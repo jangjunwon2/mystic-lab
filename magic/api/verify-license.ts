@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // 1. 해당 코드 존재 여부 및 productId와 일치하는지 조회
     const { data: unlockCode, error: queryError } = await supabase
       .from("product_unlock_codes")
-      .select("id, product_id, user_id")
+      .select("id, product_id, user_id, is_locked, activation_count, max_activations")
       .eq("code_hash", codeHash)
       .eq("product_id", productId)
       .maybeSingle();
@@ -45,6 +45,19 @@ export async function POST(request: NextRequest) {
 
     if (!unlockCode) {
       return NextResponse.json({ error: "유효하지 않은 코드이거나 이 상품의 코드가 아닙니다." }, { status: 404 });
+    }
+
+    // 1-1. 관리자 잠금 / 활성화 한도 검사 (무한 재활성화·공유 악용 방지)
+    if (unlockCode.is_locked) {
+      return NextResponse.json({ error: "관리자에 의해 비활성화된 코드입니다. 판매처에 문의해 주세요." }, { status: 403 });
+    }
+    const maxActivations: number | null = unlockCode.max_activations;
+    const activationCount: number = unlockCode.activation_count ?? 0;
+    if (maxActivations != null && activationCount >= maxActivations) {
+      return NextResponse.json(
+        { error: "이 코드의 기기 활성화 가능 횟수를 초과했습니다. 판매처에 문의해 주세요." },
+        { status: 403 }
+      );
     }
 
     // 1-2. 로그인 상태이고 코드가 아직 회원에 미할당(수동 발급)이면 현재 로그인 회원에게 자동 귀속
@@ -63,12 +76,13 @@ export async function POST(request: NextRequest) {
     const newDeviceToken = randomBytes(32).toString("hex");
     const newDeviceTokenHash = createHash("sha256").update(newDeviceToken).digest("hex");
 
-    // DB에 활성 토큰 해시 및 마지막 활성화 시각 업데이트 (+ 미할당 코드면 로그인 회원에 귀속)
+    // DB에 활성 토큰 해시·마지막 활성화 시각·활성화 횟수(+1) 업데이트 (+ 미할당 코드면 로그인 회원에 귀속)
     const { error: updateError } = await supabase
       .from("product_unlock_codes")
       .update({
         active_token_hash: newDeviceTokenHash,
         last_activated_at: new Date().toISOString(),
+        activation_count: activationCount + 1,
         ...(assignUserId ? { user_id: assignUserId } : {}),
       })
       .eq("id", unlockCode.id);

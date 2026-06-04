@@ -18,6 +18,9 @@ interface RawCode {
   active_token_hash: string | null;
   last_activated_at: string | null;
   user_id: string | null;
+  activation_count: number | null;
+  max_activations: number | null;
+  is_locked: boolean | null;
   products: { slug: string; product_translations: { name: string; language: string }[] } | null;
 }
 
@@ -42,7 +45,7 @@ export default async function AdminUnlockCodesPage() {
     supabase
       .from("product_unlock_codes")
       .select(
-        "id, product_id, created_at, first_used_at, code_plain, active_token_hash, last_activated_at, user_id, products(slug, product_translations(name, language))"
+        "id, product_id, created_at, first_used_at, code_plain, active_token_hash, last_activated_at, user_id, activation_count, max_activations, is_locked, products(slug, product_translations(name, language))"
       )
       .order("created_at", { ascending: false })
       .limit(300),
@@ -81,6 +84,9 @@ export default async function AdminUnlockCodesPage() {
     is_member: !!c.user_id,
     member_name: c.user_id ? memberNames.get(c.user_id) ?? null : null,
     product_name: pickName(c.products?.product_translations, c.products?.slug ?? "알 수 없음"),
+    activation_count: c.activation_count ?? 0,
+    max_activations: c.max_activations ?? null,
+    is_locked: !!c.is_locked,
   }));
 
   return (
@@ -90,8 +96,8 @@ export default async function AdminUnlockCodesPage() {
       </h1>
       <p className="text-sm mb-8" style={{ color: "#9CA3AF" }}>
         상품별 정품 인증 코드를 수동 발급하고, 발급된 코드의 기기 등록 현황을 관리합니다.
-        코드 1개당 단말기 1대만 활성화되며, &ldquo;기기 해제&rdquo;를 누르면 기존 단말기 권한이 즉시 취소됩니다.
-        회원 구매 시에는 코드가 자동 발급됩니다.
+        코드 1개당 단말기 1대만 활성화되며, 신규 코드는 기본 <b className="text-[#A855F7]">5회</b>까지만 기기 활성화(교체)가 허용됩니다(무한 공유 방지).
+        한도 초과 시 &ldquo;리셋&rdquo;, 즉시 차단은 &ldquo;잠금&rdquo;, 등록 기기만 풀려면 &ldquo;기기 해제&rdquo;를 사용하세요. 회원 구매 시에는 코드가 자동 발급됩니다.
       </p>
       <UnlockCodesManager products={products} codes={codes} />
     </div>
