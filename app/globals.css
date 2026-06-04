@@ -118,3 +118,12 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #A855F7;
 }
+
+/* 스크롤바 숨김 (가짜 인스타 스토리 링·릴스 등 네이티브 위장 영역) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
