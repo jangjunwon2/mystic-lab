@@ -183,7 +183,7 @@ export default async function AdminAnalyticsPage() {
     supabase.from("profiles").select("id, created_at", { count: "exact" }),
     supabase
       .from("orders")
-      .select("total_usd, status, customer_email, user_id")
+      .select("total_usd, status, customer_email, user_id, stripe_payment_intent_id, shipping_address")
       .limit(2000),
     // 상품 마스터 (상품별 상세 통계 행 구성)
     supabase.from("products").select("id, slug, product_translations(name, language)").eq("is_active", true),
@@ -325,6 +325,33 @@ export default async function AdminAnalyticsPage() {
   const SHARE_LABELS: Record<string, string> = {
     native: "공유시트", facebook: "Facebook", x: "X", whatsapp: "WhatsApp", telegram: "Telegram", line: "LINE", copy: "링크복사",
   };
+
+  // ───── 결제수단·국가별 분포 (결제완료+ 기준) ─────
+  interface FullOrder { total_usd: number; status: string; stripe_payment_intent_id: string | null; shipping_address: Record<string, string> | null }
+  const fullOrders = (allOrdersRes.data ?? []) as FullOrder[];
+
+  const gatewayStats: Record<string, { count: number; revenue: number }> = {};
+  for (const o of fullOrders) {
+    if (!PAID.includes(o.status)) continue;
+    const ref = o.stripe_payment_intent_id ?? "";
+    const gw = ref.startsWith("toss_") ? "Toss (한국)" : ref.startsWith("lemon_") ? "LemonSqueezy (해외)" : "수동/기타";
+    if (!gatewayStats[gw]) gatewayStats[gw] = { count: 0, revenue: 0 };
+    gatewayStats[gw].count += 1;
+    gatewayStats[gw].revenue += o.total_usd;
+  }
+  const gatewayEntries = Object.entries(gatewayStats).sort(([, a], [, b]) => b.revenue - a.revenue);
+  const gatewayTotal = gatewayEntries.reduce((s, [, v]) => s + v.revenue, 0) || 1;
+
+  const countryStats: Record<string, { count: number; revenue: number }> = {};
+  for (const o of fullOrders) {
+    if (!PAID.includes(o.status)) continue;
+    const country = (o.shipping_address?.country ?? "").toUpperCase().trim() || "미지정";
+    if (!countryStats[country]) countryStats[country] = { count: 0, revenue: 0 };
+    countryStats[country].count += 1;
+    countryStats[country].revenue += o.total_usd;
+  }
+  const countryEntries = Object.entries(countryStats).sort(([, a], [, b]) => b.revenue - a.revenue).slice(0, 10);
+  const countryTotal = countryEntries.reduce((s, [, v]) => s + v.revenue, 0) || 1;
 
   return (
     <div className="p-8 space-y-8">
@@ -603,6 +630,61 @@ export default async function AdminAnalyticsPage() {
               })}
           </div>
         )}
+      </div>
+
+      {/* 결제수단·국가별 분포 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+          <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
+            결제수단별 매출 (결제완료+)
+          </h2>
+          {gatewayEntries.length === 0 ? (
+            <p className="text-sm" style={{ color: "#9CA3AF" }}>아직 결제 데이터가 없습니다.</p>
+          ) : (
+            <div className="space-y-2">
+              {gatewayEntries.map(([gw, v]) => {
+                const pct = Math.round((v.revenue / gatewayTotal) * 100);
+                return (
+                  <div key={gw}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span style={{ color: "#F0E6FF" }}>{gw}</span>
+                      <span style={{ color: "#A855F7" }}>${v.revenue.toFixed(0)} <span className="text-xs" style={{ color: "#9CA3AF" }}>({v.count}건 · {pct}%)</span></span>
+                    </div>
+                    <div className="h-1.5 rounded-full" style={{ background: "#2D2D4E" }}>
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#7C3AED,#A855F7)" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+          <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>
+            국가별 매출 Top 10 (배송지 기준)
+          </h2>
+          {countryEntries.length === 0 ? (
+            <p className="text-sm" style={{ color: "#9CA3AF" }}>아직 배송지 데이터가 없습니다.</p>
+          ) : (
+            <div className="space-y-2">
+              {countryEntries.map(([country, v]) => {
+                const pct = Math.round((v.revenue / countryTotal) * 100);
+                return (
+                  <div key={country}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span style={{ color: "#F0E6FF" }}>{country}</span>
+                      <span style={{ color: "#F59E0B" }}>${v.revenue.toFixed(0)} <span className="text-xs" style={{ color: "#9CA3AF" }}>({v.count}건 · {pct}%)</span></span>
+                    </div>
+                    <div className="h-1.5 rounded-full" style={{ background: "#2D2D4E" }}>
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#F59E0B,#F97316)" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Note on conversion tracking */}
