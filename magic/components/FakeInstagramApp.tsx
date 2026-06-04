@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, Send, Bookmark, Home, Search, Film, Settings, X, Plus, Trash2, Upload, ChevronLeft, BadgeCheck, Grid3x3, Music, MoreHorizontal, Phone, Video, Camera } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, Home, Search, Film, Settings, X, Plus, Trash2, Upload, ChevronLeft, BadgeCheck, Grid3x3, Music, MoreHorizontal, Phone, Video, Camera, Menu, ChevronDown, AtSign, UserPlus, Repeat, User } from "lucide-react";
 import {
   type InstaConfig, type InstaPost, type InstaStory, type InstaReel, type InstaThread, type InstaDMMessage, type LocalizedText,
   loadInstaConfig, saveInstaConfig, fileToScaledDataUrl, formatCount, defaultInstaConfig, pickText, formatPostDate,
@@ -15,17 +15,17 @@ interface Props {
 
 interface UiStrings {
   posts: string; followers: string; following: string; viewAll: (n: number) => string; edit: string; follow: string; message: string;
-  yourStory: string; reels: string; messages: string; active: string; messagePlaceholder: string;
+  yourStory: string; reels: string; messages: string; active: string; messagePlaceholder: string; share: string; addBanner: string;
 }
 
 const UI: Record<string, UiStrings> = {
-  ko: { posts: "게시물", followers: "팔로워", following: "팔로잉", viewAll: (n) => `댓글 ${n}개 모두 보기`, edit: "프로필 편집", follow: "팔로우", message: "메시지", yourStory: "내 스토리", reels: "릴스", messages: "메시지", active: "활동 중", messagePlaceholder: "메시지 보내기..." },
-  en: { posts: "posts", followers: "followers", following: "following", viewAll: (n) => `View all ${n} comments`, edit: "Edit profile", follow: "Follow", message: "Message", yourStory: "Your story", reels: "Reels", messages: "Messages", active: "Active now", messagePlaceholder: "Message..." },
-  ja: { posts: "投稿", followers: "フォロワー", following: "フォロー中", viewAll: (n) => `コメント${n}件をすべて見る`, edit: "プロフィールを編集", follow: "フォロー", message: "メッセージ", yourStory: "あなたのストーリー", reels: "リール", messages: "メッセージ", active: "アクティブ", messagePlaceholder: "メッセージ..." },
-  "zh-CN": { posts: "帖子", followers: "粉丝", following: "关注", viewAll: (n) => `查看全部 ${n} 条评论`, edit: "编辑主页", follow: "关注", message: "私信", yourStory: "你的快拍", reels: "Reels", messages: "私信", active: "在线", messagePlaceholder: "发消息..." },
-  es: { posts: "publicaciones", followers: "seguidores", following: "seguidos", viewAll: (n) => `Ver los ${n} comentarios`, edit: "Editar perfil", follow: "Seguir", message: "Mensaje", yourStory: "Tu historia", reels: "Reels", messages: "Mensajes", active: "Activo(a) ahora", messagePlaceholder: "Mensaje..." },
-  fr: { posts: "publications", followers: "abonnés", following: "abonnements", viewAll: (n) => `Voir les ${n} commentaires`, edit: "Modifier le profil", follow: "Suivre", message: "Message", yourStory: "Votre story", reels: "Reels", messages: "Messages", active: "Actif", messagePlaceholder: "Message..." },
-  de: { posts: "Beiträge", followers: "Follower", following: "Gefolgt", viewAll: (n) => `Alle ${n} Kommentare ansehen`, edit: "Profil bearbeiten", follow: "Folgen", message: "Nachricht", yourStory: "Deine Story", reels: "Reels", messages: "Nachrichten", active: "Aktiv", messagePlaceholder: "Nachricht..." },
+  ko: { posts: "게시물", followers: "팔로워", following: "팔로잉", viewAll: (n) => `댓글 ${n}개 모두 보기`, edit: "프로필 편집", follow: "팔로우", message: "메시지", yourStory: "내 스토리", reels: "릴스", messages: "메시지", active: "활동 중", messagePlaceholder: "메시지 보내기...", share: "프로필 공유", addBanner: "배너 추가" },
+  en: { posts: "posts", followers: "followers", following: "following", viewAll: (n) => `View all ${n} comments`, edit: "Edit profile", follow: "Follow", message: "Message", yourStory: "Your story", reels: "Reels", messages: "Messages", active: "Active now", messagePlaceholder: "Message...", share: "Share profile", addBanner: "Add banner" },
+  ja: { posts: "投稿", followers: "フォロワー", following: "フォロー中", viewAll: (n) => `コメント${n}件をすべて見る`, edit: "プロフィールを編集", follow: "フォロー", message: "メッセージ", yourStory: "あなたのストーリー", reels: "リール", messages: "メッセージ", active: "アクティブ", messagePlaceholder: "メッセージ...", share: "プロフィールをシェア", addBanner: "バナーを追加" },
+  "zh-CN": { posts: "帖子", followers: "粉丝", following: "关注", viewAll: (n) => `查看全部 ${n} 条评论`, edit: "编辑主页", follow: "关注", message: "私信", yourStory: "你的快拍", reels: "Reels", messages: "私信", active: "在线", messagePlaceholder: "发消息...", share: "分享主页", addBanner: "添加横幅" },
+  es: { posts: "publicaciones", followers: "seguidores", following: "seguidos", viewAll: (n) => `Ver los ${n} comentarios`, edit: "Editar perfil", follow: "Seguir", message: "Mensaje", yourStory: "Tu historia", reels: "Reels", messages: "Mensajes", active: "Activo(a) ahora", messagePlaceholder: "Mensaje...", share: "Compartir perfil", addBanner: "Añadir banner" },
+  fr: { posts: "publications", followers: "abonnés", following: "abonnements", viewAll: (n) => `Voir les ${n} commentaires`, edit: "Modifier le profil", follow: "Suivre", message: "Message", yourStory: "Votre story", reels: "Reels", messages: "Messages", active: "Actif", messagePlaceholder: "Message...", share: "Partager le profil", addBanner: "Ajouter une bannière" },
+  de: { posts: "Beiträge", followers: "Follower", following: "Gefolgt", viewAll: (n) => `Alle ${n} Kommentare ansehen`, edit: "Profil bearbeiten", follow: "Folgen", message: "Nachricht", yourStory: "Deine Story", reels: "Reels", messages: "Nachrichten", active: "Aktiv", messagePlaceholder: "Nachricht...", share: "Profil teilen", addBanner: "Banner hinzufügen" },
 };
 
 const AVATAR_FALLBACK = "/images/magic/instagram-post.png";
@@ -47,6 +47,33 @@ export default function FakeInstagramApp({ locale }: Props) {
     const timer = setTimeout(() => setLoading(false), 1300);
     return () => clearTimeout(timer);
   }, [locale]);
+
+  // 기기/브라우저 뒤로가기 → 앱 내부 화면을 한 단계씩 복귀(설치형 PWA에서 뒤로가기가 앱을 나가버리던 문제 해결).
+  const navRef = useRef({ settingsOpen, storyStart, openPostId, openThreadId, view });
+  useEffect(() => {
+    navRef.current = { settingsOpen, storyStart, openPostId, openThreadId, view };
+  }, [settingsOpen, storyStart, openPostId, openThreadId, view]);
+  const goBack = useCallback(() => {
+    const s = navRef.current;
+    if (s.settingsOpen) { setSettingsOpen(false); return; }
+    if (s.storyStart !== null) { setStoryStart(null); return; }
+    if (s.openPostId) { setOpenPostId(null); return; }
+    if (s.view === "dm") {
+      if (s.openThreadId) { setOpenThreadId(null); return; }
+      setView("feed"); return;
+    }
+    if (s.view === "reels" || s.view === "profile") { setView("feed"); return; }
+    // 피드 루트 — 더 돌아갈 곳 없음(네이티브 앱처럼 뒤로가기로 앱이 닫히지 않게 유지)
+  }, []);
+  useEffect(() => {
+    window.history.pushState({ insta: true }, "");
+    const onPop = () => {
+      goBack();
+      window.history.pushState({ insta: true }, ""); // 다음 뒤로가기도 가로채도록 재무장
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [goBack]);
 
   if (!config) return <div className="w-full h-screen bg-black" />;
 
@@ -108,7 +135,7 @@ export default function FakeInstagramApp({ locale }: Props) {
           onBack={() => setOpenPostId(null)} onLike={toggleLike}
         />
       ) : view === "reels" ? (
-        <ReelsView config={config} ui={ui} onBack={() => setView("feed")} />
+        <ReelsView config={config} ui={ui} />
       ) : view === "dm" ? (
         openThreadId ? (
           <DMThreadView
@@ -124,7 +151,7 @@ export default function FakeInstagramApp({ locale }: Props) {
           onOpenStory={(i) => setStoryStart(i)} onOpenDM={() => setView("dm")}
         />
       ) : (
-        <ProfileView config={config} ui={ui} onBack={() => setView("feed")} onOpenPost={(id) => setOpenPostId(id)} />
+        <ProfileView config={config} ui={ui} onOpenSettings={() => setSettingsOpen(true)} onOpenPost={(id) => setOpenPostId(id)} />
       )}
 
       {/* 하단 탭 바 — 게시물 상세·DM·스토리 뷰어에서는 숨김 */}
@@ -292,16 +319,23 @@ function PostDetail({ post, config, ui, liked, likeCount, onBack, onLike }: {
 }
 
 // ─── 프로필 ───
-function ProfileView({ config, ui, onBack, onOpenPost }: { config: InstaConfig; ui: typeof UI["en"]; onBack: () => void; onOpenPost: (id: string) => void }) {
+function ProfileView({ config, ui, onOpenSettings, onOpenPost }: { config: InstaConfig; ui: typeof UI["en"]; onOpenSettings: () => void; onOpenPost: (id: string) => void }) {
   return (
     <>
       <div className="h-12 border-b border-[#262626] bg-black flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <button onClick={onBack} className="active:opacity-60 -ml-1.5"><ChevronLeft className="w-6 h-6 text-white" /></button>
+        <div className="flex items-center gap-1">
           <span className="font-semibold text-base">{config.username}</span>
           {config.verified && <BadgeCheck className="w-4 h-4 text-[#3897F0] fill-[#3897F0]" stroke="#000" strokeWidth={1.5} />}
+          <ChevronDown className="w-4 h-4 text-white ml-0.5" strokeWidth={2.5} />
         </div>
-        <Plus className="w-6 h-6 text-white" />
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <AtSign className="w-6 h-6 text-white" strokeWidth={2} />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#FF3040]" />
+          </div>
+          {/* 햄버거(≡) → 비밀 설정 */}
+          <button onClick={onOpenSettings} className="active:opacity-60"><Menu className="w-6 h-6 text-white" strokeWidth={2} /></button>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto pb-2">
         <div className="px-4 pt-4">
@@ -327,14 +361,21 @@ function ProfileView({ config, ui, onBack, onOpenPost }: { config: InstaConfig; 
             </div>
             <p className="text-[13px] text-gray-100 whitespace-pre-line leading-snug mt-0.5">{config.bio}</p>
           </div>
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-1.5 mt-3">
             <button className="flex-1 py-1.5 rounded-lg text-sm font-semibold bg-[#262626] text-white">{ui.edit}</button>
-            <button className="flex-1 py-1.5 rounded-lg text-sm font-semibold bg-[#262626] text-white">{ui.message}</button>
+            <button className="flex-1 py-1.5 rounded-lg text-sm font-semibold bg-[#262626] text-white">{ui.share}</button>
+            <button className="px-2.5 py-1.5 rounded-lg bg-[#262626] text-white flex items-center justify-center"><UserPlus className="w-4 h-4" /></button>
           </div>
+          {/* 배너 추가 */}
+          <button className="flex items-center gap-1.5 mt-3 text-[13px] text-[#8E8E8E]"><Plus className="w-4 h-4" /> {ui.addBanner}</button>
         </div>
 
-        <div className="flex items-center justify-center border-t border-[#262626] mt-4">
-          <div className="py-2.5 text-white border-t border-white -mt-px"><Grid3x3 className="w-6 h-6" /></div>
+        {/* 탭 바: 그리드(활성) · 릴스 · 리믹스 · 태그됨 */}
+        <div className="flex items-center border-t border-[#262626] mt-4">
+          <div className="flex-1 py-2.5 flex justify-center text-white border-t border-white -mt-px"><Grid3x3 className="w-6 h-6" /></div>
+          <div className="flex-1 py-2.5 flex justify-center text-[#8E8E8E]"><Film className="w-6 h-6" /></div>
+          <div className="flex-1 py-2.5 flex justify-center text-[#8E8E8E]"><Repeat className="w-6 h-6" /></div>
+          <div className="flex-1 py-2.5 flex justify-center text-[#8E8E8E]"><User className="w-6 h-6" /></div>
         </div>
         <div className="grid grid-cols-3 gap-[2px]">
           {config.posts.map((p) => (
@@ -411,14 +452,11 @@ function StoryViewer({ config, ui, startIndex, onClose }: {
 }
 
 // ─── 릴스 ───
-function ReelsView({ config, ui, onBack }: { config: InstaConfig; ui: UiStrings; onBack: () => void }) {
+function ReelsView({ config, ui }: { config: InstaConfig; ui: UiStrings }) {
   return (
     <div className="flex-1 relative bg-black overflow-y-auto snap-y snap-mandatory no-scrollbar">
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-3">
-        <div className="flex items-center gap-2">
-          <button onClick={onBack} className="active:opacity-60"><ChevronLeft className="w-6 h-6 text-white drop-shadow" /></button>
-          <span className="text-lg font-semibold text-white drop-shadow">{ui.reels}</span>
-        </div>
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 pointer-events-none">
+        <span className="text-lg font-semibold text-white drop-shadow">{ui.reels}</span>
         <Camera className="w-6 h-6 text-white drop-shadow" />
       </div>
       {config.reels.map((r) => <ReelItem key={r.id} reel={r} config={config} ui={ui} />)}
