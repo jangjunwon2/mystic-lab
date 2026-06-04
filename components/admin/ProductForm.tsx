@@ -30,13 +30,37 @@ interface Translation {
   short_description: string;
 }
 
+interface OptionItemRow {
+  product_id: string;
+  quantity: string;
+}
+
 interface ProductOptionRow {
   name: string;
   price_delta_usd: string;
+  items: OptionItemRow[];
+  pricing_mode: "discount" | "fixed";
+  discount_percent: string;
+  set_price_usd: string;
+}
+
+export interface AdminProductLite {
+  id: string;
+  name: string;
+  price_usd: number;
+}
+
+interface InitialOption {
+  name: string;
+  price_delta_usd: number;
+  set_price_usd: number | null;
+  discount_percent: number | null;
+  items: { product_id: string; quantity: number }[];
 }
 
 interface ProductFormProps {
   productId?: string;
+  allProducts?: AdminProductLite[];
   initial?: {
     slug: string;
     category: string;
@@ -49,7 +73,7 @@ interface ProductFormProps {
     demo_video_cloudflare_id: string;
     image_urls: string[];
     translations: Translation[];
-    options?: { name: string; price_delta_usd: number }[];
+    options?: InitialOption[];
   };
 }
 
@@ -104,7 +128,7 @@ async function uploadImage(file: File): Promise<string> {
   return data.url;
 }
 
-export default function ProductForm({ productId, initial }: ProductFormProps) {
+export default function ProductForm({ productId, initial, allProducts = [] }: ProductFormProps) {
   const router = useRouter();
   const isEdit = !!productId;
 
@@ -118,7 +142,14 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
   const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnail_url ?? "");
   const [imageUrls, setImageUrls] = useState<string[]>(initial?.image_urls ?? []);
   const [options, setOptions] = useState<ProductOptionRow[]>(
-    initial?.options?.map((o) => ({ name: o.name, price_delta_usd: o.price_delta_usd.toString() })) ?? []
+    initial?.options?.map((o) => ({
+      name: o.name,
+      price_delta_usd: o.price_delta_usd.toString(),
+      items: (o.items ?? []).map((it) => ({ product_id: it.product_id, quantity: it.quantity.toString() })),
+      pricing_mode: o.set_price_usd != null ? "fixed" : "discount",
+      discount_percent: o.discount_percent != null ? o.discount_percent.toString() : "",
+      set_price_usd: o.set_price_usd != null ? o.set_price_usd.toString() : "",
+    })) ?? []
   );
   const [translations, setTranslations] = useState<Translation[]>(
     initial?.translations?.length
@@ -253,7 +284,29 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
       translations: translations.filter((t) => t.name.trim()),
       options: options
         .filter((o) => o.name.trim())
-        .map((o) => ({ name: o.name.trim(), price_delta_usd: parseFloat(o.price_delta_usd) || 0 })),
+        .map((o) => {
+          const items = o.items
+            .filter((it) => it.product_id)
+            .map((it) => ({ product_id: it.product_id, quantity: Math.max(1, parseInt(it.quantity, 10) || 1) }));
+          if (items.length > 0) {
+            // 세트: 고정가 또는 할인율
+            return {
+              name: o.name.trim(),
+              price_delta_usd: 0,
+              items,
+              set_price_usd: o.pricing_mode === "fixed" ? (parseFloat(o.set_price_usd) || 0) : null,
+              discount_percent: o.pricing_mode === "discount" ? (parseInt(o.discount_percent, 10) || 0) : null,
+            };
+          }
+          // 단순 추가옵션
+          return {
+            name: o.name.trim(),
+            price_delta_usd: parseFloat(o.price_delta_usd) || 0,
+            items: [],
+            set_price_usd: null,
+            discount_percent: null,
+          };
+        }),
     };
 
     const url = isEdit ? `/api/admin/products/${productId}` : "/api/admin/products";
@@ -541,13 +594,13 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-semibold" style={{ color: "#F0E6FF" }}>구매 옵션 (추가 구성·세트)</h2>
-            <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
-              상품 상세에 드롭다운으로 노출됩니다. 기본가에 가격차가 더해집니다(음수=할인). 비워두면 옵션 없이 기본 구성만 판매됩니다.
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#6B7280" }}>
+              상품 상세에 드롭다운으로 노출됩니다. <b className="text-[#9CA3AF]">기존 상품을 결합</b>해 세트로 팔 수 있고(가격 자동 연동), 구성 상품을 비워두면 단순 추가옵션(가격차)으로 동작합니다.
             </p>
           </div>
           <button
             type="button"
-            onClick={() => setOptions((prev) => [...prev, { name: "", price_delta_usd: "0" }])}
+            onClick={() => setOptions((prev) => [...prev, { name: "", price_delta_usd: "0", items: [], pricing_mode: "discount", discount_percent: "10", set_price_usd: "" }])}
             className="flex items-center gap-1 text-xs px-2 py-1 rounded transition-opacity hover:opacity-80 shrink-0"
             style={{ background: "rgba(124,58,237,0.1)", color: "#A855F7" }}
           >
@@ -558,36 +611,115 @@ export default function ProductForm({ productId, initial }: ProductFormProps) {
         {options.length === 0 ? (
           <p className="text-xs" style={{ color: "#6B7280" }}>등록된 옵션이 없습니다. (구매 시 &lsquo;기본 구성&rsquo;만 표시)</p>
         ) : (
-          <div className="space-y-2">
-            {options.map((o, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  value={o.name}
-                  onChange={(e) => setOptions((prev) => prev.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
-                  placeholder="옵션명 (예: 전용 케이스 추가, 프리미엄 패키지)"
-                  style={{ ...inputStyle, flex: 1 }}
-                />
-                <div className="flex items-center gap-1 shrink-0" style={{ width: "140px" }}>
-                  <span className="text-xs" style={{ color: "#9CA3AF" }}>+$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={o.price_delta_usd}
-                    onChange={(e) => setOptions((prev) => prev.map((x, j) => (j === i ? { ...x, price_delta_usd: e.target.value } : x)))}
-                    placeholder="0"
-                    style={inputStyle}
-                  />
+          <div className="space-y-4">
+            {options.map((o, i) => {
+              const hostPrice = parseFloat(priceUsd) || 0;
+              const compTotal = o.items.reduce((s, it) => {
+                const p = allProducts.find((ap) => ap.id === it.product_id);
+                return s + (p ? p.price_usd * (parseInt(it.quantity, 10) || 1) : 0);
+              }, 0);
+              const base = hostPrice + compTotal;
+              const isSet = o.items.length > 0;
+              const preview = !isSet
+                ? Math.max(0, hostPrice + (parseFloat(o.price_delta_usd) || 0))
+                : o.pricing_mode === "fixed"
+                  ? Math.max(0, parseFloat(o.set_price_usd) || 0)
+                  : Math.max(0, Math.round(base * (1 - (parseInt(o.discount_percent, 10) || 0) / 100) * 100) / 100);
+              const update = (patch: Partial<ProductOptionRow>) =>
+                setOptions((prev) => prev.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+              return (
+                <div key={i} className="rounded-lg border p-3 space-y-3" style={{ borderColor: "#2D2D4E", background: "#13131F" }}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={o.name}
+                      onChange={(e) => update({ name: e.target.value })}
+                      placeholder="옵션명 (예: 프로 세트, 전용 케이스 추가)"
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setOptions((prev) => prev.filter((_, j) => j !== i))}
+                      className="p-1.5 rounded transition-opacity hover:opacity-80 shrink-0"
+                      style={{ color: "#EF4444" }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* 구성 상품 (기존 상품 결합) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs" style={{ color: "#9CA3AF" }}>결합할 구성 상품 (이 상품 + 선택 상품 = 세트)</span>
+                      <button
+                        type="button"
+                        onClick={() => update({ items: [...o.items, { product_id: "", quantity: "1" }] })}
+                        className="text-xs px-2 py-0.5 rounded transition-opacity hover:opacity-80"
+                        style={{ background: "rgba(124,58,237,0.1)", color: "#A855F7" }}
+                      >
+                        + 상품 추가
+                      </button>
+                    </div>
+                    {o.items.map((it, k) => (
+                      <div key={k} className="flex items-center gap-2">
+                        <select
+                          value={it.product_id}
+                          onChange={(e) => update({ items: o.items.map((x, m) => (m === k ? { ...x, product_id: e.target.value } : x)) })}
+                          style={{ ...inputStyle, flex: 1 }}
+                        >
+                          <option value="">상품 선택…</option>
+                          {allProducts.filter((ap) => ap.id !== productId).map((ap) => (
+                            <option key={ap.id} value={ap.id}>{ap.name} (${ap.price_usd})</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          min="1"
+                          value={it.quantity}
+                          onChange={(e) => update({ items: o.items.map((x, m) => (m === k ? { ...x, quantity: e.target.value } : x)) })}
+                          style={{ ...inputStyle, width: "64px" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => update({ items: o.items.filter((_, m) => m !== k) })}
+                          className="p-1.5 rounded transition-opacity hover:opacity-80 shrink-0"
+                          style={{ color: "#EF4444" }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 가격 */}
+                  {isSet ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-3">
+                        {(["discount", "fixed"] as const).map((m) => (
+                          <label key={m} className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: "#F0E6FF" }}>
+                            <input type="radio" checked={o.pricing_mode === m} onChange={() => update({ pricing_mode: m })} className="accent-[#7C3AED]" />
+                            {m === "discount" ? "할인율(%)" : "고정 세트가($)"}
+                          </label>
+                        ))}
+                      </div>
+                      {o.pricing_mode === "discount" ? (
+                        <input type="number" min="0" max="90" value={o.discount_percent} onChange={(e) => update({ discount_percent: e.target.value })} placeholder="할인 %" style={{ ...inputStyle, width: "90px" }} />
+                      ) : (
+                        <input type="number" min="0" step="0.01" value={o.set_price_usd} onChange={(e) => update({ set_price_usd: e.target.value })} placeholder="세트가 $" style={{ ...inputStyle, width: "110px" }} />
+                      )}
+                      <span className="text-xs" style={{ color: "#6B7280" }}>
+                        개별 합계 ${base.toFixed(2)} → <b className="text-[#A855F7]">판매가 ${preview.toFixed(2)}</b>
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs" style={{ color: "#9CA3AF" }}>추가 요금 +$</span>
+                      <input type="number" step="0.01" value={o.price_delta_usd} onChange={(e) => update({ price_delta_usd: e.target.value })} placeholder="0" style={{ ...inputStyle, width: "110px" }} />
+                      <span className="text-xs" style={{ color: "#6B7280" }}>판매가 <b className="text-[#A855F7]">${preview.toFixed(2)}</b></span>
+                    </div>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setOptions((prev) => prev.filter((_, j) => j !== i))}
-                  className="p-1.5 rounded transition-opacity hover:opacity-80 shrink-0"
-                  style={{ color: "#EF4444" }}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

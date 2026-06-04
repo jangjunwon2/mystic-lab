@@ -43,6 +43,11 @@ interface Order {
   shipping_address: Record<string, string> | null;
   shipping_method: string | null;
   stripe_payment_intent_id: string | null;
+  applied_discount_code: string | null;
+  applied_referral_code: string | null;
+  customer_note: string | null;
+  points_spent?: number;
+  points_earned?: number;
   order_items: OrderItem[];
 }
 
@@ -479,6 +484,58 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                               })}
                             </div>
                           </div>
+
+                          {/* 결제·할인 정보 */}
+                          {(() => {
+                            const subtotal = order.order_items.reduce((s, it) => s + it.price_usd * it.quantity, 0);
+                            const spent = order.points_spent ?? 0;
+                            const earned = order.points_earned ?? 0;
+                            return (
+                              <div>
+                                <p className="text-xs font-medium mb-2" style={{ color: "#9CA3AF" }}>결제·할인:</p>
+                                <div className="text-xs space-y-1" style={{ color: "#9CA3AF" }}>
+                                  <div className="flex justify-between">
+                                    <span>상품 합계</span>
+                                    <span style={{ color: "#F0E6FF" }}>${subtotal.toFixed(2)}</span>
+                                  </div>
+                                  {order.applied_discount_code && (
+                                    <div className="flex justify-between">
+                                      <span>할인 코드</span>
+                                      <span style={{ color: "#10B981" }}>{order.applied_discount_code}</span>
+                                    </div>
+                                  )}
+                                  {order.applied_referral_code && (
+                                    <div className="flex justify-between">
+                                      <span>레퍼럴 코드</span>
+                                      <span style={{ color: "#10B981" }}>{order.applied_referral_code}</span>
+                                    </div>
+                                  )}
+                                  {spent > 0 && (
+                                    <div className="flex justify-between">
+                                      <span>마일리지 사용</span>
+                                      <span style={{ color: "#EF4444" }}>-{spent.toLocaleString()}P (-${(spent / 100).toFixed(2)})</span>
+                                    </div>
+                                  )}
+                                  {earned > 0 && (
+                                    <div className="flex justify-between">
+                                      <span>마일리지 적립</span>
+                                      <span style={{ color: "#A855F7" }}>+{earned.toLocaleString()}P</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between pt-1 mt-1 border-t border-[#2D2D4E] font-semibold">
+                                    <span style={{ color: "#9CA3AF" }}>실 결제액</span>
+                                    <span style={{ color: "#A855F7" }}>${order.total_usd.toFixed(2)}</span>
+                                  </div>
+                                  {order.customer_note && (
+                                    <div className="pt-1 mt-1 border-t border-[#2D2D4E]">
+                                      <span>메모: </span>
+                                      <span style={{ color: "#F0E6FF" }}>{order.customer_note}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {/* Tracking */}
                           <div>

@@ -10,7 +10,6 @@ export const NAV_ITEMS = [
   { href: "/admin/analytics", label: "통계", icon: "📈" },
   { href: "/admin/users", label: "회원 관리", icon: "👥" },
   { href: "/admin/products", label: "상품 관리", icon: "🪄" },
-  { href: "/admin/bundles", label: "세트 상품", icon: "🧩" },
   { href: "/admin/orders", label: "주문 관리", icon: "📦" },
   { href: "/admin/shipping", label: "배송 관리", icon: "🚚" },
   { href: "/admin/gifts", label: "증정", icon: "🎁" },

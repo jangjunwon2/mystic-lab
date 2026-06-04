@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { saveProductOptions } from "@/lib/admin/save-product-options";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -49,18 +50,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
-  // 옵션은 전달 시 전체 교체(삭제 후 재삽입). undefined면 건드리지 않음.
+  // 옵션은 전달 시 전체 교체(삭제 후 재삽입 — product_option_items는 CASCADE). undefined면 건드리지 않음.
   if (options !== undefined) {
     await supabase.from("product_options").delete().eq("product_id", id);
-    const optionRows = (options as { name: string; price_delta_usd: number }[])
-      .filter((o) => o.name?.trim())
-      .map((o, idx) => ({
-        product_id: id,
-        name: o.name.trim(),
-        price_delta_usd: Number(o.price_delta_usd) || 0,
-        display_order: idx,
-      }));
-    if (optionRows.length > 0) await supabase.from("product_options").insert(optionRows);
+    if (Array.isArray(options) && options.length > 0) {
+      await saveProductOptions(supabase, id, options);
+    }
   }
 
   return NextResponse.json({ ok: true });

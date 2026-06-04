@@ -1,12 +1,45 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
+interface RecentOrderItem {
+  quantity: number;
+  option_name: string | null;
+  products: { slug: string; product_translations: { name: string; language: string }[] } | null;
+}
+
 interface OrderRow {
   id: string;
   total_usd: number;
   status: string;
   customer_email: string;
   created_at: string;
+}
+
+interface RecentOrderRow extends OrderRow {
+  applied_discount_code: string | null;
+  order_items: RecentOrderItem[];
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "결제대기",
+  paid: "결제완료",
+  shipped: "배송중",
+  completed: "배송완료",
+  refunded: "환불됨",
+};
+
+function itemSummary(items: RecentOrderItem[]): string {
+  if (!items?.length) return "—";
+  return items
+    .map((i) => {
+      const name =
+        i.products?.product_translations?.find((t) => t.language === "ko")?.name ??
+        i.products?.product_translations?.find((t) => t.language === "en")?.name ??
+        i.products?.slug ?? "상품";
+      const opt = i.option_name ? ` (${i.option_name})` : "";
+      return `${name}${opt}×${i.quantity}`;
+    })
+    .join(", ");
 }
 
 async function getStats() {
@@ -22,7 +55,7 @@ async function getStats() {
       .eq("status", "received"),
     supabase
       .from("orders")
-      .select("id, customer_email, total_usd, status, created_at")
+      .select("id, customer_email, total_usd, status, created_at, applied_discount_code, order_items(quantity, option_name, products(slug, product_translations(name, language)))")
       .order("created_at", { ascending: false })
       .limit(8),
   ]);
@@ -37,7 +70,7 @@ async function getStats() {
     totalRevenue: paidRevenue,
     totalProducts: productsRes.count ?? 0,
     pendingCustomOrders: customOrdersRes.count ?? 0,
-    recentOrders: (recentOrdersRes.data ?? []) as OrderRow[],
+    recentOrders: (recentOrdersRes.data ?? []) as RecentOrderRow[],
   };
 }
 
@@ -125,7 +158,7 @@ export default async function AdminDashboard() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["주문 ID", "고객", "합계", "상태", "날짜"].map((h) => (
+                {["주문 ID", "고객", "상품", "합계", "상태", "날짜"].map((h) => (
                   <th
                     key={h}
                     className="text-left px-6 py-3 font-medium"
@@ -139,7 +172,7 @@ export default async function AdminDashboard() {
             <tbody>
               {stats.recentOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center" style={{ color: "#9CA3AF" }}>
+                  <td colSpan={6} className="px-6 py-8 text-center" style={{ color: "#9CA3AF" }}>
                     아직 주문이 없습니다.
                   </td>
                 </tr>
@@ -156,22 +189,30 @@ export default async function AdminDashboard() {
                     <td className="px-6 py-4" style={{ color: "#F0E6FF" }}>
                       {order.customer_email}
                     </td>
-                    <td className="px-6 py-4 font-medium" style={{ color: "#A855F7" }}>
+                    <td className="px-6 py-4 max-w-[260px]" style={{ color: "#9CA3AF" }}>
+                      <span className="line-clamp-2 text-xs">{itemSummary(order.order_items)}</span>
+                    </td>
+                    <td className="px-6 py-4 font-medium whitespace-nowrap" style={{ color: "#A855F7" }}>
                       ${order.total_usd.toFixed(2)}
+                      {order.applied_discount_code && (
+                        <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full align-middle" style={{ background: "#10B98122", color: "#10B981" }}>
+                          {order.applied_discount_code}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className="px-2 py-1 rounded-full text-xs font-medium"
+                        className="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap"
                         style={{
                           background: `${STATUS_COLORS[order.status] ?? "#9CA3AF"}22`,
                           color: STATUS_COLORS[order.status] ?? "#9CA3AF",
                         }}
                       >
-                        {order.status}
+                        {STATUS_LABELS[order.status] ?? order.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
-                      {new Date(order.created_at).toLocaleDateString()}
+                    <td className="px-6 py-4 whitespace-nowrap" style={{ color: "#9CA3AF" }}>
+                      {new Date(order.created_at).toLocaleDateString("ko-KR")}
                     </td>
                   </tr>
                 ))

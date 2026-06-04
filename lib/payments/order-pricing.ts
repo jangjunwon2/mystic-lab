@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { loadOptionDefs, computeOptionPrice } from "./option-pricing";
 import type { CartItem } from "./types";
 
 // 서버에서 DB 가격(+세트 할인)으로 소계를 재계산한다. 클라이언트가 보낸 단가는 신뢰하지 않는다.
@@ -30,32 +31,22 @@ export async function computeServerSubtotalUsd(items: CartItem[]): Promise<numbe
     }
   }
 
-  // 구매 옵션(추가 구성) — 옵션이 해당 상품 소속일 때만 가격차 적용
+  // 구매 옵션(추가옵션·세트) 정의 로드 — 옵션이 해당 상품 소속일 때만 옵션가 적용
   const optionIds = [...new Set(items.map((i) => i.option_id).filter(Boolean))] as string[];
-  const optionDelta = new Map<string, number>();
-  const optionProduct = new Map<string, string>();
-  if (optionIds.length > 0) {
-    const { data: opts } = await admin
-      .from("product_options")
-      .select("id, product_id, price_delta_usd")
-      .in("id", optionIds);
-    for (const o of (opts ?? []) as { id: string; product_id: string; price_delta_usd: number }[]) {
-      optionDelta.set(o.id, Number(o.price_delta_usd) || 0);
-      optionProduct.set(o.id, o.product_id);
-    }
-  }
+  const optionDefs = await loadOptionDefs(admin, optionIds);
 
   let subtotal = 0;
   for (const it of items) {
     const dbPrice = priceMap.get(it.id);
     if (dbPrice == null) continue;
     let unit = dbPrice;
-    // 세트 구성품이고, 해당 세트가 활성이며 실제 그 세트에 포함된 상품일 때만 세트 할인가 적용
+    const optDef = it.option_id ? optionDefs.get(it.option_id) : undefined;
+    // 세트(번들) 구성품 — 기존 호환
     if (it.bundle_id && bundleDiscount.has(it.bundle_id) && bundleProducts.get(it.bundle_id)?.has(it.id)) {
       unit = Math.round(dbPrice * (1 - (bundleDiscount.get(it.bundle_id) ?? 0) / 100) * 100) / 100;
-    } else if (it.option_id && optionProduct.get(it.option_id) === it.id) {
-      // 선택 옵션의 가격차를 기본가에 가산(0 미만으로는 내려가지 않음)
-      unit = Math.max(0, Math.round((dbPrice + (optionDelta.get(it.option_id) ?? 0)) * 100) / 100);
+    } else if (optDef && optDef.productId === it.id) {
+      // 선택 옵션(추가옵션·세트) 정의 기반 가격 — 클라이언트 단가 무시
+      unit = computeOptionPrice(dbPrice, optDef);
     }
     const qty = Math.max(1, Math.trunc(it.quantity));
     subtotal += unit * qty;

@@ -49,10 +49,20 @@ export type SolutionVideo = {
   created_at: string;
 };
 
+export type ProductOptionItem = {
+  product_id: string;
+  quantity: number;
+  price_usd: number;
+  name: string;
+};
+
 export type ProductOption = {
   id: string;
   name: string;
   price_delta_usd: number;
+  set_price_usd: number | null;
+  discount_percent: number | null;
+  items: ProductOptionItem[];
 };
 
 const SAMPLE: Record<string, ProductWithTranslations> = {
@@ -193,16 +203,31 @@ export default async function ProductPage({ params }: Props) {
     if (error) throw error;
     product = data as unknown as ProductWithTranslations;
 
-    // 구매 옵션 조회 (드롭다운)
+    // 구매 옵션 조회 (드롭다운) — 세트 구성 상품·가격 포함
     const { data: optionData } = await supabase
       .from("product_options")
-      .select("id, name, price_delta_usd")
+      .select("id, name, price_delta_usd, set_price_usd, discount_percent, product_option_items(quantity, products(id, price_usd, product_translations(name, language)))")
       .eq("product_id", product.id)
       .order("display_order", { ascending: true });
-    options = ((optionData ?? []) as { id: string; name: string; price_delta_usd: number }[]).map((o) => ({
+    options = ((optionData ?? []) as {
+      id: string; name: string; price_delta_usd: number; set_price_usd: number | null; discount_percent: number | null;
+      product_option_items: { quantity: number; products: { id: string; price_usd: number; product_translations: { name: string; language: string }[] } | null }[];
+    }[]).map((o) => ({
       id: o.id,
       name: o.name,
       price_delta_usd: Number(o.price_delta_usd) || 0,
+      set_price_usd: o.set_price_usd != null ? Number(o.set_price_usd) : null,
+      discount_percent: o.discount_percent != null ? Number(o.discount_percent) : null,
+      items: (o.product_option_items ?? [])
+        .filter((it) => it.products)
+        .map((it) => ({
+          product_id: it.products!.id,
+          quantity: it.quantity,
+          price_usd: Number(it.products!.price_usd) || 0,
+          name: it.products!.product_translations?.find((t) => t.language === locale)?.name
+            ?? it.products!.product_translations?.find((t) => t.language === "en")?.name
+            ?? "",
+        })),
     }));
 
     // 리뷰 조회 — profiles 조인은 anon RLS에 막히므로 분리: reviews(anon) + profiles(service-role 배치)

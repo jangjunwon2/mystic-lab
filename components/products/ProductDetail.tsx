@@ -74,14 +74,23 @@ export default function ProductDetail({
 
   const ol = OPTION_LABELS[locale] ?? OPTION_LABELS.en;
 
-  // 드롭다운 선택지: 기본 구성 + 옵션들 (각 옵션은 기본가 + 가격차)
+  // 옵션 가격 계산: 세트(구성 상품 있음)는 고정가 우선, 없으면 (기본가+구성합계)×(1-할인%);
+  // 단순 추가옵션은 기본가 + 가격차
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const optionPrice = (o: ProductOption): number => {
+    if (!o.items || o.items.length === 0) {
+      return Math.max(0, round2(product.price_usd + o.price_delta_usd));
+    }
+    const comp = o.items.reduce((s, it) => s + it.price_usd * it.quantity, 0);
+    const base = product.price_usd + comp;
+    if (o.set_price_usd != null) return Math.max(0, round2(o.set_price_usd));
+    return Math.max(0, round2(base * (1 - (o.discount_percent ?? 0) / 100)));
+  };
+
+  // 드롭다운 선택지: 기본 구성 + 옵션들
   const choices = [
-    { id: "", name: ol.standard, price: product.price_usd },
-    ...options.map((o) => ({
-      id: o.id,
-      name: o.name,
-      price: Math.max(0, Math.round((product.price_usd + o.price_delta_usd) * 100) / 100),
-    })),
+    { id: "", name: ol.standard, price: product.price_usd, items: [] as ProductOption["items"] },
+    ...options.map((o) => ({ id: o.id, name: o.name, price: optionPrice(o), items: o.items ?? [] })),
   ];
   const selected = choices.find((c) => c.id === selectedOptionId) ?? choices[0];
 
@@ -273,6 +282,14 @@ export default function ProductDetail({
                   </select>
                   <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
                 </div>
+                {/* 선택한 세트의 구성 상품 표시 */}
+                {selected.items.length > 0 && (
+                  <p className="mt-2 text-xs text-[#9CA3AF]">
+                    <span className="text-[#A855F7]">{locale === "ko" ? "구성" : "Includes"}:</span>{" "}
+                    {translation.name}
+                    {selected.items.map((it) => ` + ${it.name}${it.quantity > 1 ? `×${it.quantity}` : ""}`).join("")}
+                  </p>
+                )}
               </div>
             )}
 

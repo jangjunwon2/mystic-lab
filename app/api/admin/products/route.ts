@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { saveProductOptions } from "@/lib/admin/save-product-options";
 
 export async function POST(request: Request) {
   const admin = await requireAdmin();
@@ -49,15 +50,7 @@ export async function POST(request: Request) {
   }
 
   if (Array.isArray(options) && options.length > 0) {
-    const optionRows = (options as { name: string; price_delta_usd: number }[])
-      .filter((o) => o.name?.trim())
-      .map((o, idx) => ({
-        product_id: (product as { id: string }).id,
-        name: o.name.trim(),
-        price_delta_usd: Number(o.price_delta_usd) || 0,
-        display_order: idx,
-      }));
-    if (optionRows.length > 0) await supabase.from("product_options").insert(optionRows);
+    await saveProductOptions(supabase, (product as { id: string }).id, options);
   }
 
   return NextResponse.json({ id: (product as { id: string }).id }, { status: 201 });
