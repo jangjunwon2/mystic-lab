@@ -818,31 +818,20 @@ export default function MagicCalculator({ locale, productId }: Props) {
           }`}
           style={{ height: "35vh" }}
           onTouchStart={(e) => {
-            const x = e.touches[0].clientX;
-            (window as any).displayStartX = x;
-            (window as any).displayLastX = x;
-            // -/+ 모드: 닿는 즉시 맨 앞 글자 1개 제거
-            if (isEraseLeftActive) eraseFrontChar();
-          }}
-          onTouchMove={(e) => {
-            if (!isEraseLeftActive) return;
-            const x = e.touches[0].clientX;
-            const last = (window as any).displayLastX ?? x;
-            // 왼쪽으로 일정 거리 이동할 때마다 앞 글자 추가 제거
-            if (last - x > 28) {
-              eraseFrontChar();
-              (window as any).displayLastX = x;
-            }
+            // 시작 좌표만 기록 — 삭제는 손을 뗄 때(스와이프 1회) 1글자만 처리
+            (window as any).displayStartX = e.touches[0].clientX;
           }}
           onTouchEnd={(e) => {
-            if (isEraseLeftActive) return; // 삭제 모드는 touchstart/move에서 처리됨
             const touch = e.changedTouches[0];
             const startX = (window as any).displayStartX;
-            if (startX !== undefined) {
-              const diffX = touch.clientX - startX;
-              if (Math.abs(diffX) > 40) {
-                handleDisplaySwipe(diffX > 0 ? "right" : "left");
-              }
+            if (startX === undefined) return;
+            const diffX = touch.clientX - startX;
+            if (Math.abs(diffX) <= 40) return; // 작은 움직임은 무시 (오작동 방지)
+            if (isEraseLeftActive) {
+              // -/+ 삭제 모드: 왼쪽 스와이프 1회당 맨 앞 글자 1개만 제거
+              if (diffX < 0) eraseFrontChar();
+            } else {
+              handleDisplaySwipe(diffX > 0 ? "right" : "left");
             }
           }}
         >
