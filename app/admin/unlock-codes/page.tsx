@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import UnlockCodesManager from "@/components/admin/UnlockCodesManager";
+import { decryptCode } from "@/lib/crypto/unlock-code";
 
 export const metadata = { title: "잠금해제 코드 — Admin" };
 
@@ -78,7 +79,7 @@ export default async function AdminUnlockCodesPage() {
     product_slug: c.products?.slug ?? "",
     created_at: c.created_at,
     first_used_at: c.first_used_at,
-    code_plain: c.code_plain,
+    code_plain: decryptCode(c.code_plain),
     is_activated: !!c.active_token_hash,
     last_activated_at: c.last_activated_at,
     is_member: !!c.user_id,

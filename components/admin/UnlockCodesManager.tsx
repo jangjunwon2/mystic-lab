@@ -223,7 +223,7 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
           </button>
         </div>
         <p className="text-xs" style={{ color: "#6B7280" }}>
-          발급된 코드는 평문으로 보관되어 아래 목록에서 언제든 다시 확인·복사할 수 있습니다.
+          발급된 코드는 DB에 암호화되어 저장되며, 이 화면에서는 복호화되어 언제든 다시 확인·복사할 수 있습니다.
         </p>
       </div>
 

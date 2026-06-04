@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 
 import { createHash, randomBytes } from "crypto";
+import { encryptCode } from "@/lib/crypto/unlock-code";
 
 function generatePlainCode(): string {
   // Format: XXXX-XXXX-XXXX (alphanumeric uppercase, easy to type)
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
   const supabase = await createAdminClient() as any;
   const { data, error } = await supabase
     .from("product_unlock_codes")
-    .insert({ product_id, code_hash: codeHash, code_plain: plainCode })
+    .insert({ product_id, code_hash: codeHash, code_plain: encryptCode(plainCode) })
     .select("id")
     .single();
 

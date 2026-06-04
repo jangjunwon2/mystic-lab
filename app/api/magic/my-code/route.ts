@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { createHash, randomBytes } from "crypto";
+import { encryptCode, decryptCode } from "@/lib/crypto/unlock-code";
 
 // 회원에게 노출되는 정품 인증 코드 형식: MC-XXXX-XXXX (대문자/숫자, 혼동 문자 제외)
 function generateMemberCode(): string {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existing?.code_plain) {
-    return NextResponse.json({ code: existing.code_plain });
+    return NextResponse.json({ code: decryptCode(existing.code_plain) });
   }
 
   // 3. 신규 자동 발급
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
   const { error } = await admin.from("product_unlock_codes").insert({
     product_id: productId,
     code_hash: codeHash,
-    code_plain: plain,
+    code_plain: encryptCode(plain),
     user_id: user.id,
   });
 
