@@ -26,6 +26,7 @@ import CountrySelect from "@/components/ui/CountrySelect";
 import { usdToKrw, USD_TO_KRW } from "@/lib/payments/toss";
 import { createClient } from "@/lib/supabase/client";
 import type { CartItem } from "@/lib/payments/types";
+import { readCheckoutItems, removePaidItemsFromCart } from "@/lib/cart-storage";
 
 // Lazy load Toss widget to avoid SSR issues
 const TossPaymentWidget = dynamic(
@@ -116,12 +117,8 @@ export default function CheckoutPage({ params }: Props) {
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
-    try {
-      const stored = JSON.parse(localStorage.getItem("ml_cart") ?? "[]");
-      setItems(stored);
-    } catch {
-      setItems([]);
-    }
+    // 결제 대상: 부분 선택(ml_checkout) 우선, 없으면 전체 장바구니
+    setItems(readCheckoutItems() as CartItem[]);
     setMounted(true);
     fetch("/api/exchange-rate")
       .then((r) => r.json())
@@ -196,8 +193,7 @@ export default function CheckoutPage({ params }: Props) {
     const handler = (e: MessageEvent) => {
       if (e.data?.event === "Checkout.Success") {
         setLsSuccess(true);
-        localStorage.removeItem("ml_cart");
-        window.dispatchEvent(new Event("storage"));
+        removePaidItemsFromCart(items);
         if (appliedDiscountRef.current?.id) {
           fetch("/api/discounts/use", {
             method: "POST",
@@ -209,7 +205,7 @@ export default function CheckoutPage({ params }: Props) {
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, []);
+  }, [items]);
 
   const SHIPPING_COSTS = { standard: 0, express: 15 } as const;
   const subtotalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);

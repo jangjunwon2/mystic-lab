@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, AlertCircle, BookOpen, ShoppingBag } from "lucide-react";
 import type { CartItem } from "@/lib/payments/types";
+import { removePaidItemsFromCart } from "@/lib/cart-storage";
 
 function fireAnalyticsPurchase({ value, currency }: { value: number; currency: string }) {
   try {
@@ -50,6 +51,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
       const gateway = sp.gateway;
 
       let analyticsValue = 0;
+      let paidItems: { id: string; option_id?: string }[] = [];
 
       if (gateway === "lemon") {
         // Read pending data saved before overlay opened
@@ -68,6 +70,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
 
         if (pending?.customerEmail && pending?.items?.length) {
           analyticsValue = pending.totalUsd ?? 0;
+          paidItems = pending.items;
           await fetch("/api/payment/lemon-confirm", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -111,6 +114,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
         } catch { /* ignore */ }
 
         analyticsValue = pending?.totalUsd ?? Number(amount) / 100;
+        paidItems = (pending?.items ?? []) as { id: string; option_id?: string }[];
 
         const res = await fetch("/api/payment/toss-confirm", {
           method: "POST",
@@ -139,11 +143,8 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
         sessionStorage.removeItem("toss_pending");
       }
 
-      // Clear cart
-      try {
-        localStorage.removeItem("ml_cart");
-        window.dispatchEvent(new Event("storage"));
-      } catch { /* ignore */ }
+      // 결제한 항목만 장바구니에서 제거 (부분 결제 지원) + ml_checkout 정리
+      removePaidItemsFromCart(paidItems);
 
       // Fire purchase analytics events
       fireAnalyticsPurchase({ value: analyticsValue, currency: "USD" });

@@ -96,9 +96,9 @@ export default function ProductDetail({
   ];
 
   const handleBuyNow = () => {
+    // 장바구니를 건드리지 않고 결제 대상만 지정 (바로구매)
     try {
-      localStorage.setItem("ml_cart", JSON.stringify(buildCartLines()));
-      window.dispatchEvent(new Event("storage"));
+      sessionStorage.setItem("ml_checkout", JSON.stringify(buildCartLines()));
     } catch { /* storage may be unavailable */ }
     router.push(`/${locale}/checkout`);
   };
