@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendRefundConfirmation } from "@/lib/resend";
+import { reverseOrderEffects } from "@/lib/payments/refund-order";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -108,6 +109,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   } else {
     gatewayMessage = "수동 주문 — 별도 결제 게이트웨이 없음";
   }
+
+  // 재고 복원 + 마일리지(적립 회수/사용 복원) — 멱등(중복 방지). 상태 변경 전에 수행
+  await reverseOrderEffects(supabase, id);
 
   // Update order status to refunded
   const { error: updateErr } = await supabase
