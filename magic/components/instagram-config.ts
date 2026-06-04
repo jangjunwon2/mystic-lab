@@ -24,8 +24,28 @@ export interface InstaPost {
   image: string; // dataURL 또는 외부 URL
   caption: LocalizedText;
   likes: number;
-  date: LocalizedText; // 표시용 (예: "3주 전" / "3 weeks ago")
+  date: LocalizedText; // 상대 표기 (예: "3주 전" / "3 weeks ago")
+  exactDate?: string; // ISO yyyy-mm-dd. 설정 시 상대 표기 대신 로케일 형식 실제 날짜로 표시
   comments: InstaComment[];
+}
+
+// 게시물 날짜 표시: 정확한 게시일(exactDate)이 있으면 로케일 형식으로, 없으면 상대 텍스트(date).
+export function formatPostDate(post: InstaPost, locale: string): string {
+  if (post.exactDate) {
+    const d = new Date(post.exactDate);
+    if (!isNaN(d.getTime())) {
+      const sameYear = d.getFullYear() === new Date().getFullYear();
+      const opts: Intl.DateTimeFormatOptions = sameYear
+        ? { month: "long", day: "numeric" }
+        : { year: "numeric", month: "long", day: "numeric" };
+      try {
+        return d.toLocaleDateString(locale, opts);
+      } catch {
+        return d.toLocaleDateString("en", opts);
+      }
+    }
+  }
+  return pickText(post.date, locale);
 }
 
 // 스토리 (피드 상단 링 → 풀스크린 뷰어)
@@ -211,6 +231,7 @@ function normalizePost(p: any): InstaPost {
     likes: Number(p?.likes) || 0,
     caption: toLocalized(p?.caption),
     date: toLocalized(p?.date),
+    exactDate: typeof p?.exactDate === "string" ? p.exactDate : undefined,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     comments: Array.isArray(p?.comments) ? p.comments.map((c: any) => ({ user: String(c?.user ?? ""), text: toLocalized(c?.text) })) : [],
   };

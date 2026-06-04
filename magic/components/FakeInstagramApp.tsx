@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, Send, Bookmark, Home, Search, Film, Settings, X, Plus, Trash2, Upload, ChevronLeft, BadgeCheck, Grid3x3, Music, MoreHorizontal, Phone, Video, Camera } from "lucide-react";
 import {
   type InstaConfig, type InstaPost, type InstaStory, type InstaReel, type InstaThread, type InstaDMMessage, type LocalizedText,
-  loadInstaConfig, saveInstaConfig, fileToScaledDataUrl, formatCount, defaultInstaConfig, pickText,
+  loadInstaConfig, saveInstaConfig, fileToScaledDataUrl, formatCount, defaultInstaConfig, pickText, formatPostDate,
 } from "./instagram-config";
 
 interface Props {
@@ -108,7 +108,7 @@ export default function FakeInstagramApp({ locale }: Props) {
           onBack={() => setOpenPostId(null)} onLike={toggleLike}
         />
       ) : view === "reels" ? (
-        <ReelsView config={config} ui={ui} />
+        <ReelsView config={config} ui={ui} onBack={() => setView("feed")} />
       ) : view === "dm" ? (
         openThreadId ? (
           <DMThreadView
@@ -124,16 +124,16 @@ export default function FakeInstagramApp({ locale }: Props) {
           onOpenStory={(i) => setStoryStart(i)} onOpenDM={() => setView("dm")}
         />
       ) : (
-        <ProfileView config={config} ui={ui} onOpenPost={(id) => setOpenPostId(id)} />
+        <ProfileView config={config} ui={ui} onBack={() => setView("feed")} onOpenPost={(id) => setOpenPostId(id)} />
       )}
 
       {/* 하단 탭 바 — 게시물 상세·DM·스토리 뷰어에서는 숨김 */}
       {!openPostId && view !== "dm" && storyStart === null && (
         <div className="h-[49px] border-t border-[#262626] bg-black flex items-center justify-around px-2 shrink-0">
-          <button onClick={() => setView("feed")} className={view === "feed" ? "text-white" : "text-gray-500"}>
+          <button onClick={() => setView("feed")} className="text-white">
             <Home className="w-6 h-6" fill={view === "feed" ? "currentColor" : "none"} strokeWidth={view === "feed" ? 0 : 2} />
           </button>
-          <button onClick={() => setView("reels")} className={view === "reels" ? "text-white" : "text-gray-500"}>
+          <button onClick={() => setView("reels")} className="text-white">
             <Film className="w-6 h-6" fill={view === "reels" ? "currentColor" : "none"} strokeWidth={view === "reels" ? 0 : 2} />
           </button>
           <button onClick={() => setView("dm")} className="relative text-white active:opacity-60">
@@ -142,7 +142,7 @@ export default function FakeInstagramApp({ locale }: Props) {
               <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-[#FF3040] text-[9px] font-bold flex items-center justify-center">{config.dms.length}</span>
             )}
           </button>
-          <button className="text-gray-500"><Search className="w-6 h-6" strokeWidth={2} /></button>
+          <button className="text-white"><Search className="w-6 h-6" strokeWidth={2} /></button>
           <button onClick={() => setView("profile")} className="w-7 h-7 rounded-full overflow-hidden" style={{ border: view === "profile" ? "1.5px solid #fff" : "1px solid #555" }}>
             <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url('${config.avatar || AVATAR_FALLBACK}')` }} />
           </button>
@@ -269,7 +269,7 @@ function PostCard({ post, config, ui, liked, likeCount, onLike }: {
           <div key={i}><strong className="text-white mr-1.5">{c.user}</strong><span className="select-text">{pickText(c.text, config.appLocale)}</span></div>
         ))}
       </div>
-      <div className="px-3 pt-1 text-[10px] text-gray-500 uppercase tracking-wide">{pickText(post.date, config.appLocale)}</div>
+      <div className="px-3 pt-1 text-[10px] text-gray-500 uppercase tracking-wide">{formatPostDate(post, config.appLocale)}</div>
     </div>
   );
 }
@@ -292,11 +292,12 @@ function PostDetail({ post, config, ui, liked, likeCount, onBack, onLike }: {
 }
 
 // ─── 프로필 ───
-function ProfileView({ config, ui, onOpenPost }: { config: InstaConfig; ui: typeof UI["en"]; onOpenPost: (id: string) => void }) {
+function ProfileView({ config, ui, onBack, onOpenPost }: { config: InstaConfig; ui: typeof UI["en"]; onBack: () => void; onOpenPost: (id: string) => void }) {
   return (
     <>
       <div className="h-12 border-b border-[#262626] bg-black flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
+          <button onClick={onBack} className="active:opacity-60 -ml-1.5"><ChevronLeft className="w-6 h-6 text-white" /></button>
           <span className="font-semibold text-base">{config.username}</span>
           {config.verified && <BadgeCheck className="w-4 h-4 text-[#3897F0] fill-[#3897F0]" stroke="#000" strokeWidth={1.5} />}
         </div>
@@ -410,11 +411,14 @@ function StoryViewer({ config, ui, startIndex, onClose }: {
 }
 
 // ─── 릴스 ───
-function ReelsView({ config, ui }: { config: InstaConfig; ui: UiStrings }) {
+function ReelsView({ config, ui, onBack }: { config: InstaConfig; ui: UiStrings; onBack: () => void }) {
   return (
     <div className="flex-1 relative bg-black overflow-y-auto snap-y snap-mandatory no-scrollbar">
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 pointer-events-none">
-        <span className="text-lg font-semibold text-white drop-shadow">{ui.reels}</span>
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-3">
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} className="active:opacity-60"><ChevronLeft className="w-6 h-6 text-white drop-shadow" /></button>
+          <span className="text-lg font-semibold text-white drop-shadow">{ui.reels}</span>
+        </div>
         <Camera className="w-6 h-6 text-white drop-shadow" />
       </div>
       {config.reels.map((r) => <ReelItem key={r.id} reel={r} config={config} ui={ui} />)}
@@ -692,7 +696,14 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
               <textarea value={p.caption[loc] ?? ""} onChange={(e) => updatePost(p.id, { caption: setLoc(p.caption, e.target.value) })} placeholder={`캡션 (${loc.toUpperCase()})`} rows={2} className={`${inputCls} resize-none`} />
               <div className="grid grid-cols-2 gap-2">
                 <div><label className={labelCls}>좋아요</label><input type="number" value={p.likes} onChange={(e) => updatePost(p.id, { likes: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
-                <div><label className={labelCls}>날짜 표시 ({loc.toUpperCase()})</label><input value={p.date[loc] ?? ""} onChange={(e) => updatePost(p.id, { date: setLoc(p.date, e.target.value) })} placeholder="3주 전" className={inputCls} /></div>
+                <div><label className={labelCls}>상대 날짜 ({loc.toUpperCase()})</label><input value={p.date[loc] ?? ""} onChange={(e) => updatePost(p.id, { date: setLoc(p.date, e.target.value) })} placeholder="3주 전" className={inputCls} disabled={!!p.exactDate} style={p.exactDate ? { opacity: 0.5 } : undefined} /></div>
+              </div>
+              <div>
+                <label className={labelCls}>정확한 게시일 (설정 시 상대 날짜 대신 이 날짜로 표시)</label>
+                <div className="flex items-center gap-2">
+                  <input type="date" value={p.exactDate ?? ""} onChange={(e) => updatePost(p.id, { exactDate: e.target.value || undefined })} className={inputCls} style={{ flex: 1 }} />
+                  {p.exactDate && <button onClick={() => updatePost(p.id, { exactDate: undefined })} className="text-xs px-2 py-2 rounded shrink-0" style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444" }}>지우기</button>}
+                </div>
               </div>
               {/* 댓글 */}
               <div className="space-y-1.5">
