@@ -21,6 +21,16 @@ import type {
   SolutionVideo,
 } from "@/app/[locale]/products/[slug]/page";
 
+const SHARE_LABELS: Record<string, { share: string; shareBtn: string; copyAria: string; shareAria: string; copied: string; hint: string }> = {
+  en: { share: "Share", shareBtn: "Share", copyAria: "Copy link", shareAria: "Share", copied: "Copied!", hint: "Instagram, KakaoTalk, WeChat, Messenger and more are available via the Share button (mobile)." },
+  ko: { share: "공유", shareBtn: "공유하기", copyAria: "링크 복사", shareAria: "공유", copied: "복사됨!", hint: "인스타그램·카카오톡·위챗·메신저 등은 공유하기 버튼(모바일)에서 선택할 수 있어요." },
+  ja: { share: "シェア", shareBtn: "共有", copyAria: "リンクをコピー", shareAria: "で共有", copied: "コピーしました!", hint: "Instagram・カカオトーク・WeChat・メッセンジャーなどは「共有」ボタン（モバイル）から選べます。" },
+  "zh-CN": { share: "分享", shareBtn: "分享", copyAria: "复制链接", shareAria: "分享", copied: "已复制!", hint: "Instagram、KakaoTalk、微信、Messenger 等可通过“分享”按钮（移动端）选择。" },
+  es: { share: "Compartir", shareBtn: "Compartir", copyAria: "Copiar enlace", shareAria: "Compartir en", copied: "¡Copiado!", hint: "Instagram, KakaoTalk, WeChat, Messenger y más están disponibles con el botón Compartir (móvil)." },
+  fr: { share: "Partager", shareBtn: "Partager", copyAria: "Copier le lien", shareAria: "Partager sur", copied: "Copié !", hint: "Instagram, KakaoTalk, WeChat, Messenger, etc. sont disponibles via le bouton Partager (mobile)." },
+  de: { share: "Teilen", shareBtn: "Teilen", copyAria: "Link kopieren", shareAria: "Teilen auf", copied: "Kopiert!", hint: "Instagram, KakaoTalk, WeChat, Messenger usw. sind über die Schaltfläche „Teilen“ (mobil) verfügbar." },
+};
+
 const OPTION_LABELS: Record<string, { together: string; totalLabel: string }> = {
   en: { together: "Buy together & save", totalLabel: "Total" },
   ko: { together: "함께 구매하고 할인받기", totalLabel: "합계" },
@@ -331,7 +341,7 @@ export default function ProductDetail({
 
             {/* Share */}
             <div className="mt-6">
-              <ShareButtons name={translation?.name ?? product.slug} productId={product.id} />
+              <ShareButtons name={translation?.name ?? product.slug} productId={product.id} locale={locale} />
             </div>
           </motion.div>
         </div>
@@ -470,8 +480,9 @@ function ReviewCard({ review, locale }: { review: ReviewWithProfile; locale: str
   );
 }
 
-function ShareButtons({ name, productId }: { name: string; productId: string }) {
+function ShareButtons({ name, productId, locale }: { name: string; productId: string; locale: string }) {
   const [copied, setCopied] = useState(false);
+  const sl = SHARE_LABELS[locale] ?? SHARE_LABELS.en;
   const shareText = `Check out "${name}" on Mystic Lab ✨`;
   const getUrl = () => (typeof window !== "undefined" ? window.location.href : "");
 
@@ -526,19 +537,19 @@ function ShareButtons({ name, productId }: { name: string; productId: string }) 
       <div className="flex items-center gap-2 flex-wrap">
         <span className="flex items-center gap-1.5 text-xs text-[#6B7280] mr-1">
           <Share2 className="w-3.5 h-3.5" />
-          공유
+          {sl.share}
         </span>
         <button
           onClick={nativeShare}
           className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:opacity-90 transition-opacity"
         >
-          공유하기
+          {sl.shareBtn}
         </button>
         {targets.map((s) => (
           <button
             key={s.key}
             onClick={() => openShare(s.key, s.make)}
-            aria-label={`${s.label} 공유`}
+            aria-label={`${s.label} ${sl.shareAria}`}
             className="px-3 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
             style={{ background: s.bg }}
           >
@@ -547,7 +558,7 @@ function ShareButtons({ name, productId }: { name: string; productId: string }) 
         ))}
         <button
           onClick={copyLink}
-          aria-label="링크 복사"
+          aria-label={sl.copyAria}
           className={`flex items-center justify-center w-8 h-8 rounded-full border transition-all ${
             copied
               ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
@@ -556,11 +567,9 @@ function ShareButtons({ name, productId }: { name: string; productId: string }) 
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
         </button>
-        {copied && <span className="text-xs text-emerald-400">복사됨!</span>}
+        {copied && <span className="text-xs text-emerald-400">{sl.copied}</span>}
       </div>
-      <p className="text-[11px] text-[#6B7280]">
-        인스타그램·카카오톡·위챗·메신저 등은 <b className="text-[#9CA3AF]">공유하기</b> 버튼(모바일)에서 선택할 수 있어요.
-      </p>
+      <p className="text-[11px] text-[#6B7280]">{sl.hint}</p>
     </div>
   );
 }
