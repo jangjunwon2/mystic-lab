@@ -13,6 +13,7 @@ import CloudflarePlayer from "@/components/video/CloudflarePlayer";
 import ReviewForm from "@/components/products/ReviewForm";
 import WishlistButton from "@/components/products/WishlistButton";
 import MagicMemberAccess from "@/components/products/MagicMemberAccess";
+import ProductCommunity from "@/components/products/ProductCommunity";
 import type {
   ProductWithTranslations,
   ProductTranslation,
@@ -397,6 +398,9 @@ export default function ProductDetail({
             </div>
           )}
         </Section>
+
+        {/* ── 구매자 커뮤니티 (개선 제안 / 연출 공유 / 업데이트 공지) ── */}
+        <ProductCommunity productId={product.id} locale={locale} isLoggedIn={isLoggedIn} />
       </div>
     </div>
   );

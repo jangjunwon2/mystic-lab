@@ -175,7 +175,8 @@ export default function CartPage({ params }: Props) {
                       >
                         {item.name}
                       </Link>
-                      {item.option_name && (
+                      {/* 애드온 라인은 상품명과 옵션명이 동일 → 중복 표시 생략. 레거시 옵션만 표시. */}
+                      {item.option_name && !item.option_id && (
                         <p className="text-xs text-[#A855F7] line-clamp-1">{item.option_name}</p>
                       )}
                       <p className="text-sm text-[#F59E0B] font-semibold mt-0.5">

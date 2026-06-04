@@ -4,6 +4,7 @@ import Link from "next/link";
 interface RecentOrderItem {
   quantity: number;
   option_name: string | null;
+  option_id: string | null;
   products: { slug: string; product_translations: { name: string; language: string }[] } | null;
 }
 
@@ -36,7 +37,7 @@ function itemSummary(items: RecentOrderItem[]): string {
         i.products?.product_translations?.find((t) => t.language === "ko")?.name ??
         i.products?.product_translations?.find((t) => t.language === "en")?.name ??
         i.products?.slug ?? "상품";
-      const opt = i.option_name ? ` (${i.option_name})` : "";
+      const opt = i.option_name && !i.option_id ? ` (${i.option_name})` : "";
       return `${name}${opt}×${i.quantity}`;
     })
     .join(", ");
@@ -55,7 +56,7 @@ async function getStats() {
       .eq("status", "received"),
     supabase
       .from("orders")
-      .select("id, customer_email, total_usd, status, created_at, applied_discount_code, order_items(quantity, option_name, products(slug, product_translations(name, language)))")
+      .select("id, customer_email, total_usd, status, created_at, applied_discount_code, order_items(quantity, option_name, option_id, products(slug, product_translations(name, language)))")
       .order("created_at", { ascending: false })
       .limit(8),
   ]);

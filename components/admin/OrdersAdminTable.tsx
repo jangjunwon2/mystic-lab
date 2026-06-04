@@ -27,6 +27,7 @@ interface OrderItem {
   quantity: number;
   price_usd: number;
   option_name: string | null;
+  option_id: string | null;
   products: { slug: string; product_translations: { name: string; language: string }[] } | null;
 }
 
@@ -53,6 +54,28 @@ interface Order {
 
 interface Props {
   orders: Order[];
+}
+
+// 어드민(한국어) 표시용 상품명 — ko → en → slug 순.
+function itemName(item: OrderItem): string {
+  const tr = item.products?.product_translations;
+  return (
+    tr?.find((t) => t.language === "ko")?.name ??
+    tr?.find((t) => t.language === "en")?.name ??
+    item.products?.slug ??
+    "상품"
+  );
+}
+
+// 목록에 보일 구매 상품 요약 — 첫 상품 + "외 N건".
+function productSummary(order: Order): string {
+  const items = order.order_items;
+  if (!items || items.length === 0) return "—";
+  const first = items[0];
+  // 애드온 라인(option_id 존재)은 상품명이 곧 옵션명이라 중복 스냅샷 생략. 레거시 옵션만 표시.
+  const opt = first.option_name && !first.option_id ? ` · ${first.option_name}` : "";
+  const label = `${itemName(first)}${opt} × ${first.quantity}`;
+  return items.length === 1 ? label : `${label} 외 ${items.length - 1}건`;
 }
 
 function downloadOrdersCSV(orders: Order[]) {
@@ -291,7 +314,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                     onChange={toggleSelectAll}
                   />
                 </th>
-                {["주문 ID", "고객", "합계", "상태", "날짜", "관리"].map((h) => (
+                {["상품", "고객", "합계", "상태", "날짜", "관리"].map((h) => (
                   <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
@@ -323,8 +346,8 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                           onChange={() => toggleSelect(order.id)}
                         />
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs" style={{ color: "#9CA3AF" }}>
-                        {order.id.slice(0, 8)}…
+                      <td className="px-6 py-4" style={{ color: "#F0E6FF" }}>
+                        {productSummary(order)}
                       </td>
                       <td className="px-6 py-4" style={{ color: "#F0E6FF" }}>
                         {order.customer_email}
@@ -394,6 +417,12 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                     {expandedId === order.id && (
                       <tr key={`${order.id}-detail`} style={{ background: "#13131F" }}>
                         <td colSpan={7} className="px-6 py-4 space-y-4">
+
+                          {/* Order ID */}
+                          <div>
+                            <span className="text-xs" style={{ color: "#6B7280" }}>주문 ID: </span>
+                            <span className="text-xs font-mono" style={{ color: "#9CA3AF" }}>{order.id}</span>
+                          </div>
 
                           {/* Gateway + shipping method */}
                           <div className="flex items-center gap-3 flex-wrap">
@@ -473,7 +502,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                                   >
                                     <span>
                                       {name}
-                                      {item.option_name && <span style={{ color: "#A855F7" }}> · {item.option_name}</span>}
+                                      {item.option_name && !item.option_id && <span style={{ color: "#A855F7" }}> · {item.option_name}</span>}
                                       {" "}× {item.quantity}
                                     </span>
                                     <span style={{ color: "#A855F7" }}>

@@ -75,7 +75,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
       id, status, total_usd, created_at, customer_email, shipping_address,
       tracking_number, tracking_carrier,
       order_items(
-        id, quantity, price_usd, option_name,
+        id, quantity, price_usd, option_name, option_id,
         products(id, slug, thumbnail_url, product_translations(name, language))
       )
     `)
@@ -225,7 +225,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </h2>
           <div className="space-y-4">
             {order.order_items.map((item: {
-              id: string; quantity: number; price_usd: number; option_name: string | null;
+              id: string; quantity: number; price_usd: number; option_name: string | null; option_id: string | null;
               products: { id: string; slug: string; thumbnail_url: string | null; product_translations: { name: string; language: string }[] } | null;
             }) => {
               const name =
@@ -255,7 +255,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
                     >
                       {name}
                     </Link>
-                    {item.option_name && <p className="text-xs text-[#A855F7] line-clamp-1">{item.option_name}</p>}
+                    {/* 애드온 라인(option_id 존재)은 상품명이 이미 현재 언어로 표시되므로 단일언어 스냅샷 생략. 레거시 옵션만 폴백 표시. */}
+                    {item.option_name && !item.option_id && <p className="text-xs text-[#A855F7] line-clamp-1">{item.option_name}</p>}
                     <p className="text-xs text-[#6B7280]">× {item.quantity}</p>
                   </div>
                   <p className="text-sm font-semibold text-[#F59E0B] flex-shrink-0">

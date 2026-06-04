@@ -1,22 +1,49 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendLowStockAlert } from "@/lib/resend";
-import { earnPointsForUsd, addPointTransaction } from "@/lib/points";
+import { earnPointsForUsd, addPoints, spendPoints } from "@/lib/points";
 import type { SaveOrderInput } from "./types";
 
 const LOW_STOCK_THRESHOLD = 3;
+
+// email → auth.users.id 조회. RPC(017) 우선, 미배포 시 레거시 스캔으로 폴백.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveUserId(supabase: any, email: string): Promise<string | null> {
+  if (!email) return null;
+  try {
+    const { data, error } = await supabase.rpc("get_user_id_by_email", { p_email: email });
+    if (!error && data) return data as string;
+  } catch {
+    // RPC 미배포 — 폴백
+  }
+  try {
+    const { data: listRes } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    return listRes?.users?.find((u: { email?: string; id: string }) => u.email === email)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = (await createAdminClient()) as any;
 
-  // Resolve user_id from email
-  let userId: string | null = null;
-  try {
-    const { data: listRes } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    userId = listRes?.users?.find((u: { email?: string; id: string }) => u.email === input.customerEmail)?.id ?? null;
-  } catch {
-    // non-critical — order saves without user_id
+  // 게이트웨이 결제 식별자 — 멱등성 키. (lemon-webhook·lemon-confirm·toss-confirm 더블클릭/재시도 모두 이 키로 중복 차단)
+  const gatewayKey =
+    input.gateway === "toss" ? `toss_${input.gatewayRef}` : `lemon_${input.gatewayRef}`;
+
+  // 멱등성: 같은 결제로 이미 주문이 저장됐으면 재처리하지 않고 기존 주문 ID 반환.
+  // → 주문 중복 생성·포인트 이중 적립/차감·재고 이중 차감 방지.
+  const { data: dup } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("stripe_payment_intent_id", gatewayKey)
+    .maybeSingle();
+  if (dup?.id) {
+    return dup.id as string;
   }
+
+  // Resolve user_id from email
+  const userId: string | null = await resolveUserId(supabase, input.customerEmail);
 
   // 디지털 상품만으로 구성된 주문은 배송이 없으므로 결제 즉시 completed 처리 → 바로 리뷰 작성 가능
   let allDigital = false;
@@ -43,9 +70,7 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
       total_usd: input.totalUsd,
       customer_email: input.customerEmail,
       ...(userId ? { user_id: userId } : {}),
-      ...(input.gateway === "toss"
-        ? { stripe_payment_intent_id: `toss_${input.gatewayRef}` }
-        : { stripe_payment_intent_id: `lemon_${input.gatewayRef}` }),
+      stripe_payment_intent_id: gatewayKey,
       ...(input.appliedDiscountCode ? { applied_discount_code: input.appliedDiscountCode } : {}),
       ...(input.appliedReferralCode ? { applied_referral_code: input.appliedReferralCode } : {}),
       ...(input.customerNote ? { customer_note: input.customerNote } : {}),
@@ -76,27 +101,22 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     console.error(`[${input.gateway}] saveOrderItems error:`, itemsError);
   }
 
-  // 마일리지 사용(차감) — 회원이 결제 시 포인트를 사용했을 때. 잔액 초과분은 보정
+  // 마일리지 사용(차감) — 회원이 결제 시 포인트를 사용했을 때. FIFO 소진(잔액 초과분은 자동 보정).
   if (userId && input.pointsSpent && input.pointsSpent > 0) {
-    const { getPointsBalance } = await import("@/lib/points");
-    const balance = await getPointsBalance(supabase, userId);
-    const spend = Math.min(input.pointsSpent, balance);
-    if (spend > 0) {
-      await addPointTransaction(supabase, {
-        userId,
-        amount: -spend,
-        type: "spend",
-        orderId: order.id,
-        note: `주문 사용 (${input.gateway})`,
-      }).catch(() => { /* 차감 실패는 주문에 영향 없음 */ });
-    }
+    await spendPoints(supabase, {
+      userId,
+      amount: input.pointsSpent,
+      type: "spend",
+      orderId: order.id,
+      note: `주문 사용 (${input.gateway})`,
+    }).catch(() => { /* 차감 실패는 주문에 영향 없음 */ });
   }
 
-  // 마일리지 적립 — 회원이며 결제 금액이 있을 때 (5%)
+  // 마일리지 적립 — 회원이며 결제 금액이 있을 때 (5%). 적립분은 12개월 후 만료.
   if (userId && input.totalUsd > 0) {
     const earned = earnPointsForUsd(input.totalUsd);
     if (earned > 0) {
-      await addPointTransaction(supabase, {
+      await addPoints(supabase, {
         userId,
         amount: earned,
         type: "earn",
@@ -116,18 +136,40 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
   const lowStockItems: { productName: string; stock: number }[] = [];
 
   for (const [productId, qty] of qtyByProduct) {
-    const { data: product } = await supabase
-      .from("products")
-      .select("stock")
-      .eq("id", productId)
-      .single();
+    // 낙관적 동시성(CAS): stock=oldStock 조건부 업데이트가 0행이면 다른 결제가 끼어든 것 → 재읽기 후 재시도.
+    // 동시 주문 시 lost update(oversell) 방지.
+    let finalStock: number | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data: product } = await supabase
+        .from("products")
+        .select("stock")
+        .eq("id", productId)
+        .single();
 
-    if (!product || typeof product.stock !== "number") continue;
+      if (!product || typeof product.stock !== "number") break;
 
-    const newStock = Math.max(0, product.stock - qty);
-    await supabase.from("products").update({ stock: newStock }).eq("id", productId);
+      const oldStock = product.stock;
+      const newStock = Math.max(0, oldStock - qty);
+      if (newStock === oldStock) {
+        finalStock = oldStock; // 이미 0 — 변경 불필요
+        break;
+      }
 
-    if (newStock <= LOW_STOCK_THRESHOLD) {
+      const { data: updated } = await supabase
+        .from("products")
+        .update({ stock: newStock })
+        .eq("id", productId)
+        .eq("stock", oldStock)
+        .select("id");
+
+      if (updated && updated.length > 0) {
+        finalStock = newStock; // 성공
+        break;
+      }
+      // 0행 — 경합 발생, 재시도
+    }
+
+    if (finalStock != null && finalStock <= LOW_STOCK_THRESHOLD) {
       const { data: transKo } = await supabase
         .from("product_translations")
         .select("name")
@@ -142,7 +184,7 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
         .maybeSingle();
       lowStockItems.push({
         productName: transKo?.name ?? transEn?.name ?? productId,
-        stock: newStock,
+        stock: finalStock,
       });
     }
   }

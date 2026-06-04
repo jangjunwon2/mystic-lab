@@ -893,7 +893,7 @@ export default function CheckoutPage({ params }: Props) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-[#F0E6FF] line-clamp-1">{item.name}</p>
-                        {item.option_name && <p className="text-[11px] text-[#A855F7] line-clamp-1">{item.option_name}</p>}
+                        {item.option_name && !item.option_id && <p className="text-[11px] text-[#A855F7] line-clamp-1">{item.option_name}</p>}
                         <p className="text-[11px] text-[#9CA3AF]">{t("qty", { n: item.quantity })}</p>
                       </div>
                       <span className="text-xs font-semibold text-[#F0E6FF] shrink-0">
