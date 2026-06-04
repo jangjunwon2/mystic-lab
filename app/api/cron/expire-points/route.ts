@@ -21,7 +21,15 @@ export async function GET(request: NextRequest) {
       console.error("[cron/expire-points]", error);
       return NextResponse.json({ error: "expire failed" }, { status: 500 });
     }
-    return NextResponse.json({ expired: data ?? 0 });
+    // 만료된 포인트 예약(hold) 정리 — 미배포(033 전)면 조용히 무시
+    let releasedHolds = 0;
+    try {
+      const { data: holds } = await admin.rpc("expire_point_holds");
+      releasedHolds = (holds as number) ?? 0;
+    } catch {
+      /* 033 미배포 — 무시 */
+    }
+    return NextResponse.json({ expired: data ?? 0, releasedHolds });
   } catch (err) {
     console.error("[cron/expire-points]", err);
     return NextResponse.json({ error: "Server error." }, { status: 500 });

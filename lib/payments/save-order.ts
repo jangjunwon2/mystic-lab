@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendLowStockAlert } from "@/lib/resend";
-import { earnPointsForUsd, addPoints, spendPoints } from "@/lib/points";
+import { earnPointsForUsd, addPoints, consumeHold } from "@/lib/points";
 import type { SaveOrderInput } from "./types";
 
 const LOW_STOCK_THRESHOLD = 3;
@@ -101,12 +101,13 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     console.error(`[${input.gateway}] saveOrderItems error:`, itemsError);
   }
 
-  // 마일리지 사용(차감) — 회원이 결제 시 포인트를 사용했을 때. FIFO 소진(잔액 초과분은 자동 보정).
+  // 마일리지 사용(차감) — 회원이 결제 시 포인트를 사용했을 때. 체크아웃에서 예약(hold)한 포인트를
+  // 정산(consume): 해당 hold를 consumed 처리하고 FIFO 차감. (hold 없으면 그냥 FIFO 차감으로 폴백)
   if (userId && input.pointsSpent && input.pointsSpent > 0) {
-    await spendPoints(supabase, {
+    await consumeHold(supabase, {
       userId,
+      ref: input.pointsHoldRef ?? gatewayKey,
       amount: input.pointsSpent,
-      type: "spend",
       orderId: order.id,
       note: `주문 사용 (${input.gateway})`,
     }).catch(() => { /* 차감 실패는 주문에 영향 없음 */ });

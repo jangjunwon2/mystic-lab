@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createLemonCheckout } from "@/lib/payments/lemon";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { getPointsBalance, pointsToUsd } from "@/lib/points";
+import { holdPoints, pointsToUsd } from "@/lib/points";
 import { computeServerSubtotalUsd } from "@/lib/payments/order-pricing";
+import { randomUUID } from "crypto";
 import type { OrderPayload } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
@@ -29,18 +30,23 @@ export async function POST(request: NextRequest) {
     // 쿠폰 할인은 소계를 초과할 수 없음
     const couponDiscount = Math.max(0, Math.min(discountAmount ?? 0, subtotalUsd));
 
-    // 마일리지 사용 — 로그인 회원의 실제 잔액으로 서버 검증 후 차감액 결정
+    // 마일리지 사용 — 로그인 회원의 가용 잔액(잔액 − 활성 hold) 내에서 원자적 예약(hold).
+    // 예약량만큼만 할인에 반영 → 동시 결제 시 같은 포인트로 이중 할인되는 race 차단.
     let pointsSpent = 0;
+    let pointsHoldRef: string | undefined;
     if (pointsUsed && pointsUsed > 0) {
       const supa = await createClient();
       const { data: { user } } = await supa.auth.getUser();
       if (user) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const admin = (await createAdminClient()) as any;
-        const balance = await getPointsBalance(admin, user.id);
         const maxByValue = Math.floor(Math.max(0, subtotalUsd - couponDiscount) * 100);
-        pointsSpent = Math.min(Math.trunc(pointsUsed), balance, maxByValue);
-        if (pointsSpent < 0) pointsSpent = 0;
+        const requested = Math.min(Math.trunc(pointsUsed), maxByValue);
+        if (requested > 0) {
+          const ref = randomUUID();
+          pointsSpent = await holdPoints(admin, { userId: user.id, amount: requested, ref, minutes: 30 });
+          if (pointsSpent > 0) pointsHoldRef = ref;
+        }
       }
     }
     const pointsDiscountUsd = pointsToUsd(pointsSpent);
@@ -59,6 +65,7 @@ export async function POST(request: NextRequest) {
       shippingMethod ?? undefined,
       shippingAddress ?? undefined,
       pointsSpent,
+      pointsHoldRef,
     );
 
     return NextResponse.json({ url });

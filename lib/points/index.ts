@@ -90,6 +90,53 @@ export async function addPoints(
   return !error;
 }
 
+interface HoldPointsParams {
+  userId: string;
+  amount: number; // 양수(예약 요청액)
+  ref: string; // 게이트웨이 식별자(holdRef / paymentKey) — 정산 매칭·재시도 멱등
+  minutes?: number; // 예약 만료(기본 30분)
+}
+
+// 포인트 예약(hold) — 가용 잔액(잔액 − 활성 hold) 한도 내에서 원자적으로 예약. 실제 예약량 반환.
+// RPC(033) 우선, 미배포 시 평면 잔액까지로 폴백(예약 미기록 → 동시 race는 033 배포 후 차단).
+export async function holdPoints(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  params: HoldPointsParams
+): Promise<number> {
+  const req = Math.trunc(params.amount);
+  if (!req || req <= 0) return 0;
+
+  try {
+    const { data, error } = await admin.rpc("hold_points", {
+      p_user: params.userId,
+      p_amount: req,
+      p_ref: params.ref,
+      p_minutes: params.minutes ?? 30,
+    });
+    if (!error && typeof data === "number") return data;
+  } catch {
+    // RPC 미배포 — 폴백
+  }
+  // 폴백: hold 테이블 없이 현재 잔액까지만 허용(기존 동작과 동일).
+  const balance = await getPointsBalance(admin, params.userId);
+  return Math.min(req, Math.max(0, balance));
+}
+
+// 예약 해제 — 결제 거부·취소 시 가용 복원. RPC(033) 우선, 미배포 시 no-op.
+export async function releaseHold(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  ref: string
+): Promise<void> {
+  if (!ref) return;
+  try {
+    await admin.rpc("release_hold", { p_ref: ref });
+  } catch {
+    // RPC 미배포 — 폴백 없음(hold 미기록이므로 해제 불필요)
+  }
+}
+
 interface SpendPointsParams {
   userId: string;
   amount: number; // 양수(요청 차감액)
@@ -134,4 +181,44 @@ export async function spendPoints(
     note: params.note ?? null,
   });
   return error ? 0 : spend;
+}
+
+interface ConsumeHoldParams {
+  userId: string;
+  ref: string; // 예약 시 사용한 ref — 해당 hold를 consumed 처리
+  amount: number; // 실제 차감할 포인트(예약량 = 청구에 반영된 사용액)
+  orderId?: string | null;
+  note?: string;
+}
+
+// 예약 정산 — ref의 hold를 consumed 처리하고 실제 포인트를 FIFO로 차감. 실제 차감액 반환.
+// RPC(033) 우선, 미배포 시 spendPoints로 폴백(기존 동작과 동일).
+export async function consumeHold(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  params: ConsumeHoldParams
+): Promise<number> {
+  const req = Math.trunc(params.amount);
+  if (!req || req <= 0) return 0;
+
+  try {
+    const { data, error } = await admin.rpc("consume_hold", {
+      p_user: params.userId,
+      p_ref: params.ref,
+      p_amount: req,
+      p_order: params.orderId ?? null,
+      p_type: "spend",
+      p_note: params.note ?? null,
+    });
+    if (!error && typeof data === "number") return data;
+  } catch {
+    // RPC 미배포 — 폴백
+  }
+  return spendPoints(admin, {
+    userId: params.userId,
+    amount: req,
+    type: "spend",
+    orderId: params.orderId ?? null,
+    note: params.note,
+  });
 }

@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
   const webhookCustom = (webhookMeta?.custom_data as Record<string, string>) ?? {};
   const shippingMethod = webhookCustom.shipping_method ?? undefined;
   const pointsSpent = webhookCustom.points_used ? parseInt(webhookCustom.points_used, 10) || 0 : 0;
+  const pointsHoldRef = webhookCustom.points_hold_ref ?? undefined;
 
   let shippingAddress: Record<string, string> | undefined;
   if (webhookCustom.shipping_address) {
@@ -111,6 +112,7 @@ export async function POST(request: NextRequest) {
     shippingMethod,
     shippingAddress,
     pointsSpent,
+    pointsHoldRef,
   });
 
   if (email && items.length > 0) {

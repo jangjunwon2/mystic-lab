@@ -37,6 +37,7 @@ export interface SaveOrderInput {
   shippingAddress?: ShippingAddress;
   shippingMethod?: string;
   pointsSpent?: number; // 결제 시 사용한 마일리지(포인트) — 결제 성공 후 차감 기록
+  pointsHoldRef?: string; // 포인트 예약(hold) 식별자 — 정산 시 해당 hold consume (미지정 시 gatewayKey)
 }
 
 export type PaymentGateway = "lemon" | "toss";

@@ -3,7 +3,7 @@ import { confirmTossPayment } from "@/lib/payments/toss";
 import { saveOrderToSupabase } from "@/lib/payments/save-order";
 import { sendOrderConfirmation } from "@/lib/resend";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { getPointsBalance, pointsToUsd } from "@/lib/points";
+import { holdPoints, releaseHold, pointsToUsd } from "@/lib/points";
 import { computeServerSubtotalUsd } from "@/lib/payments/order-pricing";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
 import type { CartItem } from "@/lib/payments/types";
@@ -19,16 +19,19 @@ export async function POST(request: NextRequest) {
 
     const resolvedItemsPre = (items as CartItem[]) ?? [];
 
-    // 마일리지 사용 — 로그인 회원의 실제 잔액으로 검증 (확정 전)
+    // 마일리지 사용 — 로그인 회원의 가용 잔액(잔액 − 활성 hold) 내에서 원자적 예약(hold). ref = paymentKey.
+    // 동시 결제 시 같은 포인트로 이중 할인되는 race 차단.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let adminP: any = null;
     let pointsSpent = 0;
+    let pointsHeld = false;
     if (pointsUsed && pointsUsed > 0) {
       const supa = await createClient();
       const { data: { user } } = await supa.auth.getUser();
       if (user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const adminP = (await createAdminClient()) as any;
-        const balance = await getPointsBalance(adminP, user.id);
-        pointsSpent = Math.max(0, Math.min(Math.trunc(pointsUsed), balance));
+        adminP = await createAdminClient();
+        pointsSpent = await holdPoints(adminP, { userId: user.id, amount: Math.trunc(pointsUsed), ref: paymentKey, minutes: 30 });
+        if (pointsSpent > 0) pointsHeld = true;
       }
     }
 
@@ -40,8 +43,9 @@ export async function POST(request: NextRequest) {
       const expectedUsd = Math.max(0, serverSubtotal - coupon - pointsToUsd(pointsSpent) + ship);
       const krwRate = await getUsdToKrw();
       const expectedKrw = expectedUsd * krwRate;
-      // 5% 허용 오차(환율·반올림) — 그보다 적게 청구되면 가격 조작으로 간주
+      // 5% 허용 오차(환율·반올림) — 그보다 적게 청구되면 가격 조작 또는 동시 결제로 예약 부족 → 예약 해제 후 거부
       if (Number(amount) < Math.floor(expectedKrw * 0.95)) {
+        if (pointsHeld && adminP) await releaseHold(adminP, paymentKey);
         return NextResponse.json({ error: "결제 금액이 올바르지 않습니다." }, { status: 400 });
       }
     }
@@ -49,6 +53,7 @@ export async function POST(request: NextRequest) {
     const result = await confirmTossPayment(paymentKey, orderId, amount);
 
     if (!result.success) {
+      if (pointsHeld && adminP) await releaseHold(adminP, paymentKey);
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
@@ -64,6 +69,7 @@ export async function POST(request: NextRequest) {
       totalKrw: amount,
       shippingAddress: shippingAddress ?? undefined,
       pointsSpent,
+      pointsHoldRef: paymentKey,
     });
 
     if (resolvedEmail && resolvedItems.length > 0) {
