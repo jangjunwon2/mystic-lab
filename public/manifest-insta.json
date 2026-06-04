@@ -1,0 +1,16 @@
+{
+  "id": "/insta",
+  "name": "Instagram",
+  "short_name": "Instagram",
+  "start_url": "/insta",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/images/magic/insta-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/images/magic/insta-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/images/magic/insta-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

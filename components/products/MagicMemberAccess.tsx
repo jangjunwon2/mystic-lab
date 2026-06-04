@@ -8,12 +8,16 @@ import { Zap, Copy, Check } from "lucide-react";
 interface Props {
   productId: string;
   locale: string;
+  slug?: string; // 앱 경로/활성화 키 분기 (magic-calculator → /calc, fake-instagram → /insta)
 }
 
 // 회원 구매자에게 해법 영상 하단에서 자동 발급 코드 + 웹앱 실행을 제공
-export default function MagicMemberAccess({ productId, locale }: Props) {
+export default function MagicMemberAccess({ productId, locale, slug = "magic-calculator" }: Props) {
   const router = useRouter();
   const t = useTranslations("calc");
+
+  const appPath = slug === "fake-instagram" ? `/${locale}/insta` : `/${locale}/calc`;
+  const activatedKey = `ml_app_activated_${slug}`;
 
   const [code, setCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +28,9 @@ export default function MagicMemberAccess({ productId, locale }: Props) {
 
   useEffect(() => {
     try {
-      if (localStorage.getItem("ml_calc_device_token")) setActivated(true);
+      if (localStorage.getItem(activatedKey) || (slug === "magic-calculator" && localStorage.getItem("ml_calc_device_token"))) {
+        setActivated(true);
+      }
     } catch { /* ignore */ }
 
     fetch("/api/magic/my-code", {
@@ -38,9 +44,9 @@ export default function MagicMemberAccess({ productId, locale }: Props) {
       })
       .catch(() => { /* 구매 안 했거나 오류 → 표시 안 함 */ })
       .finally(() => setLoading(false));
-  }, [productId]);
+  }, [productId, activatedKey, slug]);
 
-  const openApp = () => router.push(`/${locale}/calc`);
+  const openApp = () => router.push(appPath);
 
   const activateAndOpen = async () => {
     if (!code) return;
@@ -54,8 +60,11 @@ export default function MagicMemberAccess({ productId, locale }: Props) {
       });
       const d = await res.json();
       if (res.ok && d.success) {
-        try { localStorage.setItem("ml_calc_device_token", d.deviceToken); } catch { /* ignore */ }
-        router.push(`/${locale}/calc`);
+        try {
+          localStorage.setItem(activatedKey, "1");
+          if (slug === "magic-calculator") localStorage.setItem("ml_calc_device_token", d.deviceToken);
+        } catch { /* ignore */ }
+        router.push(appPath);
       } else {
         setError(d.error ?? t("maErrActivation"));
       }

@@ -6,6 +6,7 @@ import { PlusSquare, Share, MoreVertical, Sparkles } from "lucide-react";
 interface Props {
   children: React.ReactNode;
   locale: string;
+  appName?: string; // 설치 안내 제목 오버라이드 (예: "Instagram"). 미지정 시 계산기 기본 문구
 }
 
 // 7개 언어 대응 PWA 가이드 텍스트
@@ -114,7 +115,7 @@ function detectInApp(ua: string): boolean {
 
 type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
-export default function ClientPwaWrapper({ children, locale }: Props) {
+export default function ClientPwaWrapper({ children, locale, appName }: Props) {
   const [isStandalone, setIsStandalone] = useState(true);
   const [checked, setChecked] = useState(false);
   const [skipPwa, setSkipPwa] = useState(false);
@@ -201,7 +202,7 @@ export default function ClientPwaWrapper({ children, locale }: Props) {
             <Sparkles className="w-6 h-6 text-[#A855F7] animate-pulse" />
           </div>
           <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-cinzel), serif" }}>
-            {text.title}
+            {appName ? appName : text.title}
           </h1>
           <p className="text-xs text-[#9CA3AF] leading-relaxed">
             {text.subtitle}

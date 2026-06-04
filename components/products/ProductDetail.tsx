@@ -377,8 +377,8 @@ export default function ProductDetail({
             locale={locale}
             productSlug={product.slug}
           />
-          {product.slug === "magic-calculator" && isLoggedIn && hasPurchased && (
-            <MagicMemberAccess productId={product.id} locale={locale} />
+          {(product.slug === "magic-calculator" || product.slug === "fake-instagram") && isLoggedIn && hasPurchased && (
+            <MagicMemberAccess productId={product.id} locale={locale} slug={product.slug} />
           )}
         </Section>
 

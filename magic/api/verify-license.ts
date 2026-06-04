@@ -91,6 +91,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "기기 인증 상태 업데이트 실패" }, { status: 500 });
     }
 
+    // 상품 slug 조회 (계산기 레거시 쿠키 호환 판단용)
+    const { data: prod } = await supabase
+      .from("products")
+      .select("slug")
+      .eq("id", unlockCode.product_id)
+      .maybeSingle();
+    const slug: string | null = prod?.slug ?? null;
+
     // 3. 응답 생성 및 쿠키 주입
     const response = NextResponse.json({
       success: true,
@@ -98,21 +106,18 @@ export async function POST(request: NextRequest) {
       deviceToken: newDeviceToken,
     });
 
-    // 일반 unlock 쿠키 (30일 유효)
-    response.cookies.set(`ml_unlock_${unlockCode.product_id}`, "granted", {
-      maxAge: 30 * 24 * 60 * 60,
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-    });
+    const cookieOpts = { maxAge: 30 * 24 * 60 * 60, httpOnly: true, sameSite: "lax" as const, path: "/" };
 
-    // 계산기 기기 잠금용 고유 토큰 쿠키 (30일 유효)
-    response.cookies.set(`ml_calc_device_token`, newDeviceToken, {
-      maxAge: 30 * 24 * 60 * 60,
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-    });
+    // 일반 unlock 쿠키
+    response.cookies.set(`ml_unlock_${unlockCode.product_id}`, "granted", cookieOpts);
+
+    // 상품별 기기 토큰 쿠키 (앱 게이트가 상품별로 대조)
+    response.cookies.set(`ml_dt_${unlockCode.product_id}`, newDeviceToken, cookieOpts);
+
+    // 계산기는 기존 게이트가 ml_calc_device_token 을 읽으므로 호환 유지 (계산기 상품에만 설정)
+    if (slug === "magic-calculator") {
+      response.cookies.set("ml_calc_device_token", newDeviceToken, cookieOpts);
+    }
 
     return response;
   } catch {
