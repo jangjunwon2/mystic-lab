@@ -135,6 +135,7 @@
     "emailLabel": "邮箱地址",
     "couponLabel": "优惠码（可选）",
     "selectCoupon": "从我的优惠券中选择",
+    "couponMinOrderShort": "最低订单",
     "mileageLabel": "使用积分（可选）",
     "balanceLabel": "余额",
     "useAll": "全部",

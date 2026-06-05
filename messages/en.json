@@ -135,6 +135,7 @@
     "emailLabel": "Email address",
     "couponLabel": "Discount code (optional)",
     "selectCoupon": "Select from my coupons",
+    "couponMinOrderShort": "Min order",
     "mileageLabel": "Use points (optional)",
     "balanceLabel": "Balance",
     "useAll": "All",

@@ -135,6 +135,7 @@
     "emailLabel": "Adresse e-mail",
     "couponLabel": "Code de réduction (facultatif)",
     "selectCoupon": "Choisir parmi mes coupons",
+    "couponMinOrderShort": "Cmde min.",
     "mileageLabel": "Utiliser des points (facultatif)",
     "balanceLabel": "Solde",
     "useAll": "Tout",

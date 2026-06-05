@@ -135,6 +135,7 @@
     "emailLabel": "Correo electrónico",
     "couponLabel": "Código de descuento (opcional)",
     "selectCoupon": "Elegir de mis cupones",
+    "couponMinOrderShort": "Pedido mín.",
     "mileageLabel": "Usar puntos (opcional)",
     "balanceLabel": "Saldo",
     "useAll": "Todo",

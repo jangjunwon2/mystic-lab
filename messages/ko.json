@@ -135,6 +135,7 @@
     "emailLabel": "이메일 주소",
     "couponLabel": "할인 코드 (선택)",
     "selectCoupon": "내 쿠폰에서 선택",
+    "couponMinOrderShort": "최소주문",
     "mileageLabel": "마일리지 사용 (선택)",
     "balanceLabel": "보유",
     "useAll": "전액",

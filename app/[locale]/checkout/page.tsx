@@ -219,8 +219,6 @@ export default function CheckoutPage({ params }: Props) {
 
   const SHIPPING_COSTS = { standard: 0, express: 15 } as const;
   const subtotalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
-  // 현재 주문에 적용 가능한 보유 쿠폰(최소 주문액 충족). 서버에서 소유·미사용·미만료만 반환됨.
-  const applicableCoupons = myCoupons.filter((c) => subtotalUsd >= (c.min_order_usd ?? 0));
   const couponDiscountUsd = appliedDiscount?.discountAmount ?? 0;
   // 마일리지: 100P = $1. 쿠폰 차감 후 잔여 금액까지만, 보유 잔액까지만 사용 가능.
   // 단, 총 보유가 최소 사용 한도(MIN_REDEEM_POINTS=$5) 미만이면 사용 불가.
@@ -534,7 +532,7 @@ export default function CheckoutPage({ params }: Props) {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {applicableCoupons.length > 0 && (
+                    {myCoupons.length > 0 && (
                       <select
                         value=""
                         disabled={couponLoading}
@@ -542,11 +540,16 @@ export default function CheckoutPage({ params }: Props) {
                         className="w-full bg-[#13131F] border border-[#7C3AED]/40 text-[#F0E6FF] text-sm px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] transition-colors disabled:opacity-50"
                       >
                         <option value="">{t("selectCoupon")}</option>
-                        {applicableCoupons.map((c) => (
-                          <option key={c.id} value={c.code}>
-                            {c.type === "fixed" ? `$${c.value}` : `${c.value}%`} OFF · {c.code}
-                          </option>
-                        ))}
+                        {myCoupons.map((c) => {
+                          // 사용 불가(최소 주문액 미달) 쿠폰도 보이되 비활성화(사유 표시).
+                          const usable = subtotalUsd >= (c.min_order_usd ?? 0);
+                          return (
+                            <option key={c.id} value={c.code} disabled={!usable}>
+                              {c.type === "fixed" ? `$${c.value}` : `${c.value}%`} OFF · {c.code}
+                              {!usable ? ` · ${t("couponMinOrderShort")} $${c.min_order_usd}` : ""}
+                            </option>
+                          );
+                        })}
                       </select>
                     )}
                     <div className="flex gap-2">

@@ -135,6 +135,7 @@
     "emailLabel": "E-Mail-Adresse",
     "couponLabel": "Rabattcode (optional)",
     "selectCoupon": "Aus meinen Gutscheinen wählen",
+    "couponMinOrderShort": "Mindestbest.",
     "mileageLabel": "Punkte verwenden (optional)",
     "balanceLabel": "Guthaben",
     "useAll": "Alle",
