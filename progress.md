@@ -34,8 +34,8 @@
 - 대시보드 · 통계(매출·전환율·위시→구매·공유·결제수단/국가 분포·**고객 세그먼트(빈도·구매액대별 매출 기여)**·**기간 지정 CSV 내보내기**)
 - 상품 CRUD(이미지 업로드·드래그정렬·Claude 자동번역·옵션 빌더·디지털 토글)
 - 주문(상세·상태·**환불=게이트웨이 실환불+재고/포인트 복원**·배송추적·선택삭제)
-- 배송 관리 전용 페이지 · 리뷰(게시 관리) · 커스텀의뢰 · 할인 · 영상 · 공지(**프로모션 쿠폰코드** 표시) · 뉴스레터 · **구매자 커뮤니티 관리**(`/admin/community` — 전 상품 글/댓글 조회·삭제·필터)
-- **쿠폰 발급**(`/admin/coupons`): 회원/이메일에 1회용 개인 쿠폰(정률/정액) 수동 발급 + 자동발급분(뉴스레터·레퍼럴) 조회. **뉴스레터 구독 시 환영 쿠폰 자동발급**(설정 `newsletter_coupon_percent`)
+- 배송 관리 전용 페이지 · 리뷰(게시 관리) · 커스텀의뢰 · 영상 · 공지(**프로모션 쿠폰코드** 표시) · 뉴스레터 · **구매자 커뮤니티 관리**(`/admin/community` — 전 상품 글/댓글 조회·삭제·필터)
+- **쿠폰 관리 허브**(`/admin/coupons`): 분류 탭(개별/전체/신입/프로모션/정기) · **개인·공개 쿠폰 발급**(이름·정률/정액·최소주문·사용기간·전체/1인당 한도·**상품/카테고리 한정**) · **삭제/정지** · **가입 환영쿠폰·위시리스트 정기쿠폰 설정 카드**. 자동발급분(뉴스레터·레퍼럴·가입·트리거) 함께 조회. (구 `/admin/discounts` 할인코드는 공개쿠폰으로 통합·폐기)
 - **레퍼럴/제휴 코드**: 신규 구매자 할인 **정률/정액 선택** + **추천인 보상 쿠폰 자동발급**(구매 시 이메일→회원 매칭) · 고객 체크아웃 공용 입력창 적용 · 사용횟수 서버측 집계
 - 잠금코드(상품별 탭·기기바인딩 현황·강제해제·활성화 횟수제한·잠금·AES 암호화)
 - 회원(트라이그램 검색·페이지네이션) · **증정/권한부여**(상품권한·무료주문·마일리지 지급)
@@ -83,14 +83,8 @@
 ## ⏳ 운영자(사장님) To-Do
 > 마이그레이션 **019~035 적용 완료** (포인트 hold·site_settings·쿠폰/레퍼럴 등) — 재확인 불필요.
 
-- [ ] **Supabase 마이그레이션 `036_pending_checkouts.sql`** — ⚠️ **해외결제 항목 5개+ 처리에 필수**. 미적용 시 압축 폴백(4개까지만). LS custom 255자 제한 우회용 대기 장바구니 테이블
-- [ ] **Supabase 마이그레이션 `039_order_price_breakdown.sql`** — 주문 상세 가격 분해 컬럼(미적용 시 신규주문 분해 미기록). `038_drop_discount_codes.sql`은 선택(미사용 테이블 정리)
-- [ ] **Supabase 마이그레이션 `040_coupon_period.sql`** — 쿠폰 사용 시작일(starts_at). 프로모션(기간한정) 공개쿠폰용
-- [ ] **Supabase 마이그레이션 `041_coupon_per_user_limit.sql`** — 쿠폰 1인당 사용 한도(per_user_limit) + 사용이력 테이블(coupon_redemptions)
-- [ ] **Supabase 마이그레이션 `042_coupon_targeting.sql`** — 쿠폰 상품/카테고리 한정 조인테이블(coupon_products·coupon_categories)
-- [ ] **Supabase 마이그레이션 `043_coupon_name.sql`** — 쿠폰 이름(명목) 컬럼. 고객 드롭다운에 코드 대신 이름 노출
-- [ ] **Supabase 마이그레이션 `044_coupon_claims.sql`** — 공개 쿠폰 발급(claim) 테이블. 공개 쿠폰은 발급받아야 사용 가능
-- [ ] **Supabase 마이그레이션 `037_unify_coupons.sql`** — 쿠폰 통합 Phase 0. `issued_coupons`에 공개쿠폰(scope/max_uses/used_count) 추가 + `discount_codes` 백필 + `redeem_public_coupon` RPC. ⚠️ 미적용 시 어드민 공개쿠폰 발급/검증 동작 안 함(레거시 `discount_codes`는 폴백으로 계속 동작). **후방호환**: `discount_codes`·`/admin/discounts`는 보존(추후 cleanup에서 폐기)
+- [x] **마이그레이션 `036`~`044` — 작업하며 순차 적용 완료** (036 pending_checkouts · 037 쿠폰통합(scope·공개쿠폰·discount_codes 백필·redeem_public_coupon) · 039 주문 가격분해 · 040 사용기간 · 041 1인당 한도+coupon_redemptions · 042 상품/카테고리 한정 · 043 쿠폰 이름 · 044 공개쿠폰 발급(claim)). `038_drop_discount_codes.sql`은 **선택**(미사용 테이블·RPC 정리, 미실행 무방). ※ 누락분 있으면 번호 순서대로 실행
+- [ ] **(선택) 위시리스트 정기 쿠폰 켜기** — `/admin/coupons`의 "위시리스트 정기 쿠폰" 카드에서 활성화(기본 OFF). cron은 `vercel.json`에 등록됨 — `CRON_SECRET` 필요
 - [ ] **법적고지 `/legal-notice` 자리표시자 기입** — 대표자명·사업장 주소·연락처·통신판매업 신고번호(+EU 판매 시 VAT). ⚠️ 모든 법률 문구는 템플릿이며 **변호사/법률 서비스 검토 후** 적용 권장
 - [ ] **상품 등록 + 인증코드 발급**: slug `magic-calculator`, `fake-instagram` (없으면 `/calc`·`/insta` 게이트·자동발급 동작 안 함)
 - [ ] **Vercel 환경변수 확인**: `CRON_SECRET`(포인트 만료 cron), `ADMIN_EMAIL`, `RESEND_FROM_EMAIL`(문의 메일 수신)
@@ -100,7 +94,7 @@
 ## 🔍 점검 필요 (실기기/라이브)
 - [ ] **인스타·계산기 앱 iOS 실기기 확인**(최신 배포 후): 홈 아이콘 · 풀스크린 · 아래당김 검정 · 뒤로가기 → 기존 홈추가본 **삭제 후 재추가**(iOS 캐시)
 - [ ] 라이브 **국내(Toss) 결제·환불·리뷰** 확인 (해외 LemonSqueezy 결제 ✅ 확인 완료)
-- [ ] **쿠폰/레퍼럴 라이브 확인**: 뉴스레터 환영 쿠폰 발급 → 체크아웃 사용, 레퍼럴 신규자 할인(정률/정액) + 추천인 보상 쿠폰 발급, 어드민 쿠폰 수동 발급
+- [ ] **쿠폰 시스템 라이브 확인**: ① 개인쿠폰 발급(상품한정 포함)→회원 드롭다운 노출·해당상품만 활성 ② 공개쿠폰→`/[locale]/coupons` 발급(claim)→사용, 미발급 시 코드 입력해도 거부 ③ 쿠폰 이름 노출·정지/삭제 ④ 1인당/전체 한도·사용기간 ⑤ 가입 환영쿠폰 ⑥ (켰다면) 위시리스트 정기쿠폰 cron ⑦ 레퍼럴 신규자 할인+추천인 보상
 - [ ] **포인트 정책 확인**: 가입 보너스 200P 지급, $5 미만 사용 차단, 어드민 적립률 변경 반영
 - [ ] **계산기↔인스타 force 실기기 확인**: 계산기 입력 후 인스타 앱 '마지막에서 한개 이전' 게시물에 숫자 노출
 - [ ] **공지 배너** X 닫힘 + **공유 팝업/인스타그램** 동작 확인
@@ -113,9 +107,9 @@
 
 ---
 
-## 📐 기획(확정) — 쿠폰 통합 + 프로모션 엔진 (미구현, 착수 대기)
+## 📐 쿠폰 통합 + 프로모션 엔진 — Phase 0~C3 구현·배포 완료 (잔여: 이벤트 일괄발급 · 프로모션 대시보드)
 
-> 목표: ① 첫 가입/기간한정 **자동 쿠폰**, ② **이벤트 일괄 발급**, ③ **프로모션 현황 대시보드**, ④ **할인코드↔쿠폰 통일**. 코드는 아직 안 짬 — 아래는 합의된 설계.
+> 목표: ① 가입/트리거 **자동 쿠폰**, ② **이벤트 일괄 발급**, ③ **프로모션 대시보드**, ④ **할인코드↔쿠폰 통일**. ①④ + 사용조건(기간·1인당·상품한정)·발급(claim)·정기쿠폰까지 **구현 완료**. 아래는 설계 + 진행 현황.
 
 ### 결정 사항
 1. 가입 환영쿠폰 기본값 **10% / 6개월**(어드민에서 가변)
@@ -138,17 +132,22 @@
 - ✅ 전체회원(`auth.users`) · 뉴스레터(`newsletter_subscribers`) · 과거구매자(`orders` distinct) · **위시리스트 제품별**(`wishlists`) · 직접입력 이메일
 - ❌ **장바구니 미결제** — 장바구니가 localStorage(`ml_cart`) 전용이라 서버 조회 불가. **회원 장바구니 서버 동기화** 선행 필요 → 별도 기능으로 보류
 
-### 작업 분해 (Phase별 독립 배포)
-- **Phase 0 — 쿠폰 통일** ✅ **구현(추가·폴백 방식, 037 적용 대기)**: `issued_coupons`에 `scope/max_uses/used_count/is_active` + `redeem_public_coupon` RPC + `discount_codes` 멱등 백필(`037`). `validate`는 통합쿠폰(공개+개인) 우선 → 레퍼럴 → 레거시 `discount_codes` **폴백** 순. 공개쿠폰을 `kind:"coupon"`으로 반환해 **체크아웃 클라이언트·`save-order` 무수정**. 어드민 `/admin/coupons`에 공개쿠폰 발급 폼 추가. **남은 cleanup(추후)**: 라이브 검증 후 `discount_codes`·`/admin/discounts` 폐기, validate 폴백 제거
-- **Phase 1 — 자동쿠폰 + 고객노출** ✅ **구현(새 테이블 없이)**: `lib/promotions.ts`(`grantSignupCoupon` — 가입 환영쿠폰 멱등 발급, `source='signup'` + 기존 `hasCouponFromSource` 재사용) · `account/points`·`account/coupons` 진입 시 보장 호출 · `GET /api/account/coupons`(소유 미사용·미만료 개인쿠폰) + 마이페이지 **"내 쿠폰" 탭**(i18n 7개국어) · `sendCouponEmail()`(발급 시 안내) · **가입쿠폰 enabled/percent/months 설정은 어드민 `/admin/coupons`(쿠폰 발급 메뉴)에 통합**(`SignupCouponCard`, 기본 10%/6개월, `site_settings`). ⚠️ promotions 규칙엔진 테이블은 불필요 → 원래 Phase 3(프로모션 CRUD+대시보드)로 이관
-- **체크아웃 보유쿠폰 드롭다운** ✅: 로그인 시 `/api/account/coupons`로 보유 쿠폰을 불러와 **드롭다운 선택→즉시 적용**. 사용 불가(최소주문 미달) 쿠폰도 보이되 **비활성화+사유 표시**. i18n `selectCoupon`·`couponMinOrderShort` 7개국어
-- **할인코드(discount_codes) 폐기** ✅ (#1 cleanup): validate 레거시 폴백·save-order `increment_discount_used`·`/admin/discounts`(페이지·API·네비) 전부 제거. 기능은 공개쿠폰으로 일원화(037 백필 완료). **선택적 `038_drop_discount_codes.sql`**(미사용 테이블·RPC drop, 미실행해도 무방)
-- **주문 가격 분해** ✅ (#4): 주문에 `subtotal_usd/discount_usd/shipping_usd/points_spent_usd` 기록(`save-order` 산출, toss `shippingUsd` 전달) + 주문 상세(`orders/[id]`)에 소계·할인·마일리지·배송·결제금액 분해 표시(7개국어 인라인). ⚠️ **`039_order_price_breakdown.sql`** 필요(미적용 시 신규주문 분해 미기록·상세는 항목합계 폴백)
-- **쿠폰 통합 관리 허브 C1** ✅ (#2-C1): `/admin/coupons` **분류 탭**(전체보기/개별/전체/신입환영/프로모션/정기) + 공개쿠폰 **사용기간(starts_at·종료일)** 입력. validate가 `starts_at` enforce(기간 전 무효). ⚠️ **`040_coupon_period.sql`** 필요.
-- **쿠폰 1인당 한도 C2a** ✅ (#2-C2a): `per_user_limit` + `coupon_redemptions`(사용이력) — save-order가 사용 시 이력 기록, validate가 1인당 한도 enforce(로그인 회원). 어드민 공개쿠폰 폼에 "1인당 사용 한도" 입력. ⚠️ **`041_coupon_per_user_limit.sql`** 필요.
-- **쿠폰 상품/카테고리 한정 C2b** ✅ (#2-C2b): `coupon_products`/`coupon_categories` 한정 → **해당 상품 소계에만 할인**(대상 없으면 사용 불가). 어드민 공개쿠폰 폼에 상품 체크리스트+카테고리 선택. **결제 서버측 할인 재계산**(`resolveOrderDiscountUsd` — lemon-checkout·toss-confirm이 클라이언트 `discountAmount` 불신, 쿠폰/레퍼럴 서버 재계산 → 정합성·보안 강화). `order-pricing.computeServerLineTotals`(상품별 라인합계). validate에 items 전달. 체크아웃 드롭다운: 대상 상품 없는 쿠폰 비활성(`couponNotApplicable`). **개인 쿠폰도 타게팅 지원**(발급 폼에 상품/카테고리 선택기 — 회원에게 발급 시 그 회원 "내 쿠폰" 드롭다운에 뜨고 대상 상품 담을 때만 활성). ⚠️ **`042_coupon_targeting.sql`** 필요. **남은 #2**: C3(트리거: 위시리스트 N일+ 먼저, 장바구니는 서버동기화 선행). 🔒 **비타게팅 쿠폰은 기존과 동일 동작**(회귀 차단)
-- **Phase 2 — 이벤트 일괄발급**: `POST /api/admin/coupons/bulk`(대상 5종·이메일 배치·상한·중복가드) + 어드민 UI
-- **Phase 3 — 프로모션 CRUD + 대시보드**: `/api/admin/promotions` + 관리 UI + 소스별 발급·사용·전환율 집계, 어드민 네비 메뉴 추가
+### 작업 분해 — 진행 현황
+
+**✅ 구현·배포 완료** (상세는 위 ✅ 구현 완료 섹션 + git 이력):
+- **Phase 0 쿠폰 통일** — `issued_coupons` scope(개인/공개) 통합, `discount_codes` 백필→폐기(#1), `redeem_public_coupon` RPC
+- **Phase 1 자동쿠폰** — 가입 환영쿠폰(`grantSignupCoupon`, 멱등) + 마이페이지 "내 쿠폰" 탭, 어드민 가입쿠폰 설정 카드
+- **C1 통합 관리 허브** — `/admin/coupons` 분류 탭(개별/전체/신입/프로모션/정기) + 사용기간(`starts_at`)
+- **C2a 1인당 한도** — `per_user_limit` + `coupon_redemptions` 이력
+- **C2b 상품/카테고리 한정** — 해당 상품 소계에만 할인, **결제 서버측 할인 재계산**(`resolveOrderDiscountUsd`, 클라 discountAmount 불신·보안 강화), 개인·공개 쿠폰 모두 타게팅
+- **C3 위시리스트 정기쿠폰** — N일+ 잔존 상품 → 그 상품 한정 쿠폰 자동발급(cron, 기본 OFF)
+- **부가** — 쿠폰 이름(명목)·어드민 삭제/정지 · 공개쿠폰 발급(claim) 전용 페이지(`/[locale]/coupons`) · 체크아웃 보유쿠폰 드롭다운(개인+발급받은 공개, 사용불가 비활성, 이름 표시) · #4 주문 가격분해
+- 🔒 **비타게팅 쿠폰은 기존과 동일 동작**(회귀 차단), 결제 경로 회귀 없음
+
+**🔜 남은 것**:
+- **Phase 2 — 이벤트 일괄발급**: `POST /api/admin/coupons/bulk`(대상 5종: 전체회원·뉴스레터·과거구매자·위시리스트·직접입력 · 이메일 배치·상한·중복가드) + 어드민 UI
+- **Phase 3 — 프로모션 대시보드**: 소스별 발급·사용·전환율 집계 (현재 분류 탭까지만)
+- **장바구니 잔존 트리거 쿠폰**: 회원 장바구니 **서버 동기화 선행** 필요(현재 `ml_cart` localStorage 전용)
 
 ### 영향 주의
 - **체크아웃 결제 경로**(`discounts/validate`, `save-order`, lemon/toss confirm·webhook의 코드 사용처리)가 통합 모델로 바뀜 → 회귀 테스트 필수
