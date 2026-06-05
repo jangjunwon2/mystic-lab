@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Sparkles, Mail, ArrowRight, Check } from "lucide-react";
 
 const EXPLORE_KEYS = ["products", "customOrder", "about", "contact"] as const;
-const LEGAL_KEYS = ["privacy", "terms", "refundPolicy", "shipping"] as const;
+const LEGAL_KEYS = ["privacy", "terms", "refundPolicy", "shipping", "legalNotice"] as const;
 
 const EXPLORE_PATHS: Record<string, string> = {
   products: "products",
@@ -20,6 +20,7 @@ const LEGAL_PATHS: Record<string, string> = {
   terms: "terms",
   refundPolicy: "refund-policy",
   shipping: "shipping",
+  legalNotice: "legal-notice",
 };
 
 export default function Footer() {
