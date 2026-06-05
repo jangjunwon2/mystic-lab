@@ -85,6 +85,48 @@
 
 ---
 
+## 🔬 전체 코드 정밀 점검 — 영역별 액션 항목 (2026-06-05)
+
+> 고위험 영역(인증·결제·입력·rate limit·에러노출) 중심 정밀 점검. **핵심 결론: 과거 progress가 "완료"로 적은 보안 수정 다수가 실제 코드에 없음(폴더 이동 중 유실 추정) → 재적용 필요.** 각 항목은 하나씩 해결 가능하도록 파일·라인·조치 방향 명시.
+
+### 🔴 A. 인증/인가 (우선)
+- [ ] **`discounts/use` 인증 없음** (`app/api/discounts/use/route.ts`) — `codeId`만 받아 `increment_discount_used` RPC 호출. 비로그인 누구나 임의 코드의 사용횟수를 소진 가능(할인코드 griefing/무력화). → **로그인 검증 + codeId 유효성/실제 사용 연계** 필요. (과거 "인증 추가" 표기됐으나 유실)
+- [ ] **어드민 판별 이원화 + 금지 패턴 사용** — 미들웨어(`proxy.ts:36-44`)와 `app/api/admin/custom-orders/[id]/reply/route.ts:14-21`가 `profiles.role==="admin"`로 체크. 프로젝트 규칙상 **`profiles.role` 기반 체크 금지(RLS 재귀 버그)**이며 나머지 어드민 API는 전부 `requireAdmin()`(ADMIN_EMAIL). → **이메일 기반(`user.email===ADMIN_EMAIL`)으로 통일**. (011 RLS 미적용 시 어드민이 페이지 접근 못 하는 불일치 위험)
+
+### 🟡 B. Rate limiting (대부분 유실)
+- [ ] 현재 `checkRateLimit` 적용은 **`admin/users/search`·`share/track`·`magic/verify-license`뿐**. 과거 "추가됨"이라던 아래에 rate limit 없음:
+  - `discounts/validate` (코드 브루트포스), `newsletter/subscribe` (스팸), `custom-order` (**제출마다 어드민 메일 발송 → 메일 폭탄**), `reviews` (스팸). → IP 기준 rate limit 재적용.
+
+### 🟡 C. 입력 검증
+- [ ] **`reviews` comment 길이 제한 없음** (`app/api/reviews/route.ts:60`) — 과거 "5000자 제한" 표기됐으나 코드에 없음. 거대 본문 저장 가능 → 길이 검증 추가.
+- [ ] **업로드 MIME을 client `file.type`로만 검사** (`app/api/admin/products/upload/route.ts:19-22`) — 스푸핑 가능. 저위험(전용 버킷·랜덤 파일명·어드민 전용)이나 매직바이트 검증 권장.
+
+### 🟡 D. 에러 메시지 노출 (광범위)
+- [ ] 사용자향 라우트가 DB `error.message`를 그대로 반환 → 스키마/내부 노출. 일반 메시지로 교체:
+  - `reviews:67`, `newsletter/subscribe:31`, `wishlist:30`, `account/profile:21`, `shipping-addresses:17,59`, `shipping-addresses/[id]:20,47`
+  - 어드민 라우트 다수도 `error.message` 반환(저위험이나 정리 권장): announcements/discounts/referrals/videos/orders/products/users 등
+
+### 🟡 E. 코드 ↔ 문서 드리프트 (메타)
+- [ ] 위 A~D + 뉴스레터 미리보기(`NewsletterClient.tsx:173` `dangerouslySetInnerHTML`)는 모두 과거 progress에 "완료"로 적혔으나 실제 코드엔 없음. → **"완료" 표기 신뢰 말고 코드 기준으로 재점검·재적용.**
+
+### 🟢 F. 결제 (이전 점검 유효 — 양호)
+- 멱등성 가드·재고 CAS·포인트 FIFO 만료·동시결제 hold 적용 확인. 운영자: `033_point_holds.sql` 실행 시 과할인 차단 완전 활성.
+- 외부 fetch는 전부 하드코딩 URL(LS/Toss/환율/CF) → SSRF 위험 낮음.
+
+### 🟡 G. 마술 앱
+- [ ] 계산기 인앱 매뉴얼(`MagicCalculator.tsx` `MANUAL_TEXTS`, 7개 언어)이 코드 동작과 불일치(마커=`.`버튼/피킹 1초/삭제 좌스와이프). 기획서는 정정 완료, 매뉴얼만 미반영.
+- [ ] 계산기 `eval()` 사용(`MagicCalculator.tsx:321`, 자기입력 한정 저위험) → 간이 파서 권장. 설정창 PIN 없음. NFC 매뉴얼 도메인 하드코딩.
+- [ ] 인스타 앱 **iOS 실기기 확인**(이번 배포): 아이콘·풀스크린·당김 검정·뒤로가기.
+
+### 🟢 H. 미구현 / Mock (의도된 상태)
+- PortOne 미구현(타입만, `lib/payments/toss.ts`·CLAUDE.md) — 건드리지 말 것.
+- Cloudflare Stream 키 없으면 mock 폴백(`lib/cloudflare/stream.ts:19,45,83`) → 해법영상 자체호스팅 불가, 현재 Vimeo 임베드 대체.
+
+### 🟢 I. 타입 안전성
+- [ ] `createAdminClient() as any` 패턴 광범위(런타임 정상, 타입만 우회). DB 타입(`Database`) 정합화로 점진 개선 여지.
+
+---
+
 ## 환경변수
 - **필수**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_EMAIL`, `NEXT_PUBLIC_SITE_URL`
 - **결제**: `LEMON_SQUEEZY_API_KEY`/`STORE_ID`/`VARIANT_ID`/`WEBHOOK_SECRET`, `NEXT_PUBLIC_TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`
