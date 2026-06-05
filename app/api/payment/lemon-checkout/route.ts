@@ -3,15 +3,15 @@ import { createLemonCheckout } from "@/lib/payments/lemon";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { holdPoints, pointsToUsd, getPointsBalance, MIN_REDEEM_POINTS } from "@/lib/points";
-import { computeServerSubtotalUsd } from "@/lib/payments/order-pricing";
+import { computeServerLineTotals } from "@/lib/payments/order-pricing";
+import { resolveOrderDiscountUsd } from "@/lib/coupons";
 import { randomUUID } from "crypto";
 import type { OrderPayload } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items, customerEmail, locale, discountAmount, discountCodeId, discountCode, referralCode, couponCode, shippingMethod, shippingAddress, pointsUsed } = body as OrderPayload & {
-      discountAmount?: number;
+    const { items, customerEmail, locale, discountCodeId, discountCode, referralCode, couponCode, shippingMethod, shippingAddress, pointsUsed } = body as OrderPayload & {
       discountCodeId?: string | null;
       discountCode?: string | null;
       referralCode?: string | null;
@@ -36,9 +36,15 @@ export async function POST(request: NextRequest) {
     const SHIPPING_COSTS: Record<string, number> = { standard: 0, express: 15 };
     const shippingUsd = shippingMethod ? (SHIPPING_COSTS[shippingMethod] ?? 0) : 0;
     // 클라이언트 단가를 신뢰하지 않고 DB 가격(+세트 할인)으로 서버 재계산
-    const subtotalUsd = await computeServerSubtotalUsd(items);
-    // 쿠폰 할인은 소계를 초과할 수 없음
-    const couponDiscount = Math.max(0, Math.min(discountAmount ?? 0, subtotalUsd));
+    const { subtotal: subtotalUsd, byProduct } = await computeServerLineTotals(items);
+    // 쿠폰/레퍼럴 할인도 서버에서 재계산(클라이언트 discountAmount 불신). 상품 한정 시 해당 상품 소계에만.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const adminForDiscount = (await createAdminClient()) as any;
+    const recomputedDiscount = await resolveOrderDiscountUsd(adminForDiscount, {
+      couponCode, referralCode, userId: authUserId, email: customerEmail,
+      subtotalUsd, lineTotalsByProduct: byProduct,
+    });
+    const couponDiscount = Math.max(0, Math.min(recomputedDiscount, subtotalUsd));
 
     // 마일리지 사용 — 로그인 회원의 가용 잔액(잔액 − 활성 hold) 내에서 원자적 예약(hold).
     // 예약량만큼만 할인에 반영 → 동시 결제 시 같은 포인트로 이중 할인되는 race 차단.

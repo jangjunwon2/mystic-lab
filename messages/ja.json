@@ -136,6 +136,7 @@
     "couponLabel": "割引コード（任意）",
     "selectCoupon": "マイクーポンから選択",
     "couponMinOrderShort": "最低注文",
+    "couponNotApplicable": "対象商品なし",
     "mileageLabel": "ポイント利用（任意）",
     "balanceLabel": "保有",
     "useAll": "全額",

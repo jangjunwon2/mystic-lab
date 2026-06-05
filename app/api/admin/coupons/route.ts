@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
     startsAt?: string | null;
     expiresAt?: string | null;
     expiresMonths?: number | null;
+    productIds?: string[];
+    categories?: string[];
   };
 
   const type = body.type === "fixed" ? "fixed" : "percent";
@@ -62,6 +64,8 @@ export async function POST(request: NextRequest) {
       minOrderUsd: body.minOrderUsd ?? 0,
       startsAt: body.startsAt || null,
       expiresAt: body.expiresAt || null,
+      productIds: Array.isArray(body.productIds) ? body.productIds : [],
+      categories: Array.isArray(body.categories) ? body.categories : [],
     });
     if (!code) return NextResponse.json({ error: "발급에 실패했습니다. (코드 중복일 수 있습니다)" }, { status: 500 });
     return NextResponse.json({ ok: true, code }, { status: 201 });

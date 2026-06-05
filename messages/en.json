@@ -136,6 +136,7 @@
     "couponLabel": "Discount code (optional)",
     "selectCoupon": "Select from my coupons",
     "couponMinOrderShort": "Min order",
+    "couponNotApplicable": "Not eligible",
     "mileageLabel": "Use points (optional)",
     "balanceLabel": "Balance",
     "useAll": "All",

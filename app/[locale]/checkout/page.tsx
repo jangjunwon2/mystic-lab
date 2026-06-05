@@ -80,6 +80,7 @@ interface MyCoupon {
   value: number;
   min_order_usd: number;
   expires_at: string | null;
+  product_ids: string[] | null; // 상품 한정 시 적용 가능 product_id 목록 (null = 전체)
 }
 
 interface Props {
@@ -278,7 +279,11 @@ export default function CheckoutPage({ params }: Props) {
       const res = await fetch("/api/discounts/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, totalUsd: subtotalUsd }),
+        body: JSON.stringify({
+          code,
+          totalUsd: subtotalUsd,
+          items: items.map((i) => ({ id: i.id, price_usd: i.price_usd, quantity: i.quantity })),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -541,12 +546,14 @@ export default function CheckoutPage({ params }: Props) {
                       >
                         <option value="">{t("selectCoupon")}</option>
                         {myCoupons.map((c) => {
-                          // 사용 불가(최소 주문액 미달) 쿠폰도 보이되 비활성화(사유 표시).
-                          const usable = subtotalUsd >= (c.min_order_usd ?? 0);
+                          // 사용 불가 쿠폰도 보이되 비활성화(사유 표시): 최소주문 미달 / 대상 상품 없음.
+                          const minOk = subtotalUsd >= (c.min_order_usd ?? 0);
+                          const targetOk = c.product_ids == null || c.product_ids.some((id) => items.some((i) => i.id === id));
+                          const usable = minOk && targetOk;
+                          const reason = !minOk ? ` · ${t("couponMinOrderShort")} $${c.min_order_usd}` : !targetOk ? ` · ${t("couponNotApplicable")}` : "";
                           return (
                             <option key={c.id} value={c.code} disabled={!usable}>
-                              {c.type === "fixed" ? `$${c.value}` : `${c.value}%`} OFF · {c.code}
-                              {!usable ? ` · ${t("couponMinOrderShort")} $${c.min_order_usd}` : ""}
+                              {c.type === "fixed" ? `$${c.value}` : `${c.value}%`} OFF · {c.code}{reason}
                             </option>
                           );
                         })}

@@ -136,6 +136,7 @@
     "couponLabel": "优惠码（可选）",
     "selectCoupon": "从我的优惠券中选择",
     "couponMinOrderShort": "最低订单",
+    "couponNotApplicable": "无适用商品",
     "mileageLabel": "使用积分（可选）",
     "balanceLabel": "余额",
     "useAll": "全部",

@@ -28,5 +28,40 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  return NextResponse.json({ coupons: data ?? [] });
+  const coupons = (data ?? []) as { id: string }[];
+
+  // 상품/카테고리 한정 대상 → 적용 가능 product_ids 산출(드롭다운 활성/비활성용). 한정 없으면 null(전체).
+  const productIdsByCoupon = new Map<string, Set<string>>();
+  if (coupons.length > 0) {
+    const ids = coupons.map((c) => c.id);
+    const [cp, cc] = await Promise.all([
+      admin.from("coupon_products").select("coupon_id, product_id").in("coupon_id", ids),
+      admin.from("coupon_categories").select("coupon_id, category").in("coupon_id", ids),
+    ]);
+    for (const r of (cp.data ?? []) as { coupon_id: string; product_id: string }[]) {
+      if (!productIdsByCoupon.has(r.coupon_id)) productIdsByCoupon.set(r.coupon_id, new Set());
+      productIdsByCoupon.get(r.coupon_id)!.add(r.product_id);
+    }
+    const catRows = (cc.data ?? []) as { coupon_id: string; category: string }[];
+    if (catRows.length > 0) {
+      const cats = [...new Set(catRows.map((r) => r.category))];
+      const { data: prods } = await admin.from("products").select("id, category").in("category", cats);
+      const byCategory = new Map<string, string[]>();
+      for (const p of (prods ?? []) as { id: string; category: string }[]) {
+        if (!byCategory.has(p.category)) byCategory.set(p.category, []);
+        byCategory.get(p.category)!.push(p.id);
+      }
+      for (const r of catRows) {
+        if (!productIdsByCoupon.has(r.coupon_id)) productIdsByCoupon.set(r.coupon_id, new Set());
+        for (const pid of byCategory.get(r.category) ?? []) productIdsByCoupon.get(r.coupon_id)!.add(pid);
+      }
+    }
+  }
+
+  const result = coupons.map((c) => ({
+    ...c,
+    product_ids: productIdsByCoupon.has(c.id) ? [...productIdsByCoupon.get(c.id)!] : null,
+  }));
+
+  return NextResponse.json({ coupons: result });
 }

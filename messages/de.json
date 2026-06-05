@@ -136,6 +136,7 @@
     "couponLabel": "Rabattcode (optional)",
     "selectCoupon": "Aus meinen Gutscheinen wählen",
     "couponMinOrderShort": "Mindestbest.",
+    "couponNotApplicable": "Nicht anwendbar",
     "mileageLabel": "Punkte verwenden (optional)",
     "balanceLabel": "Guthaben",
     "useAll": "Alle",

@@ -4,13 +4,14 @@ import { saveOrderToSupabase } from "@/lib/payments/save-order";
 import { sendOrderConfirmation } from "@/lib/resend";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { holdPoints, releaseHold, pointsToUsd, getPointsBalance, MIN_REDEEM_POINTS } from "@/lib/points";
-import { computeServerSubtotalUsd } from "@/lib/payments/order-pricing";
+import { computeServerLineTotals } from "@/lib/payments/order-pricing";
+import { resolveOrderDiscountUsd } from "@/lib/coupons";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
 import type { CartItem } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const { paymentKey, orderId, amount, items, customerEmail, totalUsd, shippingAddress, pointsUsed, couponDiscount, shippingUsd, referralCode, discountCode, couponCode } =
+    const { paymentKey, orderId, amount, items, customerEmail, totalUsd, shippingAddress, pointsUsed, shippingUsd, referralCode, discountCode, couponCode } =
       await request.json();
 
     if (!paymentKey || !orderId || !amount) {
@@ -49,8 +50,15 @@ export async function POST(request: NextRequest) {
 
     // 서버 가격 검증 — DB 가격(+세트) 기준 기대 청구액보다 현저히 적게 청구되면 거부 (확정 전)
     if (resolvedItemsPre.length > 0) {
-      const serverSubtotal = await computeServerSubtotalUsd(resolvedItemsPre);
-      const coupon = Math.max(0, Math.min(Number(couponDiscount) || 0, serverSubtotal));
+      const { subtotal: serverSubtotal, byProduct } = await computeServerLineTotals(resolvedItemsPre);
+      // 쿠폰/레퍼럴 할인 서버 재계산(클라이언트 값 불신). 상품 한정 시 해당 상품 소계에만.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const adminForDiscount = (await createAdminClient()) as any;
+      const recomputed = await resolveOrderDiscountUsd(adminForDiscount, {
+        couponCode, referralCode, userId: authUserId, email: customerEmail,
+        subtotalUsd: serverSubtotal, lineTotalsByProduct: byProduct,
+      });
+      const coupon = Math.max(0, Math.min(recomputed, serverSubtotal));
       const ship = Math.max(0, Number(shippingUsd) || 0);
       const expectedUsd = Math.max(0, serverSubtotal - coupon - pointsToUsd(pointsSpent) + ship);
       const krwRate = await getUsdToKrw();

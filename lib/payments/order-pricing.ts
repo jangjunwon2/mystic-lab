@@ -2,10 +2,16 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { loadAddonOptions, addonUnitPrice } from "./option-pricing";
 import type { CartItem } from "./types";
 
-// 서버에서 DB 가격(+세트 할인)으로 소계를 재계산한다. 클라이언트가 보낸 단가는 신뢰하지 않는다.
-// 알 수 없는 상품 ID는 0으로 처리(주문에서 제외 효과).
-export async function computeServerSubtotalUsd(items: CartItem[]): Promise<number> {
-  if (!items?.length) return 0;
+export interface ServerLineTotals {
+  subtotal: number;                    // 전체 소계(반올림)
+  byProduct: Map<string, number>;      // product_id → 라인 합계(같은 상품 여러 줄 합산)
+}
+
+// 서버에서 DB 가격(+세트 할인)으로 라인별 합계를 재계산한다. 클라이언트가 보낸 단가는 신뢰하지 않는다.
+// 알 수 없는 상품 ID는 0으로 처리(주문에서 제외 효과). 쿠폰 상품/카테고리 한정 할인 산출에 사용.
+export async function computeServerLineTotals(items: CartItem[]): Promise<ServerLineTotals> {
+  const byProduct = new Map<string, number>();
+  if (!items?.length) return { subtotal: 0, byProduct };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = (await createAdminClient()) as any;
@@ -49,7 +55,15 @@ export async function computeServerSubtotalUsd(items: CartItem[]): Promise<numbe
       unit = addonUnitPrice(dbPrice, opt);
     }
     const qty = Math.max(1, Math.trunc(it.quantity));
-    subtotal += unit * qty;
+    const line = unit * qty;
+    subtotal += line;
+    byProduct.set(it.id, (byProduct.get(it.id) ?? 0) + line);
   }
-  return Math.round(subtotal * 100) / 100;
+  for (const [k, v] of byProduct) byProduct.set(k, Math.round(v * 100) / 100);
+  return { subtotal: Math.round(subtotal * 100) / 100, byProduct };
+}
+
+// 전체 소계만 필요할 때(기존 호출부 호환).
+export async function computeServerSubtotalUsd(items: CartItem[]): Promise<number> {
+  return (await computeServerLineTotals(items)).subtotal;
 }

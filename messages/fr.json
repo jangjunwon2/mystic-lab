@@ -136,6 +136,7 @@
     "couponLabel": "Code de réduction (facultatif)",
     "selectCoupon": "Choisir parmi mes coupons",
     "couponMinOrderShort": "Cmde min.",
+    "couponNotApplicable": "Non éligible",
     "mileageLabel": "Utiliser des points (facultatif)",
     "balanceLabel": "Solde",
     "useAll": "Tout",

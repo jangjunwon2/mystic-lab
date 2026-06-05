@@ -39,17 +39,29 @@ const CATEGORY_TABS: { key: CouponCategory; label: string }[] = [
   { key: "trigger", label: "정기" },
 ];
 
+export interface ProductOption {
+  id: string;
+  name: string;
+  category: string | null;
+}
+
 interface Props {
   initialCoupons: IssuedCoupon[];
+  products: ProductOption[];
+  categories: string[];
 }
 
 const inputCls = "w-full px-3 py-2 rounded-lg text-sm outline-none border focus:border-purple-500";
 const inputStyle = { background: "#13131F", borderColor: "#2D2D4E", color: "#F0E6FF" } as const;
 const labelCls = "block text-xs font-medium mb-1.5 uppercase tracking-wider";
 
-export default function CouponsAdminClient({ initialCoupons }: Props) {
+export default function CouponsAdminClient({ initialCoupons, products, categories }: Props) {
   const [coupons, setCoupons] = useState(initialCoupons);
   const [tab, setTab] = useState<CouponCategory>("all");
+  // 공개쿠폰 상품/카테고리 한정 선택
+  const [targetProductIds, setTargetProductIds] = useState<string[]>([]);
+  const [targetCategories, setTargetCategories] = useState<string[]>([]);
+  const toggle = (arr: string[], v: string) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
   // 개인 쿠폰 폼
   const [pCreating, setPCreating] = useState(false);
@@ -108,6 +120,8 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
         minOrderUsd: parseFloat(bForm.minOrderUsd) || 0,
         startsAt: bForm.startsAt ? new Date(bForm.startsAt).toISOString() : null,
         expiresAt: bForm.expiresAt ? new Date(bForm.expiresAt).toISOString() : null,
+        productIds: targetProductIds,
+        categories: targetCategories,
       }),
     });
     const json = await res.json();
@@ -116,6 +130,7 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
     setBIssued(json.code);
     refresh();
     setBForm({ ...bForm, code: "" });
+    setTargetProductIds([]); setTargetCategories([]);
   }
 
   const fmt = (iso: string) => { try { return new Date(iso).toLocaleDateString("ko"); } catch { return iso.slice(0, 10); } };
@@ -217,6 +232,40 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
                 className={inputCls} style={inputStyle} />
             </div>
           </div>
+
+          {/* 상품/카테고리 한정 — 선택 시 해당 상품 소계에만 할인. 미선택=전체 적용 */}
+          <div className="mb-4">
+            <label className={labelCls} style={{ color: "#9CA3AF" }}>적용 한정 (선택 — 미선택 시 전체 상품)</label>
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {categories.map((cat) => {
+                  const on = targetCategories.includes(cat);
+                  return (
+                    <button key={cat} type="button" onClick={() => setTargetCategories((a) => toggle(a, cat))}
+                      className="px-2.5 py-1 rounded-lg text-xs transition-colors"
+                      style={{ background: on ? "#7C3AED" : "#13131F", color: on ? "#fff" : "#9CA3AF", border: `1px solid ${on ? "#7C3AED" : "#2D2D4E"}` }}>
+                      카테고리: {cat}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div className="max-h-32 overflow-y-auto rounded-lg border p-2 space-y-1" style={{ background: "#13131F", borderColor: "#2D2D4E" }}>
+              {products.length === 0 ? (
+                <p className="text-xs px-1" style={{ color: "#6B7280" }}>상품이 없습니다.</p>
+              ) : products.map((p) => {
+                const on = targetProductIds.includes(p.id);
+                return (
+                  <label key={p.id} className="flex items-center gap-2 text-xs cursor-pointer px-1 py-0.5" style={{ color: on ? "#F0E6FF" : "#9CA3AF" }}>
+                    <input type="checkbox" checked={on} onChange={() => setTargetProductIds((a) => toggle(a, p.id))} />
+                    <span className="truncate">{p.name}</span>
+                    {p.category && <span style={{ color: "#6B7280" }}>· {p.category}</span>}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
           {bError && <p className="text-sm mb-3" style={{ color: "#EF4444" }}>{bError}</p>}
           {bIssued && <p className="text-sm mb-3" style={{ color: "#10B981" }}>발급 완료: <span className="font-mono font-bold">{bIssued}</span></p>}
           <button onClick={createPublic} disabled={bCreating} className="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
