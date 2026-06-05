@@ -60,17 +60,32 @@ export async function GET() {
     publicRows = publicRows.filter((c) => c.per_user_limit == null || (usedByCode.get(c.code) ?? 0) < c.per_user_limit);
   }
 
-  // 출력 컬럼만 남겨 개인 쿠폰과 합친다(중복 코드는 없음).
-  const allowedIds = new Set(publicRows.map((c) => c.id));
-  const publicData = ((publicRaw ?? []) as Record<string, unknown>[]).filter((c) => allowedIds.has(c.id as string))
-    .map((c) => ({ id: c.id, code: c.code, name: c.name, type: c.type, value: c.value, source: c.source, min_order_usd: c.min_order_usd, expires_at: c.expires_at, created_at: c.created_at }));
+  // 발급(claim) 기록 — 공개 쿠폰은 '발급받은 것'만 드롭다운에 노출, 미발급은 '발급 가능' 목록으로 분리.
+  const eligibleIds = publicRows.map((c) => c.id);
+  const claimedIds = new Set<string>();
+  if (eligibleIds.length > 0) {
+    const { data: claims } = await admin
+      .from("coupon_claims")
+      .select("coupon_id")
+      .eq("user_id", user.id)
+      .in("coupon_id", eligibleIds);
+    for (const r of (claims ?? []) as { coupon_id: string }[]) claimedIds.add(r.coupon_id);
+  }
 
-  const coupons = ([...(personalData ?? []), ...publicData]) as { id: string }[];
+  const toOut = (c: Record<string, unknown>) => ({ id: c.id, code: c.code, name: c.name, type: c.type, value: c.value, source: c.source, min_order_usd: c.min_order_usd, expires_at: c.expires_at, created_at: c.created_at });
+  const eligibleSet = new Set(eligibleIds);
+  const publicAll = (publicRaw ?? []) as Record<string, unknown>[];
+  const claimedPublic = publicAll.filter((c) => claimedIds.has(c.id as string)).map(toOut);
+  const claimablePublic = publicAll.filter((c) => eligibleSet.has(c.id as string) && !claimedIds.has(c.id as string)).map(toOut);
 
-  // 상품/카테고리 한정 대상 → 적용 가능 product_ids 산출(드롭다운 활성/비활성용). 한정 없으면 null(전체).
+  // 드롭다운용 = 개인 쿠폰 + 발급받은 공개 쿠폰
+  const coupons = ([...(personalData ?? []), ...claimedPublic]) as { id: string }[];
+
+  // 상품/카테고리 한정 대상 → 적용 가능 product_ids 산출(드롭다운/발급목록 표시용). coupons + claimable 모두.
+  const allRows = ([...coupons, ...claimablePublic]) as { id: string }[];
   const productIdsByCoupon = new Map<string, Set<string>>();
-  if (coupons.length > 0) {
-    const ids = coupons.map((c) => c.id);
+  if (allRows.length > 0) {
+    const ids = [...new Set(allRows.map((c) => c.id))];
     const [cp, cc] = await Promise.all([
       admin.from("coupon_products").select("coupon_id, product_id").in("coupon_id", ids),
       admin.from("coupon_categories").select("coupon_id, category").in("coupon_id", ids),
@@ -95,10 +110,11 @@ export async function GET() {
     }
   }
 
-  const result = coupons.map((c) => ({
-    ...c,
-    product_ids: productIdsByCoupon.has(c.id) ? [...productIdsByCoupon.get(c.id)!] : null,
-  }));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const withTargets = (c: any) => ({ ...c, product_ids: productIdsByCoupon.has(c.id) ? [...productIdsByCoupon.get(c.id)!] : null });
 
-  return NextResponse.json({ coupons: result });
+  return NextResponse.json({
+    coupons: coupons.map(withTargets),
+    claimable: claimablePublic.map(withTargets),
+  });
 }

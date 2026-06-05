@@ -120,6 +120,15 @@ export async function findUsableCoupon(admin: any, opts: { code: string; userId?
   }
 
   if ((data.scope ?? "personal") === "public") {
+    // 공개 쿠폰은 회원이 직접 발급(claim)받아야 사용 가능 — 발급 기록 필수(로그인 필요).
+    if (!opts.userId) return null;
+    const { data: claim } = await admin
+      .from("coupon_claims")
+      .select("coupon_id")
+      .eq("coupon_id", data.id)
+      .eq("user_id", opts.userId)
+      .maybeSingle();
+    if (!claim) return null; // 미발급
     if (data.max_uses != null && (data.used_count ?? 0) >= data.max_uses) return null;
   } else {
     if (data.is_used) return null;

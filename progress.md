@@ -20,7 +20,8 @@
 ### 스토어 (고객)
 - 홈 · 카테고리 쇼케이스(상품 등록된 카테고리만 동적) · 상품목록 필터/정렬 (7개 언어)
 - 상품 상세: 리뷰, 데모영상(Cloudflare/YouTube), 재고, **구매 옵션=함께구매 애드온(다중선택, 할인율/정액)**, **공유(버튼→팝업에서 앱 선택·인스타그램 포함·채널 트래킹)**, 위시리스트, **구매자 커뮤니티**(개선제안/연출공유/공지)
-- 장바구니(**부분 선택 결제**) · 즉시구매 · **할인·레퍼럴·개인 쿠폰**(공용 입력창) · **마일리지 사용/적립** · **체크아웃 쿠폰 드롭다운**(보유 개인쿠폰 + 적용가능 활성 공개쿠폰, 최소주문·상품한정 미충족분은 비활성, **코드 대신 쿠폰 이름 표시**)
+- 장바구니(**부분 선택 결제**) · 즉시구매 · **할인·레퍼럴·개인 쿠폰**(공용 입력창) · **마일리지 사용/적립** · **체크아웃 쿠폰 드롭다운**(보유 개인쿠폰 + **발급받은** 공개쿠폰, 최소주문·상품한정 미충족분은 비활성, **코드 대신 쿠폰 이름 표시**)
+- **공개 쿠폰 발급(claim) 모델** ✅: 공개 쿠폰은 보이되 **고객이 마이페이지 "내 쿠폰" 탭에서 직접 발급(claim)받아야 사용 가능**(`coupon_claims` 테이블, 회원당 1회). validate가 공개쿠폰은 claim 기록 필수로 검증(코드만 입력해선 사용 불가). `/api/account/coupons`는 발급받은 공개쿠폰(드롭다운) + 발급가능 공개쿠폰(claimable) 분리 반환, `POST /api/account/coupons/claim`. 마이페이지에 **발급 가능한 쿠폰 섹션 + 발급받기 버튼**(7개국어). ⚠️ **`044_coupon_claims.sql`** 필요
 - **위시리스트 정기 쿠폰 C3** ✅ (#2-C3): 위시리스트 **N일+ 잔존 상품** → 해당 회원에게 **그 상품 한정 개인 쿠폰** 자동 발급(`source='trigger'`, 멱등 — 같은 회원·상품 활성 쿠폰 있으면 skip) + 이메일. 일 1회 cron `/api/cron/wishlist-coupons`(CRON_SECRET, `vercel.json` 스케줄 `0 19 * * *`). 설정 `/admin/coupons`의 **위시리스트 정기 쿠폰 카드**(enabled/일수/할인율/유효개월/이름, `site_settings`, **기본 OFF**). 새 마이그레이션·테이블 불필요. ⚠️ 장바구니 트리거는 서버 장바구니 동기화 선행(미구현)
 - **쿠폰 이름·삭제/정지** ✅: 쿠폰에 `name`(명목, 어드민 입력) — 고객 드롭다운·적용칩·요약에 코드 대신 이름. 어드민 `/admin/coupons` 목록에서 **임의 삭제**(`DELETE`, FK CASCADE) + **정지/재개**(`is_active` 토글, `PATCH`); 정지 쿠폰은 validate·드롭다운에서 제외(개인·공개 공통). ⚠️ **`043_coupon_name.sql`** 필요
 - 결제: **LemonSqueezy**(해외 USD) / **Toss**(국내 KRW) — 서버 가격검증·멱등성·재고 CAS·실시간 환율
@@ -88,6 +89,7 @@
 - [ ] **Supabase 마이그레이션 `041_coupon_per_user_limit.sql`** — 쿠폰 1인당 사용 한도(per_user_limit) + 사용이력 테이블(coupon_redemptions)
 - [ ] **Supabase 마이그레이션 `042_coupon_targeting.sql`** — 쿠폰 상품/카테고리 한정 조인테이블(coupon_products·coupon_categories)
 - [ ] **Supabase 마이그레이션 `043_coupon_name.sql`** — 쿠폰 이름(명목) 컬럼. 고객 드롭다운에 코드 대신 이름 노출
+- [ ] **Supabase 마이그레이션 `044_coupon_claims.sql`** — 공개 쿠폰 발급(claim) 테이블. 공개 쿠폰은 발급받아야 사용 가능
 - [ ] **Supabase 마이그레이션 `037_unify_coupons.sql`** — 쿠폰 통합 Phase 0. `issued_coupons`에 공개쿠폰(scope/max_uses/used_count) 추가 + `discount_codes` 백필 + `redeem_public_coupon` RPC. ⚠️ 미적용 시 어드민 공개쿠폰 발급/검증 동작 안 함(레거시 `discount_codes`는 폴백으로 계속 동작). **후방호환**: `discount_codes`·`/admin/discounts`는 보존(추후 cleanup에서 폐기)
 - [ ] **법적고지 `/legal-notice` 자리표시자 기입** — 대표자명·사업장 주소·연락처·통신판매업 신고번호(+EU 판매 시 VAT). ⚠️ 모든 법률 문구는 템플릿이며 **변호사/법률 서비스 검토 후** 적용 권장
 - [ ] **상품 등록 + 인증코드 발급**: slug `magic-calculator`, `fake-instagram` (없으면 `/calc`·`/insta` 게이트·자동발급 동작 안 함)
