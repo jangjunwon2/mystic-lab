@@ -8,7 +8,10 @@ import { dirname, join } from "path";
 const DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "images", "magic");
 const SRC = join(DIR, "insta-source.png");
 
-const GLYPH_SCALE = 0.64; // 아이콘 폭 대비 카메라 글리프 크기(주변 여백 확보, 레퍼런스 톤)
+const GLYPH_SCALE = 0.66; // 아이콘 폭 대비 카메라 글리프 크기(주변 여백 확보, 레퍼런스 톤)
+// 다크 배경에서 글리프가 어두워 보이는 것 보정 — 원본 그라디언트를 더 밝고 선명하게
+const GLYPH_BRIGHTNESS = 1.22;
+const GLYPH_SATURATION = 1.25;
 
 // 어두운 배경 SVG. inset 0 = full-bleed 정사각형(maskable/apple), >0 = 라운드 스퀴클(any, 투명 모서리)
 function darkBg(size, inset) {
@@ -27,7 +30,9 @@ function darkBg(size, inset) {
 async function make(size, file, inset, flattenDark = false) {
   const bg = await sharp(darkBg(size, inset)).png().toBuffer();
   const g = Math.round(size * GLYPH_SCALE);
-  const glyph = await sharp(SRC).resize(g, g).png().toBuffer();
+  const glyph = await sharp(SRC).resize(g, g)
+    .modulate({ brightness: GLYPH_BRIGHTNESS, saturation: GLYPH_SATURATION })
+    .png().toBuffer();
   const off = Math.round((size - g) / 2);
   let img = sharp(bg).composite([{ input: glyph, left: off, top: off }]);
   if (flattenDark) img = img.flatten({ background: "#000000" });
