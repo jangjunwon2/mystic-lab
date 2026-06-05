@@ -60,6 +60,8 @@
 - 프론트 다국어화 사실상 완료(어드민·언어선택 옵션명 제외)
 - PWA: Android 서비스워커 / iOS는 SW 미사용(성능) · 실제 PNG 아이콘
 - **줄바꿈 타이포그래피**: 제목 `text-wrap: balance`, 본문 `pretty`, 한국어/CJK `word-break: keep-all`(어색한 줄바꿈 개선)
+- **보안 헤더**: HSTS·X-Content-Type-Options·X-Frame-Options·Referrer-Policy·Permissions-Policy 강제 + **CSP는 Report-Only**(라이브 콘솔 위반 0 확인 후 강제 승격 예정)
+- **테스트**: vitest 단위 테스트 도입(`npm test`) — 포인트 적립·옵션 할인가·인스타 표시 로직(21 케이스). safeEval 추출 테스트는 후속
 
 ---
 
