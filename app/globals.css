@@ -43,6 +43,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* 줄바꿈 타이포그래피 — 기기 폭에 따라 어색하게 끊기는 현상 개선.
+   · text-wrap: balance  → 제목 줄들을 균형 있게 분배(예쁜 헤드라인 래핑)
+   · text-wrap: pretty    → 본문 마지막 줄 외톨이(orphan) 방지
+   · word-break: keep-all → 한국어/CJK를 단어(어절) 단위로만 줄바꿈(글자 중간 끊김 방지)
+   · overflow-wrap        → 너무 긴 영문/URL은 필요 시 끊어 넘침 방지 */
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+p, li, blockquote, figcaption {
+  text-wrap: pretty;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 /* Glow effects */
 .glow-purple {
   box-shadow: 0 0 20px rgba(124, 58, 237, 0.4), 0 0 40px rgba(124, 58, 237, 0.2);
