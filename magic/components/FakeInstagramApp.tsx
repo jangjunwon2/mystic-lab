@@ -16,16 +16,17 @@ interface Props {
 interface UiStrings {
   posts: string; followers: string; following: string; viewAll: (n: number) => string; edit: string; follow: string; message: string;
   yourStory: string; reels: string; messages: string; active: string; messagePlaceholder: string; share: string; addBanner: string;
+  likedBy: (user: string, n: string) => string; youPrefix: string; noPosts: string; noReels: string; noMessages: string;
 }
 
 const UI: Record<string, UiStrings> = {
-  ko: { posts: "게시물", followers: "팔로워", following: "팔로잉", viewAll: (n) => `댓글 ${n}개 모두 보기`, edit: "프로필 편집", follow: "팔로우", message: "메시지", yourStory: "내 스토리", reels: "릴스", messages: "메시지", active: "활동 중", messagePlaceholder: "메시지 보내기...", share: "프로필 공유", addBanner: "배너 추가" },
-  en: { posts: "posts", followers: "followers", following: "following", viewAll: (n) => `View all ${n} comments`, edit: "Edit profile", follow: "Follow", message: "Message", yourStory: "Your story", reels: "Reels", messages: "Messages", active: "Active now", messagePlaceholder: "Message...", share: "Share profile", addBanner: "Add banner" },
-  ja: { posts: "投稿", followers: "フォロワー", following: "フォロー中", viewAll: (n) => `コメント${n}件をすべて見る`, edit: "プロフィールを編集", follow: "フォロー", message: "メッセージ", yourStory: "あなたのストーリー", reels: "リール", messages: "メッセージ", active: "アクティブ", messagePlaceholder: "メッセージ...", share: "プロフィールをシェア", addBanner: "バナーを追加" },
-  "zh-CN": { posts: "帖子", followers: "粉丝", following: "关注", viewAll: (n) => `查看全部 ${n} 条评论`, edit: "编辑主页", follow: "关注", message: "私信", yourStory: "你的快拍", reels: "Reels", messages: "私信", active: "在线", messagePlaceholder: "发消息...", share: "分享主页", addBanner: "添加横幅" },
-  es: { posts: "publicaciones", followers: "seguidores", following: "seguidos", viewAll: (n) => `Ver los ${n} comentarios`, edit: "Editar perfil", follow: "Seguir", message: "Mensaje", yourStory: "Tu historia", reels: "Reels", messages: "Mensajes", active: "Activo(a) ahora", messagePlaceholder: "Mensaje...", share: "Compartir perfil", addBanner: "Añadir banner" },
-  fr: { posts: "publications", followers: "abonnés", following: "abonnements", viewAll: (n) => `Voir les ${n} commentaires`, edit: "Modifier le profil", follow: "Suivre", message: "Message", yourStory: "Votre story", reels: "Reels", messages: "Messages", active: "Actif", messagePlaceholder: "Message...", share: "Partager le profil", addBanner: "Ajouter une bannière" },
-  de: { posts: "Beiträge", followers: "Follower", following: "Gefolgt", viewAll: (n) => `Alle ${n} Kommentare ansehen`, edit: "Profil bearbeiten", follow: "Folgen", message: "Nachricht", yourStory: "Deine Story", reels: "Reels", messages: "Nachrichten", active: "Aktiv", messagePlaceholder: "Nachricht...", share: "Profil teilen", addBanner: "Banner hinzufügen" },
+  ko: { posts: "게시물", followers: "팔로워", following: "팔로잉", viewAll: (n) => `댓글 ${n}개 모두 보기`, edit: "프로필 편집", follow: "팔로우", message: "메시지", yourStory: "내 스토리", reels: "릴스", messages: "메시지", active: "활동 중", messagePlaceholder: "메시지 보내기...", share: "프로필 공유", addBanner: "배너 추가", likedBy: (u, n) => `${u}님 외 ${n}명이 좋아합니다`, youPrefix: "나: ", noPosts: "게시물이 없습니다", noReels: "릴스가 없습니다", noMessages: "메시지가 없습니다" },
+  en: { posts: "posts", followers: "followers", following: "following", viewAll: (n) => `View all ${n} comments`, edit: "Edit profile", follow: "Follow", message: "Message", yourStory: "Your story", reels: "Reels", messages: "Messages", active: "Active now", messagePlaceholder: "Message...", share: "Share profile", addBanner: "Add banner", likedBy: (u, n) => `Liked by ${u} and ${n} others`, youPrefix: "You: ", noPosts: "No posts yet", noReels: "No reels yet", noMessages: "No messages yet" },
+  ja: { posts: "投稿", followers: "フォロワー", following: "フォロー中", viewAll: (n) => `コメント${n}件をすべて見る`, edit: "プロフィールを編集", follow: "フォロー", message: "メッセージ", yourStory: "あなたのストーリー", reels: "リール", messages: "メッセージ", active: "アクティブ", messagePlaceholder: "メッセージ...", share: "プロフィールをシェア", addBanner: "バナーを追加", likedBy: (u, n) => `${u}、他${n}人が「いいね！」しました`, youPrefix: "あなた: ", noPosts: "投稿がありません", noReels: "リールがありません", noMessages: "メッセージがありません" },
+  "zh-CN": { posts: "帖子", followers: "粉丝", following: "关注", viewAll: (n) => `查看全部 ${n} 条评论`, edit: "编辑主页", follow: "关注", message: "私信", yourStory: "你的快拍", reels: "Reels", messages: "私信", active: "在线", messagePlaceholder: "发消息...", share: "分享主页", addBanner: "添加横幅", likedBy: (u, n) => `${u} 和其他 ${n} 人都赞了`, youPrefix: "你: ", noPosts: "暂无帖子", noReels: "暂无 Reels", noMessages: "暂无消息" },
+  es: { posts: "publicaciones", followers: "seguidores", following: "seguidos", viewAll: (n) => `Ver los ${n} comentarios`, edit: "Editar perfil", follow: "Seguir", message: "Mensaje", yourStory: "Tu historia", reels: "Reels", messages: "Mensajes", active: "Activo(a) ahora", messagePlaceholder: "Mensaje...", share: "Compartir perfil", addBanner: "Añadir banner", likedBy: (u, n) => `Les gusta a ${u} y ${n} personas más`, youPrefix: "Tú: ", noPosts: "Aún no hay publicaciones", noReels: "Aún no hay reels", noMessages: "Aún no hay mensajes" },
+  fr: { posts: "publications", followers: "abonnés", following: "abonnements", viewAll: (n) => `Voir les ${n} commentaires`, edit: "Modifier le profil", follow: "Suivre", message: "Message", yourStory: "Votre story", reels: "Reels", messages: "Messages", active: "Actif", messagePlaceholder: "Message...", share: "Partager le profil", addBanner: "Ajouter une bannière", likedBy: (u, n) => `Aimé par ${u} et ${n} autres personnes`, youPrefix: "Vous : ", noPosts: "Aucune publication", noReels: "Aucun reel", noMessages: "Aucun message" },
+  de: { posts: "Beiträge", followers: "Follower", following: "Gefolgt", viewAll: (n) => `Alle ${n} Kommentare ansehen`, edit: "Profil bearbeiten", follow: "Folgen", message: "Nachricht", yourStory: "Deine Story", reels: "Reels", messages: "Nachrichten", active: "Aktiv", messagePlaceholder: "Nachricht...", share: "Profil teilen", addBanner: "Banner hinzufügen", likedBy: (u, n) => `Gefällt ${u} und ${n} weiteren Personen`, youPrefix: "Du: ", noPosts: "Noch keine Beiträge", noReels: "Noch keine Reels", noMessages: "Noch keine Nachrichten" },
 };
 
 const AVATAR_FALLBACK = "/images/magic/instagram-post.png";
@@ -248,7 +249,7 @@ function FeedView({ config, ui, likes, likeCount, onLike, onOpenStory, onOpenDM 
           <PostCard key={post.id} post={post} config={config} ui={ui} liked={!!likes[post.id]} likeCount={likeCount} onLike={onLike} />
         ))}
         {config.posts.length === 0 && (
-          <div className="py-24 text-center text-gray-500 text-sm">게시물이 없습니다 (좌상단 3초 홀드 → 설정)</div>
+          <div className="py-24 text-center text-gray-500 text-sm">{ui.noPosts}</div>
         )}
       </div>
     </>
@@ -312,7 +313,7 @@ function PostCard({ post, config, ui, liked, likeCount, onLike }: {
         </div>
         <Bookmark style={{ width: 26, height: 26 }} className="text-white" strokeWidth={2} />
       </div>
-      <div className="px-3 pb-1 text-sm text-white"><strong>{config.username}</strong> 외 <strong>{formatCount(likeCount(post))}</strong>명이 좋아합니다</div>
+      <div className="px-3 pb-1 text-sm text-white">{ui.likedBy(config.username, formatCount(likeCount(post)))}</div>
       <div className="px-3 pb-1 text-[13.5px] leading-relaxed text-gray-100">
         <strong className="text-white mr-1.5">{config.username}</strong>
         <span className="whitespace-pre-line select-text">{pickText(post.caption, config.appLocale)}</span>
@@ -490,7 +491,7 @@ function ReelsView({ config, ui }: { config: InstaConfig; ui: UiStrings }) {
       </div>
       {config.reels.map((r) => <ReelItem key={r.id} reel={r} config={config} ui={ui} />)}
       {config.reels.length === 0 && (
-        <div className="h-full flex items-center justify-center text-gray-500 text-sm">릴스가 없습니다 (좌상단 3초 홀드 → 설정)</div>
+        <div className="h-full flex items-center justify-center text-gray-500 text-sm">{ui.noReels}</div>
       )}
     </div>
   );
@@ -561,14 +562,14 @@ function DMListView({ config, ui, onBack, onOpenThread }: {
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm text-white truncate">{d.username}</p>
-                <p className="text-xs text-gray-400 truncate">{last ? `${last.fromMe ? "You: " : ""}${last.text}` : ""}</p>
+                <p className="text-xs text-gray-400 truncate">{last ? `${last.fromMe ? ui.youPrefix : ""}${last.text}` : ""}</p>
               </div>
               <Camera className="w-6 h-6 text-gray-400 shrink-0" />
             </button>
           );
         })}
         {config.dms.length === 0 && (
-          <div className="py-24 text-center text-gray-500 text-sm">메시지가 없습니다 (좌상단 3초 홀드 → 설정)</div>
+          <div className="py-24 text-center text-gray-500 text-sm">{ui.noMessages}</div>
         )}
       </div>
     </>
