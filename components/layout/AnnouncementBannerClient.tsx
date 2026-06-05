@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 
 interface Announcement {
@@ -16,6 +16,7 @@ interface Props {
 
 export default function AnnouncementBannerClient({ announcement }: Props) {
   const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!announcement) return;
@@ -24,6 +25,16 @@ export default function AnnouncementBannerClient({ announcement }: Props) {
       setVisible(true);
     }
   }, [announcement]);
+
+  // 배너 높이를 CSS 변수로 노출 → 고정 헤더·본문이 그만큼 아래로 밀려 배너에 가리지 않음.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!visible) { root.style.setProperty("--ml-banner-h", "0px"); return; }
+    const set = () => root.style.setProperty("--ml-banner-h", `${ref.current?.offsetHeight ?? 0}px`);
+    set();
+    window.addEventListener("resize", set);
+    return () => { window.removeEventListener("resize", set); root.style.setProperty("--ml-banner-h", "0px"); };
+  }, [visible]);
 
   if (!announcement || !visible) return null;
 
@@ -35,7 +46,8 @@ export default function AnnouncementBannerClient({ announcement }: Props) {
 
   return (
     <div
-      className="w-full flex items-center justify-center gap-3 px-4 py-2.5 text-sm text-center relative"
+      ref={ref}
+      className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-10 py-2.5 text-sm text-center"
       style={{
         background: "linear-gradient(90deg, #7C3AED, #A855F7, #7C3AED)",
         color: "#fff",

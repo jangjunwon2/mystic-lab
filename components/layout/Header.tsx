@@ -80,7 +80,8 @@ export default function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      style={{ top: "var(--ml-banner-h, 0px)" }}
+      className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
           ? "bg-[#0D0D1A]/95 backdrop-blur-md border-b border-[#2D2D4E] shadow-lg shadow-purple-900/10"
           : "bg-transparent"
