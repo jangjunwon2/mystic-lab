@@ -119,6 +119,14 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
   const [bIssued, setBIssued] = useState("");
   const [bForm, setBForm] = useState({ name: "", code: "", type: "percent", value: "10", maxUses: "", perUserLimit: "", minOrderUsd: "", startsAt: "", expiresAt: "" });
 
+  // 이벤트 일괄 발급 폼 (개인 쿠폰을 대상 전체에게 발급)
+  const [blkCreating, setBlkCreating] = useState(false);
+  const [blkError, setBlkError] = useState("");
+  const [blkResult, setBlkResult] = useState("");
+  const [blkForm, setBlkForm] = useState({ target: "all", productId: "", emails: "", name: "", type: "percent", value: "10", minOrderUsd: "0", expiresMonths: "6", sendEmail: true });
+  const [blkTargetProductIds, setBlkTargetProductIds] = useState<string[]>([]);
+  const [blkTargetCategories, setBlkTargetCategories] = useState<string[]>([]);
+
   async function refresh() {
     fetch("/api/admin/coupons").then((r) => r.json()).then((d) => Array.isArray(d) && setCoupons(d)).catch(() => {});
   }
@@ -198,6 +206,41 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
     setTargetProductIds([]); setTargetCategories([]);
   }
 
+  async function createBulk() {
+    const value = parseFloat(blkForm.value);
+    if (isNaN(value) || value <= 0) { setBlkError("할인 값을 입력해주세요."); return; }
+    if (blkForm.target === "wishlist_product" && !blkForm.productId) { setBlkError("위시리스트 대상 상품을 선택해주세요."); return; }
+    if (blkForm.target === "manual" && !blkForm.emails.trim()) { setBlkError("이메일을 입력해주세요."); return; }
+    if (!confirm("선택한 대상 전체에게 개인 쿠폰을 발급합니다. 계속할까요?")) return;
+    setBlkCreating(true); setBlkError(""); setBlkResult("");
+    const res = await fetch("/api/admin/coupons/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        target: blkForm.target,
+        productId: blkForm.productId || undefined,
+        emails: blkForm.emails || undefined,
+        name: blkForm.name.trim() || null,
+        type: blkForm.type,
+        value,
+        minOrderUsd: parseFloat(blkForm.minOrderUsd) || 0,
+        expiresMonths: blkForm.expiresMonths.trim() === "" ? null : parseInt(blkForm.expiresMonths, 10),
+        productIds: blkTargetProductIds,
+        categories: blkTargetCategories,
+        sendEmail: blkForm.sendEmail,
+      }),
+    });
+    const json = await res.json();
+    setBlkCreating(false);
+    if (!res.ok) { setBlkError(json.error ?? "발급에 실패했습니다."); return; }
+    setBlkResult(
+      `발급 ${json.issued}건` +
+      (json.emailed ? ` · 이메일 ${json.emailed}통` : "") +
+      (json.capped ? ` (대상 ${json.total}명 중 상한까지만 발급)` : "")
+    );
+    refresh();
+  }
+
   const fmt = (iso: string) => { try { return new Date(iso).toLocaleDateString("ko"); } catch { return iso.slice(0, 10); } };
 
   const usageLabel = (c: IssuedCoupon) => {
@@ -217,6 +260,82 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
 
   return (
     <div>
+      {/* 이벤트 일괄 발급 — 대상 전체에게 개인 쿠폰(1인 1코드·1회용)을 한 번에 발급 */}
+      <div className="rounded-xl border p-6 mb-8" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+        <h2 className="text-base font-semibold mb-1" style={{ color: "#F0E6FF" }}>이벤트 일괄 발급</h2>
+        <p className="text-xs mb-5" style={{ color: "#9CA3AF" }}>대상 전체에게 개인 쿠폰(1인 1코드·1회용)을 한 번에 발급합니다. 1회 최대 2,000명.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className={labelCls} style={{ color: "#9CA3AF" }}>발급 대상 *</label>
+            <select value={blkForm.target} onChange={(e) => setBlkForm({ ...blkForm, target: e.target.value })} className={inputCls} style={inputStyle}>
+              <option value="all">전체 회원</option>
+              <option value="newsletter">뉴스레터 구독자</option>
+              <option value="buyers">과거 구매자</option>
+              <option value="wishlist_product">위시리스트 (상품 지정)</option>
+              <option value="manual">직접 입력</option>
+            </select>
+          </div>
+          {blkForm.target === "wishlist_product" && (
+            <div>
+              <label className={labelCls} style={{ color: "#9CA3AF" }}>위시리스트 대상 상품 *</label>
+              <select value={blkForm.productId} onChange={(e) => setBlkForm({ ...blkForm, productId: e.target.value })} className={inputCls} style={inputStyle}>
+                <option value="">선택하세요</option>
+                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          )}
+          {blkForm.target === "manual" && (
+            <div className="sm:col-span-2">
+              <label className={labelCls} style={{ color: "#9CA3AF" }}>이메일 목록 * (줄바꿈/콤마 구분)</label>
+              <textarea value={blkForm.emails} onChange={(e) => setBlkForm({ ...blkForm, emails: e.target.value })} rows={3} placeholder={"user1@example.com\nuser2@example.com"}
+                className={inputCls} style={inputStyle} />
+            </div>
+          )}
+          <div className="sm:col-span-2">
+            <label className={labelCls} style={{ color: "#9CA3AF" }}>쿠폰 이름 (선택 — 고객에게 표시)</label>
+            <input type="text" value={blkForm.name} onChange={(e) => setBlkForm({ ...blkForm, name: e.target.value })} placeholder="예: 가을맞이 감사 쿠폰" maxLength={60}
+              className={inputCls} style={inputStyle} />
+          </div>
+          <div>
+            <label className={labelCls} style={{ color: "#9CA3AF" }}>유형</label>
+            <select value={blkForm.type} onChange={(e) => setBlkForm({ ...blkForm, type: e.target.value })} className={inputCls} style={inputStyle}>
+              <option value="percent">정률 (%)</option>
+              <option value="fixed">정액 ($)</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls} style={{ color: "#9CA3AF" }}>{blkForm.type === "fixed" ? "할인액 ($)" : "할인율 (%)"}</label>
+            <input type="number" min={0} step={0.01} value={blkForm.value} onChange={(e) => setBlkForm({ ...blkForm, value: e.target.value })}
+              className={inputCls} style={{ ...inputStyle, color: "#F59E0B" }} />
+          </div>
+          <div>
+            <label className={labelCls} style={{ color: "#9CA3AF" }}>최소 주문액 ($)</label>
+            <input type="number" min={0} step={0.01} value={blkForm.minOrderUsd} onChange={(e) => setBlkForm({ ...blkForm, minOrderUsd: e.target.value })}
+              className={inputCls} style={inputStyle} />
+          </div>
+          <div>
+            <label className={labelCls} style={{ color: "#9CA3AF" }}>유효기간 (개월, 비우면 무기한)</label>
+            <input type="number" min={0} step={1} value={blkForm.expiresMonths} onChange={(e) => setBlkForm({ ...blkForm, expiresMonths: e.target.value })}
+              className={inputCls} style={inputStyle} />
+          </div>
+        </div>
+        {/* 상품/카테고리 한정 — 선택 시 해당 상품에서만 사용·할인 */}
+        <TargetPicker products={products} categories={categories}
+          productIds={blkTargetProductIds} categoriesSel={blkTargetCategories}
+          onToggleProduct={(id) => setBlkTargetProductIds((a) => toggle(a, id))}
+          onToggleCategory={(c) => setBlkTargetCategories((a) => toggle(a, c))} />
+        <label className="flex items-center gap-2 text-sm mb-4 cursor-pointer" style={{ color: "#9CA3AF" }}>
+          <input type="checkbox" checked={blkForm.sendEmail} onChange={(e) => setBlkForm({ ...blkForm, sendEmail: e.target.checked })} />
+          발급과 함께 안내 이메일 발송
+        </label>
+        {blkError && <p className="text-sm mb-3" style={{ color: "#EF4444" }}>{blkError}</p>}
+        {blkResult && <p className="text-sm mb-3" style={{ color: "#10B981" }}>{blkResult}</p>}
+        <button onClick={createBulk} disabled={blkCreating} className="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+          style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" }}>
+          {blkCreating ? "발급 중…" : "일괄 발급"}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* 개인 쿠폰 */}
         <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>

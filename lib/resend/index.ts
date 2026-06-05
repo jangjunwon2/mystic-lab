@@ -552,20 +552,12 @@ export async function sendReviewRequestEmail({
 }
 
 // 쿠폰 발급 안내 — 가입 환영/이벤트 쿠폰 등. best-effort(미설정 시 no-op).
-export async function sendCouponEmail({
-  to,
-  code,
-  type,
-  value,
-}: {
-  to: string;
-  code: string;
-  type: "percent" | "fixed";
-  value: number;
-}): Promise<void> {
-  if (!isConfigured()) return;
+function couponDiscountLabel(type: "percent" | "fixed", value: number): string {
+  return type === "fixed" ? `$${value} OFF` : `${value}% OFF`;
+}
 
-  const discountLabel = type === "fixed" ? `$${value} OFF` : `${value}% OFF`;
+function couponEmailHtml(code: string, type: "percent" | "fixed", value: number): string {
+  const discountLabel = couponDiscountLabel(type, value);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   const html = `<!DOCTYPE html>
@@ -594,8 +586,52 @@ export async function sendCouponEmail({
   </table>
 </body></html>`;
 
-  const res = await resend.emails.send({ from: FROM, to, subject: `Your ${discountLabel} Mystic Lab coupon`, html });
+  return html;
+}
+
+export async function sendCouponEmail({
+  to,
+  code,
+  type,
+  value,
+}: {
+  to: string;
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+}): Promise<void> {
+  if (!isConfigured()) return;
+  const res = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Your ${couponDiscountLabel(type, value)} Mystic Lab coupon`,
+    html: couponEmailHtml(code, type, value),
+  });
   logSendResult("coupon", res);
+}
+
+// 일괄 쿠폰 이메일 — 수신자별 고유 코드. 100통씩 batch.send (이벤트 일괄발급용).
+export async function sendCouponEmailsBatch(
+  items: { to: string; code: string }[],
+  type: "percent" | "fixed",
+  value: number,
+): Promise<{ sent: number; failed: number }> {
+  if (!isConfigured() || items.length === 0) return { sent: 0, failed: 0 };
+  const subject = `Your ${couponDiscountLabel(type, value)} Mystic Lab coupon`;
+  const CHUNK = 100;
+  let sent = 0;
+  let failed = 0;
+  for (let i = 0; i < items.length; i += CHUNK) {
+    const chunk = items.slice(i, i + CHUNK);
+    const messages = chunk.map((it) => ({ from: FROM, to: it.to, subject, html: couponEmailHtml(it.code, type, value) }));
+    try {
+      await resend.batch.send(messages);
+      sent += chunk.length;
+    } catch {
+      failed += chunk.length;
+    }
+  }
+  return { sent, failed };
 }
 
 function customOrderAdminHtml({
