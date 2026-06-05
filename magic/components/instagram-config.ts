@@ -26,6 +26,7 @@ export interface InstaPost {
   likes: number;
   date: LocalizedText; // 상대 표기 (예: "3주 전" / "3 weeks ago")
   exactDate?: string; // ISO yyyy-mm-dd. 설정 시 상대 표기 대신 로케일 형식 실제 날짜로 표시
+  audio?: string; // 게시물 음원 라인 (예: "Original audio") — 설정 시 사용자명 아래 ♪ 표시
   comments: InstaComment[];
 }
 
@@ -60,11 +61,18 @@ export interface InstaStory {
 export interface InstaReel {
   id: string;
   image: string;
-  caption: string;
+  caption: LocalizedText; // 앱 설정 언어에 맞춰 표시 (게시물 캡션과 동일)
   likes: number;
   comments: number;
   username: string;
   music: string;
+}
+
+// 프로필 하이라이트 스토리 (프로필 상단 원형 커버 행)
+export interface InstaHighlight {
+  id: string;
+  title: LocalizedText; // 짧은 라벨 (예: "Shows" / "공연")
+  cover: string; // dataURL/URL (빈 값이면 기본)
 }
 
 // DM 메시지/스레드
@@ -92,6 +100,7 @@ export interface InstaConfig {
   appLocale: InstaLocale;
   posts: InstaPost[];
   stories: InstaStory[];
+  highlights: InstaHighlight[];
   reels: InstaReel[];
   dms: InstaThread[];
 }
@@ -121,6 +130,7 @@ export function defaultInstaConfig(locale: string): InstaConfig {
         },
         likes: 1248,
         date: { en: "3 weeks ago", ko: "3주 전", ja: "3週間前", "zh-CN": "3周前", es: "hace 3 semanas", fr: "il y a 3 semaines", de: "vor 3 Wochen" },
+        audio: "Original audio",
         comments: [
           { user: "alex_mental", text: { en: "No way... how is this possible? 🤯", ko: "말도 안 돼... 이게 어떻게 가능하죠? 🤯" } },
           { user: "sarah_mystique", text: { en: "Absolutely jaw-dropping. 😱", ko: "진짜 입이 떡 벌어지네요. 😱" } },
@@ -195,10 +205,16 @@ export function defaultInstaConfig(locale: string): InstaConfig {
       { id: "s1", username: "alex_mental", avatar: "", image: "/images/magic/instagram-post.png" },
       { id: "s2", username: "sarah_mystique", avatar: "", image: "/images/magic/instagram-post.png" },
     ],
+    highlights: [
+      { id: "h1", title: { en: "Shows", ko: "공연", ja: "ショー", "zh-CN": "演出", es: "Shows", fr: "Spectacles", de: "Shows" }, cover: "/images/magic/instagram-post.png" },
+      { id: "h2", title: { en: "Magic", ko: "매직", ja: "マジック", "zh-CN": "魔术", es: "Magia", fr: "Magie", de: "Magie" }, cover: "/images/magic/instagram-post.png" },
+      { id: "h3", title: { en: "BTS", ko: "비하인드", ja: "舞台裏", "zh-CN": "幕后", es: "Tras cámaras", fr: "Coulisses", de: "Backstage" }, cover: "/images/magic/instagram-post.png" },
+    ],
     reels: [
       {
         id: "r1", image: "/images/magic/instagram-post.png", username: "mystic_lab_magic",
-        caption: "The prediction always comes true. 🔮", likes: 24800, comments: 312, music: "Original audio · Mystic Lab",
+        caption: { en: "The prediction always comes true. 🔮", ko: "예언은 언제나 이루어집니다. 🔮", ja: "予言は必ず的中する。🔮", "zh-CN": "预言总会成真。🔮", es: "La predicción siempre se cumple. 🔮", fr: "La prédiction se réalise toujours. 🔮", de: "Die Vorhersage trifft immer ein. 🔮" },
+        likes: 24800, comments: 312, music: "Original audio · Mystic Lab",
       },
     ],
     dms: [
@@ -232,8 +248,32 @@ function normalizePost(p: any): InstaPost {
     caption: toLocalized(p?.caption),
     date: toLocalized(p?.date),
     exactDate: typeof p?.exactDate === "string" ? p.exactDate : undefined,
+    audio: typeof p?.audio === "string" && p.audio ? p.audio : undefined,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     comments: Array.isArray(p?.comments) ? p.comments.map((c: any) => ({ user: String(c?.user ?? ""), text: toLocalized(c?.text) })) : [],
+  };
+}
+
+// 레거시(단일 문자열 caption) 릴스도 언어 맵으로 정규화.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeReel(r: any): InstaReel {
+  return {
+    id: String(r?.id ?? `r${Date.now()}`),
+    image: typeof r?.image === "string" ? r.image : "",
+    caption: toLocalized(r?.caption),
+    likes: Number(r?.likes) || 0,
+    comments: Number(r?.comments) || 0,
+    username: String(r?.username ?? ""),
+    music: String(r?.music ?? ""),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeHighlight(h: any): InstaHighlight {
+  return {
+    id: String(h?.id ?? `h${Date.now()}`),
+    title: toLocalized(h?.title),
+    cover: typeof h?.cover === "string" ? h.cover : "",
   };
 }
 
@@ -248,7 +288,8 @@ export function loadInstaConfig(locale: string): InstaConfig {
       ...parsed,
       posts: Array.isArray(parsed.posts) ? parsed.posts.map(normalizePost) : base.posts,
       stories: Array.isArray(parsed.stories) ? parsed.stories : base.stories,
-      reels: Array.isArray(parsed.reels) ? parsed.reels : base.reels,
+      highlights: Array.isArray(parsed.highlights) ? parsed.highlights.map(normalizeHighlight) : base.highlights,
+      reels: Array.isArray(parsed.reels) ? parsed.reels.map(normalizeReel) : base.reels,
       dms: Array.isArray(parsed.dms) ? parsed.dms : base.dms,
     };
   } catch {
