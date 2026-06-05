@@ -5,6 +5,7 @@ import { useState } from "react";
 export interface IssuedCoupon {
   id: string;
   code: string;
+  name: string | null;
   email: string | null;
   user_id: string | null;
   type: "percent" | "fixed";
@@ -110,16 +111,32 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
   const [pCreating, setPCreating] = useState(false);
   const [pError, setPError] = useState("");
   const [pIssued, setPIssued] = useState("");
-  const [pForm, setPForm] = useState({ email: "", type: "percent", value: "10", minOrderUsd: "0" });
+  const [pForm, setPForm] = useState({ name: "", email: "", type: "percent", value: "10", minOrderUsd: "0" });
 
   // 공개 쿠폰 폼
   const [bCreating, setBCreating] = useState(false);
   const [bError, setBError] = useState("");
   const [bIssued, setBIssued] = useState("");
-  const [bForm, setBForm] = useState({ code: "", type: "percent", value: "10", maxUses: "", perUserLimit: "", minOrderUsd: "", startsAt: "", expiresAt: "" });
+  const [bForm, setBForm] = useState({ name: "", code: "", type: "percent", value: "10", maxUses: "", perUserLimit: "", minOrderUsd: "", startsAt: "", expiresAt: "" });
 
   async function refresh() {
     fetch("/api/admin/coupons").then((r) => r.json()).then((d) => Array.isArray(d) && setCoupons(d)).catch(() => {});
+  }
+
+  // 정지/재개(is_active 토글). 낙관적 갱신 후 실패 시 새로고침.
+  async function setActive(id: string, isActive: boolean) {
+    setCoupons((cs) => cs.map((c) => (c.id === id ? { ...c, is_active: isActive } : c)));
+    const res = await fetch(`/api/admin/coupons/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_active: isActive }),
+    });
+    if (!res.ok) refresh();
+  }
+
+  async function remove(id: string) {
+    if (!confirm("이 쿠폰을 삭제할까요? 되돌릴 수 없습니다.")) return;
+    setCoupons((cs) => cs.filter((c) => c.id !== id));
+    const res = await fetch(`/api/admin/coupons/${id}`, { method: "DELETE" });
+    if (!res.ok) refresh();
   }
 
   async function createPersonal() {
@@ -132,6 +149,7 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "personal",
+        name: pForm.name.trim() || null,
         email: pForm.email.trim(),
         type: pForm.type,
         value,
@@ -145,7 +163,7 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
     if (!res.ok) { setPError(json.error ?? "발급에 실패했습니다."); return; }
     setPIssued(json.code);
     refresh();
-    setPForm({ ...pForm, email: "" });
+    setPForm({ ...pForm, email: "", name: "" });
     setPTargetProductIds([]); setPTargetCategories([]);
   }
 
@@ -158,6 +176,7 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "public",
+        name: bForm.name.trim() || null,
         code: bForm.code.trim() || undefined,
         type: bForm.type,
         value,
@@ -175,7 +194,7 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
     if (!res.ok) { setBError(json.error ?? "발급에 실패했습니다."); return; }
     setBIssued(json.code);
     refresh();
-    setBForm({ ...bForm, code: "" });
+    setBForm({ ...bForm, code: "", name: "" });
     setTargetProductIds([]); setTargetCategories([]);
   }
 
@@ -204,6 +223,11 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
           <h2 className="text-base font-semibold mb-1" style={{ color: "#F0E6FF" }}>개인 쿠폰</h2>
           <p className="text-xs mb-5" style={{ color: "#9CA3AF" }}>특정 이메일 1회용. 로그인 사용자만 사용 가능.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div className="sm:col-span-2">
+              <label className={labelCls} style={{ color: "#9CA3AF" }}>쿠폰 이름 (선택 — 고객에게 표시)</label>
+              <input type="text" value={pForm.name} onChange={(e) => setPForm({ ...pForm, name: e.target.value })} placeholder="예: 고객 감사 쿠폰" maxLength={60}
+                className={inputCls} style={inputStyle} />
+            </div>
             <div className="sm:col-span-2">
               <label className={labelCls} style={{ color: "#9CA3AF" }}>대상 이메일 *</label>
               <input type="email" value={pForm.email} onChange={(e) => setPForm({ ...pForm, email: e.target.value })} placeholder="user@example.com"
@@ -240,6 +264,11 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
           <h2 className="text-base font-semibold mb-1" style={{ color: "#F0E6FF" }}>공개 쿠폰</h2>
           <p className="text-xs mb-5" style={{ color: "#9CA3AF" }}>누구나 쓰는 다회용 할인코드. 비워두면 코드 자동 생성. (구 할인코드 대체)</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div className="sm:col-span-2">
+              <label className={labelCls} style={{ color: "#9CA3AF" }}>쿠폰 이름 (선택 — 고객에게 표시)</label>
+              <input type="text" value={bForm.name} onChange={(e) => setBForm({ ...bForm, name: e.target.value })} placeholder="예: 특정 제품 할인" maxLength={60}
+                className={inputCls} style={inputStyle} />
+            </div>
             <div className="sm:col-span-2">
               <label className={labelCls} style={{ color: "#9CA3AF" }}>코드 (선택)</label>
               <input type="text" value={bForm.code} onChange={(e) => setBForm({ ...bForm, code: e.target.value })} placeholder="자동 생성하려면 비워두세요"
@@ -319,7 +348,7 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["코드", "분류", "대상", "할인", "사용", "기간", "발급일"].map((h) => (
+                {["이름", "코드", "분류", "대상", "할인", "사용", "기간", "관리"].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-medium" style={{ color: "#9CA3AF" }}>{h}</th>
                 ))}
               </tr>
@@ -328,18 +357,20 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
               {(() => {
                 const filtered = tab === "all" ? coupons : coupons.filter((c) => categoryOf(c) === tab);
                 if (filtered.length === 0) {
-                  return <tr><td colSpan={7} className="px-4 py-12 text-center" style={{ color: "#9CA3AF" }}>해당 분류의 쿠폰이 없습니다.</td></tr>;
+                  return <tr><td colSpan={8} className="px-4 py-12 text-center" style={{ color: "#9CA3AF" }}>해당 분류의 쿠폰이 없습니다.</td></tr>;
                 }
                 return filtered.map((c) => {
                   const isPublic = (c.scope ?? "personal") === "public";
                   const active = usageActive(c);
+                  const suspended = c.is_active === false;
                   const cat = categoryOf(c);
                   const catLabel = CATEGORY_TABS.find((t) => t.key === cat)?.label ?? cat;
                   const period = c.starts_at || c.expires_at
                     ? `${c.starts_at ? fmt(c.starts_at) : "즉시"} ~ ${c.expires_at ? fmt(c.expires_at) : "무기한"}`
                     : "무기한";
                   return (
-                    <tr key={c.id} className="border-b last:border-0" style={{ borderColor: "#2D2D4E" }}>
+                    <tr key={c.id} className="border-b last:border-0" style={{ borderColor: "#2D2D4E", opacity: suspended ? 0.55 : 1 }}>
+                      <td className="px-4 py-3" style={{ color: "#F0E6FF" }}>{c.name ?? <span style={{ color: "#6B7280" }}>—</span>}</td>
                       <td className="px-4 py-3"><span className="font-mono font-semibold" style={{ color: "#A855F7" }}>{c.code}</span></td>
                       <td className="px-4 py-3">
                         <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap" style={{ background: isPublic ? "#7C3AED22" : "#6B728022", color: isPublic ? "#A855F7" : "#9CA3AF" }}>
@@ -350,11 +381,22 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
                       <td className="px-4 py-3" style={{ color: "#F59E0B" }}>{c.type === "fixed" ? `$${c.value}` : `${c.value}%`}</td>
                       <td className="px-4 py-3">
                         <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap" style={{ background: active ? "#10B98122" : "#6B728022", color: active ? "#10B981" : "#9CA3AF" }}>
-                          {usageLabel(c)}
+                          {suspended ? "정지됨" : usageLabel(c)}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#6B7280" }}>{period}</td>
-                      <td className="px-4 py-3" style={{ color: "#6B7280" }}>{fmt(c.created_at)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => setActive(c.id, suspended)} className="px-2 py-1 rounded text-xs transition-colors"
+                            style={{ background: "#13131F", border: "1px solid #2D2D4E", color: suspended ? "#10B981" : "#F59E0B" }}>
+                            {suspended ? "재개" : "정지"}
+                          </button>
+                          <button onClick={() => remove(c.id)} className="px-2 py-1 rounded text-xs transition-colors"
+                            style={{ background: "#13131F", border: "1px solid #2D2D4E", color: "#EF4444" }}>
+                            삭제
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 });

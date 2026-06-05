@@ -67,6 +67,7 @@ type SavedAddress = {
 interface AppliedDiscount {
   id: string;
   code: string;
+  name?: string | null;
   kind?: "discount" | "referral" | "coupon";
   type: "percent" | "fixed";
   value: number;
@@ -76,6 +77,7 @@ interface AppliedDiscount {
 interface MyCoupon {
   id: string;
   code: string;
+  name: string | null;
   type: "percent" | "fixed";
   value: number;
   min_order_usd: number;
@@ -524,8 +526,8 @@ export default function CheckoutPage({ params }: Props) {
                   <div className="flex items-center justify-between bg-[#10B98122] border border-[#10B98144] rounded-lg px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-[#10B981]" />
-                      <span className="text-sm font-mono font-bold text-[#10B981]">
-                        {appliedDiscount.code}
+                      <span className="text-sm font-bold text-[#10B981]">
+                        {appliedDiscount.name ?? appliedDiscount.code}
                       </span>
                       <span className="text-xs text-[#9CA3AF]">
                         (−${appliedDiscount.discountAmount.toFixed(2)})
@@ -551,9 +553,11 @@ export default function CheckoutPage({ params }: Props) {
                           const targetOk = c.product_ids == null || c.product_ids.some((id) => items.some((i) => i.id === id));
                           const usable = minOk && targetOk;
                           const reason = !minOk ? ` · ${t("couponMinOrderShort")} $${c.min_order_usd}` : !targetOk ? ` · ${t("couponNotApplicable")}` : "";
+                          const discountStr = c.type === "fixed" ? `$${c.value} OFF` : `${c.value}% OFF`;
+                          const label = c.name ? `${c.name} · ${discountStr}` : `${discountStr} · ${c.code}`;
                           return (
                             <option key={c.id} value={c.code} disabled={!usable}>
-                              {c.type === "fixed" ? `$${c.value}` : `${c.value}%`} OFF · {c.code}{reason}
+                              {label}{reason}
                             </option>
                           );
                         })}
@@ -973,7 +977,7 @@ export default function CheckoutPage({ params }: Props) {
                   </div>
                   {appliedDiscount && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#10B981]">{t("discountLabel")} ({appliedDiscount.code})</span>
+                      <span className="text-[#10B981]">{t("discountLabel")} ({appliedDiscount.name ?? appliedDiscount.code})</span>
                       <span className="text-[#10B981]">−${appliedDiscount.discountAmount.toFixed(2)}</span>
                     </div>
                   )}

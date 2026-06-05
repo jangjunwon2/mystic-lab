@@ -21,6 +21,7 @@ export interface IssueCouponParams {
   expiresMonths?: number | null; // null = 무기한 (기본 6개월)
   productIds?: string[];         // 한정 상품(비어있으면 전체)
   categories?: string[];         // 한정 카테고리(비어있으면 전체)
+  name?: string | null;          // 쿠폰 이름(명목) — 고객 노출용
 }
 
 // 쿠폰 발급(유니크 코드 생성·재시도). 성공 시 발급 코드 반환.
@@ -42,6 +43,7 @@ export async function issueCoupon(admin: any, params: IssueCouponParams): Promis
       source: params.source,
       min_order_usd: params.minOrderUsd ?? 0,
       expires_at: expiresAt,
+      name: params.name?.trim() || null,
     }).select("id").single();
     if (!error && data) {
       await insertCouponTargets(admin, data.id, params.productIds, params.categories);
@@ -67,6 +69,7 @@ export async function hasCouponFromSource(admin: any, opts: { userId?: string | 
 export interface UsableCoupon {
   id: string;
   code: string;
+  name: string | null;
   type: "percent" | "fixed";
   value: number;
   discountAmount: number;
@@ -94,10 +97,12 @@ export async function findUsableCoupon(admin: any, opts: { code: string; userId?
   const codeU = opts.code.toUpperCase().trim();
   const { data } = await admin
     .from("issued_coupons")
-    .select("id, code, type, value, min_order_usd, starts_at, expires_at, is_used, is_active, scope, max_uses, used_count, per_user_limit, user_id, email")
+    .select("id, code, name, type, value, min_order_usd, starts_at, expires_at, is_used, is_active, scope, max_uses, used_count, per_user_limit, user_id, email")
     .eq("code", codeU)
     .maybeSingle();
   if (!data) return null;
+
+  if (data.is_active === false) return null; // 정지(suspend) — 개인·공개 공통
 
   const now = new Date();
   if (data.starts_at && new Date(data.starts_at) > now) return null; // 아직 사용기간 전
@@ -115,7 +120,6 @@ export async function findUsableCoupon(admin: any, opts: { code: string; userId?
   }
 
   if ((data.scope ?? "personal") === "public") {
-    if (data.is_active === false) return null;
     if (data.max_uses != null && (data.used_count ?? 0) >= data.max_uses) return null;
   } else {
     if (data.is_used) return null;
@@ -147,7 +151,7 @@ export async function findUsableCoupon(admin: any, opts: { code: string; userId?
     data.type === "percent"
       ? round2(discountBase * (data.value / 100))
       : Math.min(data.value, discountBase);
-  return { id: data.id, code: data.code, type: data.type, value: data.value, discountAmount };
+  return { id: data.id, code: data.code, name: data.name ?? null, type: data.type, value: data.value, discountAmount };
 }
 
 // 주문 할인액(USD) 서버 권위 산출 — 쿠폰/레퍼럴 코드로 재계산(클라이언트 discountAmount 불신).
@@ -233,6 +237,7 @@ export interface IssuePublicCouponParams {
   expiresMonths?: number | null;   // null = 무기한 (기본 무기한)
   productIds?: string[];           // 한정 상품(비어있으면 전체)
   categories?: string[];           // 한정 카테고리(비어있으면 전체)
+  name?: string | null;            // 쿠폰 이름(명목) — 고객 노출용
 }
 
 // 발급된 쿠폰에 상품/카테고리 한정 대상 기록.
@@ -272,6 +277,7 @@ export async function issuePublicCoupon(admin: any, params: IssuePublicCouponPar
     is_active: true,
     starts_at: params.startsAt || null,
     expires_at: expiresAt,
+    name: params.name?.trim() || null,
   };
 
   // 지정 코드 — 충돌 시 실패(어드민이 다른 코드로 재시도).

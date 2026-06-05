@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         kind: "coupon",
         id: coupon.id,
         code: coupon.code,
+        name: coupon.name,
         type: coupon.type,
         value: coupon.value,
         discountAmount: coupon.discountAmount,

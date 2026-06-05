@@ -12,7 +12,7 @@ export default async function AdminCouponsPage() {
   const adminAny = admin as any;
   const { data } = await adminAny
     .from("issued_coupons")
-    .select("id, code, email, user_id, type, value, source, scope, max_uses, per_user_limit, used_count, is_active, min_order_usd, is_used, starts_at, expires_at, created_at")
+    .select("id, code, name, email, user_id, type, value, source, scope, max_uses, per_user_limit, used_count, is_active, min_order_usd, is_used, starts_at, expires_at, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 

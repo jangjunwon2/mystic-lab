@@ -17,15 +17,16 @@ export async function GET() {
   const email = user.email?.toLowerCase() ?? "";
   const nowIso = new Date().toISOString();
 
-  const SELECT_COLS = "id, code, type, value, source, min_order_usd, expires_at, created_at";
+  const SELECT_COLS = "id, code, name, type, value, source, min_order_usd, expires_at, created_at";
 
-  // 1) 소유 개인 쿠폰 — 소유자(user_id 또는 이메일)·미사용·미만료.
+  // 1) 소유 개인 쿠폰 — 소유자(user_id 또는 이메일)·미사용·미만료·미정지.
   const { data: personalData } = await admin
     .from("issued_coupons")
     .select(SELECT_COLS)
     .or(`user_id.eq.${user.id},email.eq.${email}`)
     .neq("scope", "public")
     .eq("is_used", false)
+    .eq("is_active", true)
     .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -62,7 +63,7 @@ export async function GET() {
   // 출력 컬럼만 남겨 개인 쿠폰과 합친다(중복 코드는 없음).
   const allowedIds = new Set(publicRows.map((c) => c.id));
   const publicData = ((publicRaw ?? []) as Record<string, unknown>[]).filter((c) => allowedIds.has(c.id as string))
-    .map((c) => ({ id: c.id, code: c.code, type: c.type, value: c.value, source: c.source, min_order_usd: c.min_order_usd, expires_at: c.expires_at, created_at: c.created_at }));
+    .map((c) => ({ id: c.id, code: c.code, name: c.name, type: c.type, value: c.value, source: c.source, min_order_usd: c.min_order_usd, expires_at: c.expires_at, created_at: c.created_at }));
 
   const coupons = ([...(personalData ?? []), ...publicData]) as { id: string }[];
 

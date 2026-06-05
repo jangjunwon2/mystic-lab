@@ -12,7 +12,7 @@ export async function GET() {
   const supabase = (await createAdminClient()) as any;
   const { data, error } = await supabase
     .from("issued_coupons")
-    .select("id, code, email, user_id, type, value, source, scope, max_uses, per_user_limit, used_count, is_active, min_order_usd, is_used, starts_at, expires_at, created_at")
+    .select("id, code, name, email, user_id, type, value, source, scope, max_uses, per_user_limit, used_count, is_active, min_order_usd, is_used, starts_at, expires_at, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     scope?: "personal" | "public";
     email?: string;
     code?: string;
+    name?: string;
     type?: "percent" | "fixed";
     value?: number;
     maxUses?: number | null;
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
       expiresAt: body.expiresAt || null,
       productIds: Array.isArray(body.productIds) ? body.productIds : [],
       categories: Array.isArray(body.categories) ? body.categories : [],
+      name: body.name ?? null,
     });
     if (!code) return NextResponse.json({ error: "발급에 실패했습니다. (코드 중복일 수 있습니다)" }, { status: 500 });
     return NextResponse.json({ ok: true, code }, { status: 201 });
@@ -90,6 +92,7 @@ export async function POST(request: NextRequest) {
     expiresMonths: body.expiresMonths === undefined ? 6 : body.expiresMonths,
     productIds: Array.isArray(body.productIds) ? body.productIds : [],
     categories: Array.isArray(body.categories) ? body.categories : [],
+    name: body.name ?? null,
   });
   if (!code) return NextResponse.json({ error: "발급에 실패했습니다." }, { status: 500 });
   return NextResponse.json({ ok: true, code }, { status: 201 });
