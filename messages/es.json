@@ -139,6 +139,7 @@
     "useAll": "Todo",
     "pointsDiscount": "−${usd} de descuento ({points}P usados)",
     "pointsLimit": "Hasta {points}P utilizables",
+    "pointsMinNotice": "Acumula al menos 500P (≈5 USD) para poder canjear.",
     "intlTitle": "Pago internacional",
     "intlDesc": "Visa, Mastercard, PayPal, Apple Pay y más — pago seguro con Lemon Squeezy",
     "shippingMethod": "Método de envío",

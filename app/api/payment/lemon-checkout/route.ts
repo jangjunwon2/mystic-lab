@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createLemonCheckout } from "@/lib/payments/lemon";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { holdPoints, pointsToUsd } from "@/lib/points";
+import { holdPoints, pointsToUsd, getPointsBalance, MIN_REDEEM_POINTS } from "@/lib/points";
 import { computeServerSubtotalUsd } from "@/lib/payments/order-pricing";
 import { randomUUID } from "crypto";
 import type { OrderPayload } from "@/lib/payments/types";
@@ -41,8 +41,10 @@ export async function POST(request: NextRequest) {
       if (user) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const admin = (await createAdminClient()) as any;
+        // 최소 사용 한도($5) 미만이면 적립 사용 불가
+        const balance = await getPointsBalance(admin, user.id);
         const maxByValue = Math.floor(Math.max(0, subtotalUsd - couponDiscount) * 100);
-        const requested = Math.min(Math.trunc(pointsUsed), maxByValue);
+        const requested = balance >= MIN_REDEEM_POINTS ? Math.min(Math.trunc(pointsUsed), maxByValue) : 0;
         if (requested > 0) {
           const ref = randomUUID();
           pointsSpent = await holdPoints(admin, { userId: user.id, amount: requested, ref, minutes: 30 });

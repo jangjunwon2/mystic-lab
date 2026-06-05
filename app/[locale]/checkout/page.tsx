@@ -24,6 +24,7 @@ import {
 import { COUNTRIES } from "@/lib/constants/countries";
 import CountrySelect from "@/components/ui/CountrySelect";
 import { usdToKrw, USD_TO_KRW } from "@/lib/payments/toss";
+import { MIN_REDEEM_POINTS } from "@/lib/points";
 import { createClient } from "@/lib/supabase/client";
 import type { CartItem } from "@/lib/payments/types";
 import { readCheckoutItems, removePaidItemsFromCart } from "@/lib/cart-storage";
@@ -204,9 +205,11 @@ export default function CheckoutPage({ params }: Props) {
   const SHIPPING_COSTS = { standard: 0, express: 15 } as const;
   const subtotalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
   const couponDiscountUsd = appliedDiscount?.discountAmount ?? 0;
-  // 마일리지: 100P = $1. 쿠폰 차감 후 잔여 금액까지만, 보유 잔액까지만 사용 가능
+  // 마일리지: 100P = $1. 쿠폰 차감 후 잔여 금액까지만, 보유 잔액까지만 사용 가능.
+  // 단, 총 보유가 최소 사용 한도(MIN_REDEEM_POINTS=$5) 미만이면 사용 불가.
   const afterCouponUsd = Math.max(0, subtotalUsd - couponDiscountUsd);
-  const maxUsablePoints = Math.min(pointsBalance, Math.floor(afterCouponUsd * 100));
+  const canRedeemPoints = pointsBalance >= MIN_REDEEM_POINTS;
+  const maxUsablePoints = canRedeemPoints ? Math.min(pointsBalance, Math.floor(afterCouponUsd * 100)) : 0;
   const pointsUsed = Math.max(0, Math.min(parseInt(pointsInput, 10) || 0, maxUsablePoints));
   const pointsDiscountUsd = pointsUsed / 100;
   const discountedUsd = Math.max(0, subtotalUsd - couponDiscountUsd - pointsDiscountUsd);
@@ -536,6 +539,10 @@ export default function CheckoutPage({ params }: Props) {
                     <span className="text-xs text-[#9CA3AF] uppercase tracking-wider">{t("mileageLabel")}</span>
                     <span className="text-xs text-[#9CA3AF]">{t("balanceLabel")} <b className="text-[#A855F7]">{pointsBalance.toLocaleString()}P</b> (100P = $1)</span>
                   </div>
+                  {!canRedeemPoints ? (
+                    <p className="text-xs text-[#6B7280]">{t("pointsMinNotice")}</p>
+                  ) : (
+                  <>
                   <div className="flex gap-2">
                     <input
                       type="number"
@@ -557,8 +564,10 @@ export default function CheckoutPage({ params }: Props) {
                   {pointsUsed > 0 && (
                     <p className="text-xs text-[#10B981] mt-1.5">{t("pointsDiscount", { usd: pointsDiscountUsd.toFixed(2), points: pointsUsed.toLocaleString() })}</p>
                   )}
-                  {pointsBalance > 0 && maxUsablePoints < pointsBalance && (
+                  {maxUsablePoints < pointsBalance && (
                     <p className="text-xs text-[#6B7280] mt-1">{t("pointsLimit", { points: maxUsablePoints.toLocaleString() })}</p>
+                  )}
+                  </>
                   )}
                 </div>
               )}

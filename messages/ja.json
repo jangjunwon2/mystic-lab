@@ -139,6 +139,7 @@
     "useAll": "全額",
     "pointsDiscount": "−${usd} 割引（{points}P 利用）",
     "pointsLimit": "最大 {points}P 利用可能",
+    "pointsMinNotice": "500P（約$5）以上たまると利用できます。",
     "intlTitle": "海外決済",
     "intlDesc": "Visa, Mastercard, PayPal, Apple Pay など — Lemon Squeezy 安全決済",
     "shippingMethod": "配送方法",

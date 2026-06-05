@@ -139,6 +139,7 @@
     "useAll": "전액",
     "pointsDiscount": "−${usd} 할인 ({points}P 사용)",
     "pointsLimit": "최대 {points}P 사용 가능",
+    "pointsMinNotice": "적립금 500P(약 $5) 이상부터 사용할 수 있어요.",
     "intlTitle": "해외 결제",
     "intlDesc": "Visa, Mastercard, PayPal, Apple Pay 등 — Lemon Squeezy 보안 결제",
     "shippingMethod": "배송 방법",

@@ -139,6 +139,7 @@
     "useAll": "Alle",
     "pointsDiscount": "−${usd} Rabatt ({points}P verwendet)",
     "pointsLimit": "Bis zu {points}P verwendbar",
+    "pointsMinNotice": "Sammle mindestens 500P (≈5 USD), um sie einzulösen.",
     "intlTitle": "Internationale Zahlung",
     "intlDesc": "Visa, Mastercard, PayPal, Apple Pay u.a. — sicherer Lemon-Squeezy-Checkout",
     "shippingMethod": "Versandart",

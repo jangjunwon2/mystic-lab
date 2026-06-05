@@ -139,6 +139,7 @@
     "useAll": "全部",
     "pointsDiscount": "−${usd} 优惠（使用 {points}P）",
     "pointsLimit": "最多可用 {points}P",
+    "pointsMinNotice": "累计达 500P（约 $5）后即可使用。",
     "intlTitle": "海外支付",
     "intlDesc": "Visa、Mastercard、PayPal、Apple Pay 等 — Lemon Squeezy 安全结账",
     "shippingMethod": "配送方式",

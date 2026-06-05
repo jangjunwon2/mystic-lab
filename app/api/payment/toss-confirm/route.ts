@@ -3,7 +3,7 @@ import { confirmTossPayment } from "@/lib/payments/toss";
 import { saveOrderToSupabase } from "@/lib/payments/save-order";
 import { sendOrderConfirmation } from "@/lib/resend";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { holdPoints, releaseHold, pointsToUsd } from "@/lib/points";
+import { holdPoints, releaseHold, pointsToUsd, getPointsBalance, MIN_REDEEM_POINTS } from "@/lib/points";
 import { computeServerSubtotalUsd } from "@/lib/payments/order-pricing";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
 import type { CartItem } from "@/lib/payments/types";
@@ -30,8 +30,12 @@ export async function POST(request: NextRequest) {
       const { data: { user } } = await supa.auth.getUser();
       if (user) {
         adminP = await createAdminClient();
-        pointsSpent = await holdPoints(adminP, { userId: user.id, amount: Math.trunc(pointsUsed), ref: paymentKey, minutes: 30 });
-        if (pointsSpent > 0) pointsHeld = true;
+        // 최소 사용 한도($5) 미만이면 적립 사용 불가
+        const balance = await getPointsBalance(adminP, user.id);
+        if (balance >= MIN_REDEEM_POINTS) {
+          pointsSpent = await holdPoints(adminP, { userId: user.id, amount: Math.trunc(pointsUsed), ref: paymentKey, minutes: 30 });
+          if (pointsSpent > 0) pointsHeld = true;
+        }
       }
     }
 

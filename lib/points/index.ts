@@ -2,14 +2,40 @@
 // 적립분은 12개월 후 만료(FIFO 소진). 잔액·차감·만료는 DB RPC(031)가 로트 기반으로 처리하고,
 // RPC 미배포 시에도 동작하도록 평면 원장 폴백을 둔다.
 
-export const POINT_EARN_RATE = 0.05; // 구매 금액의 5% 적립
+export const POINT_EARN_RATE = 0.05; // 구매 금액의 5% 적립 (기본값 — 어드민 설정으로 가변)
 export const POINT_PER_USD = 100; // $1 = 100 point
 export const POINT_EXPIRES_MONTHS = 12; // 적립 포인트 만료 기간(개월)
+export const SIGNUP_BONUS_POINTS = 200; // 가입 환영 적립 (~$2)
+export const MIN_REDEEM_POINTS = 500; // 적립 사용 최소 보유 (~$5) — 미만이면 결제 사용 불가
+const SIGNUP_BONUS_NOTE = "signup_bonus"; // 멱등 식별 노트(중복 지급 방지)
 
-// 구매 금액(USD)에 대한 적립 포인트
-export function earnPointsForUsd(totalUsd: number): number {
+// 구매 금액(USD)에 대한 적립 포인트 (적립률 가변 — 미지정 시 기본값)
+export function earnPointsForUsd(totalUsd: number, rate: number = POINT_EARN_RATE): number {
   if (!totalUsd || totalUsd <= 0) return 0;
-  return Math.round(totalUsd * POINT_PER_USD * POINT_EARN_RATE);
+  const r = typeof rate === "number" && rate > 0 ? rate : POINT_EARN_RATE;
+  return Math.round(totalUsd * POINT_PER_USD * r);
+}
+
+// 가입 환영 적립 — 회원당 1회. note 기반 멱등(중복 지급 방지). 신규 시에만 지급.
+export async function grantSignupBonus(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  userId: string
+): Promise<void> {
+  if (!userId) return;
+  try {
+    const { data: existing } = await admin
+      .from("point_transactions")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("note", SIGNUP_BONUS_NOTE)
+      .limit(1)
+      .maybeSingle();
+    if (existing) return;
+    await addPoints(admin, { userId, amount: SIGNUP_BONUS_POINTS, type: "adjust", note: SIGNUP_BONUS_NOTE });
+  } catch {
+    /* 지급 실패는 무시(다음 호출 때 재시도) */
+  }
 }
 
 // 포인트 → USD 환산 (사용 시 할인액)

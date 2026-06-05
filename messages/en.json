@@ -139,6 +139,7 @@
     "useAll": "All",
     "pointsDiscount": "−${usd} off ({points}P used)",
     "pointsLimit": "Up to {points}P usable",
+    "pointsMinNotice": "Earn at least 500P (≈5 USD) to start redeeming.",
     "intlTitle": "International Payment",
     "intlDesc": "Visa, Mastercard, PayPal, Apple Pay & more — secure Lemon Squeezy checkout",
     "shippingMethod": "Shipping Method",
