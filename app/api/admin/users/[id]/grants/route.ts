@@ -36,7 +36,7 @@ export async function POST(request: Request, ctx: RouteContext) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   return NextResponse.json(data);
 }
 
@@ -59,6 +59,6 @@ export async function DELETE(request: Request, ctx: RouteContext) {
     .eq("id", grantId)
     .eq("user_id", userId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

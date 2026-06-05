@@ -27,7 +27,7 @@ export async function DELETE(request: NextRequest) {
     .delete()
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     .select("id")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
 
   return NextResponse.json({ id: (data as { id: string }).id, code: plainCode }, { status: 201 });
 }

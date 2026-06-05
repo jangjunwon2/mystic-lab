@@ -21,7 +21,7 @@ export async function PATCH(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   return NextResponse.json(data);
 }
 
@@ -41,6 +41,6 @@ export async function DELETE(
     .delete()
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   return new NextResponse(null, { status: 204 });
 }

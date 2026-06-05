@@ -16,7 +16,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
   const { error } = await supabase.from("announcements").update(body).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
@@ -28,6 +28,6 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
   const { error } = await supabase.from("announcements").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

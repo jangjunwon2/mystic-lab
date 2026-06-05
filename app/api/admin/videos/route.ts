@@ -20,6 +20,6 @@ export async function POST(request: Request) {
     .select("id, cloudflare_stream_id, title, created_at, product_id")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   return NextResponse.json({ video }, { status: 201 });
 }

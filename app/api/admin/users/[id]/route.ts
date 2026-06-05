@@ -72,6 +72,6 @@ export async function PATCH(request: Request, ctx: RouteContext) {
   if (body.role !== undefined) update.role = body.role;
 
   const { error } = await supabase.from("profiles").update(update).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

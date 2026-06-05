@@ -32,7 +32,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if (Object.keys(updatePayload).length > 0) {
     const { error } = await supabase.from("products").update(updatePayload).eq("id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   }
 
   if (translations?.length > 0) {
@@ -70,7 +70,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   const supabase = await createAdminClient() as any;
 
   const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

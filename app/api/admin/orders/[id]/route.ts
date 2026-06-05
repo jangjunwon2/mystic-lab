@@ -39,7 +39,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const { error } = await supabase.from("orders").update(statusUpdate).eq("id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
 
     // completed 전환 시 리뷰 요청 이메일 자동 발송
     if (body.status === "completed") {
@@ -81,7 +81,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         ...(body.tracking_number ? { status: "shipped", shipped_at: new Date().toISOString() } : {}),
       })
       .eq("id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
 
     // Send shipping email if tracking number added
     if (body.tracking_number) {
