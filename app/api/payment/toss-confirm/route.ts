@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
       appliedReferralCode: referralCode ?? undefined,
       appliedCouponCode: couponCode ?? undefined,
       shippingAddress: shippingAddress ?? undefined,
+      shippingUsd: typeof shippingUsd === "number" ? shippingUsd : undefined,
       pointsSpent,
       pointsHoldRef: paymentKey,
     });

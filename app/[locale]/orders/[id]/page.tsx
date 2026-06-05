@@ -47,6 +47,11 @@ const UI: Record<string, Record<string, string>> = {
   orderNumber: { en: "Order", ko: "주문번호", ja: "注文番号", "zh-CN": "订单号", es: "Pedido", fr: "Commande", de: "Bestellung" },
   items: { en: "Items", ko: "상품", ja: "商品", "zh-CN": "商品", es: "Artículos", fr: "Articles", de: "Artikel" },
   total: { en: "Total", ko: "합계", ja: "合計", "zh-CN": "合计", es: "Total", fr: "Total", de: "Gesamt" },
+  subtotal: { en: "Subtotal", ko: "상품 정가", ja: "小計", "zh-CN": "小计", es: "Subtotal", fr: "Sous-total", de: "Zwischensumme" },
+  discount: { en: "Discount", ko: "할인", ja: "割引", "zh-CN": "折扣", es: "Descuento", fr: "Remise", de: "Rabatt" },
+  pointsUsed: { en: "Points used", ko: "마일리지 사용", ja: "ポイント利用", "zh-CN": "使用积分", es: "Puntos usados", fr: "Points utilisés", de: "Verwendete Punkte" },
+  shippingFee: { en: "Shipping", ko: "배송비", ja: "送料", "zh-CN": "运费", es: "Envío", fr: "Livraison", de: "Versand" },
+  paid: { en: "Total paid", ko: "결제 금액", ja: "お支払い金額", "zh-CN": "支付金额", es: "Total pagado", fr: "Total payé", de: "Bezahlt" },
   shipping: { en: "Shipping Address", ko: "배송지", ja: "配送先", "zh-CN": "收货地址", es: "Dirección de envío", fr: "Adresse de livraison", de: "Lieferadresse" },
   tracking: { en: "Tracking", ko: "운송장", ja: "追跡番号", "zh-CN": "快递单号", es: "Seguimiento", fr: "Suivi", de: "Sendungsverfolgung" },
   backToAccount: { en: "← My Account", ko: "← 마이페이지", ja: "← マイページ", "zh-CN": "← 我的账户", es: "← Mi cuenta", fr: "← Mon compte", de: "← Mein Konto" },
@@ -74,6 +79,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
     .select(`
       id, status, total_usd, created_at, customer_email, shipping_address,
       tracking_number, tracking_carrier,
+      subtotal_usd, discount_usd, shipping_usd, points_spent_usd,
       order_items(
         id, quantity, price_usd, option_name, option_id,
         products(id, slug, thumbnail_url, product_translations(name, language))
@@ -92,6 +98,34 @@ export default async function OrderDetailPage({ params }: PageProps) {
   });
 
   const shippingAddr = order.shipping_address as Record<string, string> | null;
+
+  // 가격 분해 — 신규 주문은 컬럼값, 기존(NULL)은 항목합계로 소계 폴백.
+  const itemsSubtotal = (order.order_items as { quantity: number; price_usd: number }[])
+    .reduce((s, it) => s + it.price_usd * it.quantity, 0);
+  const subtotal = typeof order.subtotal_usd === "number" ? order.subtotal_usd : itemsSubtotal;
+  const discount = typeof order.discount_usd === "number" ? order.discount_usd : 0;
+  const pointsUsd = typeof order.points_spent_usd === "number" ? order.points_spent_usd : 0;
+  const shippingUsd = typeof order.shipping_usd === "number" ? order.shipping_usd : 0;
+
+  const breakdownRow = (label: string, value: string, color: string) => (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-[#6B7280]">{label}</span>
+      <span style={{ color }}>{value}</span>
+    </div>
+  );
+
+  const priceBreakdown = (
+    <>
+      {breakdownRow(t("subtotal", locale), `$${subtotal.toFixed(2)}`, "#F0E6FF")}
+      {discount > 0 && breakdownRow(t("discount", locale), `−$${discount.toFixed(2)}`, "#10B981")}
+      {pointsUsd > 0 && breakdownRow(t("pointsUsed", locale), `−$${pointsUsd.toFixed(2)}`, "#10B981")}
+      {shippingUsd > 0 && breakdownRow(t("shippingFee", locale), `+$${shippingUsd.toFixed(2)}`, "#9CA3AF")}
+      <div className="flex items-center justify-between pt-2 mt-1 border-t border-[#2D2D4E]">
+        <span className="text-sm font-medium text-[#9CA3AF]">{t("paid", locale)}</span>
+        <span className="text-base font-bold text-[#F59E0B]">${order.total_usd.toFixed(2)}</span>
+      </div>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-[#0D0D1A] pt-24 pb-16">
@@ -266,10 +300,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
               );
             })}
           </div>
-          <div className="mt-4 pt-4 border-t border-[#2D2D4E] flex items-center justify-between">
-            <span className="text-sm text-[#6B7280]">{t("total", locale)}</span>
-            <span className="text-base font-bold text-[#F59E0B]">${order.total_usd.toFixed(2)}</span>
-          </div>
+          <div className="mt-4 pt-4 border-t border-[#2D2D4E] space-y-1.5">{priceBreakdown}</div>
         </div>
 
         {/* Shipping Address */}

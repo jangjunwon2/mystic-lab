@@ -38,6 +38,7 @@ export interface SaveOrderInput {
   customerNote?: string;
   shippingAddress?: ShippingAddress;
   shippingMethod?: string;
+  shippingUsd?: number; // 배송비(USD) — 미지정 시 shippingMethod로 추정. 주문 가격 분해 기록용
   pointsSpent?: number; // 결제 시 사용한 마일리지(포인트) — 결제 성공 후 차감 기록
   pointsHoldRef?: string; // 포인트 예약(hold) 식별자 — 정산 시 해당 hold consume (미지정 시 gatewayKey)
 }

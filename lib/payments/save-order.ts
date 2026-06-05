@@ -1,11 +1,13 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendLowStockAlert } from "@/lib/resend";
-import { earnPointsForUsd, addPoints, consumeHold } from "@/lib/points";
+import { earnPointsForUsd, addPoints, consumeHold, pointsToUsd } from "@/lib/points";
 import { getPointEarnRate } from "@/lib/settings";
 import { issueCoupon, redeemCouponByCode } from "@/lib/coupons";
 import type { SaveOrderInput } from "./types";
 
 const LOW_STOCK_THRESHOLD = 3;
+const SHIPPING_USD: Record<string, number> = { standard: 0, express: 15 };
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 // email → auth.users.id 조회. RPC(017) 우선, 미배포 시 레거시 스캔으로 폴백.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,12 +67,25 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
   }
   const nowIso = new Date().toISOString();
 
+  // 가격 분해 — 주문 상세 표시용. 보유 입력값으로 산출(없으면 추정).
+  const subtotalUsd = round2(input.items.reduce((s, i) => s + i.price_usd * i.quantity, 0));
+  const shippingUsd = round2(
+    input.shippingUsd ?? (input.shippingMethod ? (SHIPPING_USD[input.shippingMethod] ?? 0) : 0)
+  );
+  const pointsUsd = round2(pointsToUsd(input.pointsSpent ?? 0));
+  // 할인액 = 소계 + 배송 − 포인트 − 결제총액 (음수 방지)
+  const discountUsd = round2(Math.max(0, subtotalUsd + shippingUsd - pointsUsd - input.totalUsd));
+
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
       status: allDigital ? "completed" : "paid",
       ...(allDigital ? { completed_at: nowIso } : {}),
       total_usd: input.totalUsd,
+      subtotal_usd: subtotalUsd,
+      discount_usd: discountUsd,
+      shipping_usd: shippingUsd,
+      points_spent_usd: pointsUsd,
       customer_email: input.customerEmail,
       ...(userId ? { user_id: userId } : {}),
       stripe_payment_intent_id: gatewayKey,
