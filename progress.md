@@ -70,26 +70,15 @@
 
 ---
 
-## 🔒 보안·품질 점검 완료 내역 (2026-06-05)
+## 🔒 보안·품질 점검 (2026-06-05 완료, 재확인 불필요)
 
-> 전체 코드 2차 정밀 점검 후, 과거 progress가 "완료"로 적었으나 폴더 이동 중 유실됐던 보안 수정들을 **코드 기준으로 재적용** + 신규 발견 수정. 모두 `npx tsc` 통과·배포 완료.
-
-- **인증**: `discounts/use` 로그인 검증 추가(코드 소진 방지). 어드민 판별을 **이메일 기준(`requireAdmin`)으로 통일** — 미들웨어·`custom-orders/reply`의 금지패턴(`profiles.role`) 제거
-- **결제 위조 차단**: `lemon-confirm`(성공페이지 폴백)이 **실제 LS 결제(paid) 확인 후에만** 주문 저장 — 미확인 시 웹훅에 위임. 무료 취득 취약점 제거
-- **Rate limit**: `discounts/validate`·`newsletter/subscribe`·`custom-order`·`reviews` 추가
-- **입력 검증**: `reviews` 댓글 5000자 제한, 업로드 **매직바이트(이미지 시그니처) 검증**
-- **에러 노출 제거**: 사용자향 + 어드민 라우트 18곳의 DB `error.message`를 일반 메시지로 교체
-- **XSS**: 뉴스레터 미리보기를 sandboxed iframe으로 교체
-- **데드코드**: 미사용 `stripe-webhook` 삭제
-- **점검 양호(이상 없음)**: `lemon-webhook`(서명검증·환불복원·멱등) / `toss-confirm`(서버 가격검증·포인트 hold) / `lemon-checkout`(서버 재계산) / `cron/expire-points`(CRON_SECRET) / `community`(구매검증·권한) / `magic/my-code`·`account/points`(본인 한정) / 외부 fetch 전부 하드코딩 URL(SSRF 낮음)
-- **정리**: 홈 디렉터리 stale 프로젝트 파일 삭제, 프로젝트 내 mangled junk 디렉터리 제거, progress.md·CLAUDE.md 프로젝트로 일원화
+> 전체 코드 2차 점검·배포 완료. 적용: 어드민 판별 **이메일 기준(`requireAdmin`) 통일**(`profiles.role` 제거) · **결제 위조 차단**(`lemon-confirm` paid 검증 후 저장) · Rate limit 확대 · 입력검증(리뷰 5000자·업로드 매직바이트) · DB `error.message` 노출 제거(18곳) · 뉴스레터 XSS(sandboxed iframe) · 데드코드 제거. 점검 양호: `lemon-webhook`·`toss-confirm`·`lemon-checkout`·`cron/expire-points`·`community`·`account/points`. (상세는 git 이력)
 
 ---
 
 ## ⏳ 운영자(사장님) To-Do
-- [x] **Supabase 마이그레이션** — `033_point_holds.sql` 포함 019~033 적용 완료
-- [x] **Supabase 마이그레이션 `034_site_settings.sql`** 적용 완료 (포인트 적립률 어드민 설정)
-- [x] **Supabase 마이그레이션 `035_coupons.sql`** 적용 완료 (쿠폰 시스템 + 레퍼럴 보상/할인타입 + 공지 쿠폰코드)
+> 마이그레이션 **019~035 적용 완료** (포인트 hold·site_settings·쿠폰/레퍼럴 등) — 재확인 불필요.
+
 - [ ] **Supabase 마이그레이션 `036_pending_checkouts.sql`** — ⚠️ **해외결제 항목 5개+ 처리에 필수**. 미적용 시 압축 폴백(4개까지만). LS custom 255자 제한 우회용 대기 장바구니 테이블
 - [ ] **법적고지 `/legal-notice` 자리표시자 기입** — 대표자명·사업장 주소·연락처·통신판매업 신고번호(+EU 판매 시 VAT). ⚠️ 모든 법률 문구는 템플릿이며 **변호사/법률 서비스 검토 후** 적용 권장
 - [ ] **상품 등록 + 인증코드 발급**: slug `magic-calculator`, `fake-instagram` (없으면 `/calc`·`/insta` 게이트·자동발급 동작 안 함)
@@ -99,7 +88,7 @@
 
 ## 🔍 점검 필요 (실기기/라이브)
 - [ ] **인스타·계산기 앱 iOS 실기기 확인**(최신 배포 후): 홈 아이콘 · 풀스크린 · 아래당김 검정 · 뒤로가기 → 기존 홈추가본 **삭제 후 재추가**(iOS 캐시)
-- [ ] 라이브 **결제/포인트/리뷰/환불** 흐름 최종 확인
+- [ ] 라이브 **국내(Toss) 결제·환불·리뷰** 확인 (해외 LemonSqueezy 결제 ✅ 확인 완료)
 - [ ] **쿠폰/레퍼럴 라이브 확인**: 뉴스레터 환영 쿠폰 발급 → 체크아웃 사용, 레퍼럴 신규자 할인(정률/정액) + 추천인 보상 쿠폰 발급, 어드민 쿠폰 수동 발급
 - [ ] **포인트 정책 확인**: 가입 보너스 200P 지급, $5 미만 사용 차단, 어드민 적립률 변경 반영
 - [ ] **계산기↔인스타 force 실기기 확인**: 계산기 입력 후 인스타 앱 '마지막에서 한개 이전' 게시물에 숫자 노출
@@ -110,6 +99,43 @@
 ## 🔜 앞으로 할 일 / 후보
 - **인스타 앱 마술 기믹 잔여** — 숫자 force 삽입(계산기 연동)은 완료. 남은 것: 관객 *단어* 예언, 인스타 자체 입력 peek, 검색 탭 위장
 - **프린터 제어 독립 앱** — 계산기 내장 BLE 인쇄를 이미지·폰트 편집 가능한 별도 앱으로 분리
+
+---
+
+## 📐 기획(확정) — 쿠폰 통합 + 프로모션 엔진 (미구현, 착수 대기)
+
+> 목표: ① 첫 가입/기간한정 **자동 쿠폰**, ② **이벤트 일괄 발급**, ③ **프로모션 현황 대시보드**, ④ **할인코드↔쿠폰 통일**. 코드는 아직 안 짬 — 아래는 합의된 설계.
+
+### 결정 사항
+1. 가입 환영쿠폰 기본값 **10% / 6개월**(어드민에서 가변)
+2. 대량 이메일은 **배치·throttle로 정식 구현**(회원 많아져도 동작)
+3. 자동발급 트리거는 **가입(signup)만** v1, '주문 시'는 추후 확장
+4. 쿠폰 코드 형태는 **현행 `ML-XXXX` 단순 유지**(소스별 접두어 X)
+5. **`discount_codes`(공개·다회) + `issued_coupons`(개인·1회)를 단일 "쿠폰" 모델로 통일.** `referral_codes`는 의미가 달라(추천인 보상) **별개 유지**
+6. 자동/일괄 발급 쿠폰 노출: **마이페이지 "내 쿠폰" 탭 + 발급 이메일**(둘 다)
+
+### 통합 모델 (마이그레이션 `037_*.sql`, 운영자 1회 실행)
+- **`issued_coupons` 확장 → 통합 쿠폰**: `scope('personal'|'public')` + 공개형용 `max_uses`/`used_count` 추가
+  - 개인형: 소유자(user_id/email) 한정·1회(`is_used`) — 현행 유지
+  - 공개형: 소유자 없음·다회(`used_count < max_uses`) — `discount_codes` 대체
+- **`discount_codes` 데이터 이관** → `issued_coupons(scope='public')`, 이후 `/admin/discounts`·`discount_codes` 폐기
+- **`promotions`**(자동발급 규칙: trigger='signup', type/value/min/만료, starts_at·ends_at(null=상시), is_active) — 종료일 없으면 상시 가입쿠폰, 있으면 기간한정(2기능 통합)
+- **`promotion_grants`**(promotion_id·user_id·issued_coupon_id, UNIQUE(promo,user)) — 회원별 중복발급 방지
+- `issued_coupons(source)` 인덱스(대시보드 집계용)
+
+### 대상(이벤트 일괄발급) — 가능/보류
+- ✅ 전체회원(`auth.users`) · 뉴스레터(`newsletter_subscribers`) · 과거구매자(`orders` distinct) · **위시리스트 제품별**(`wishlists`) · 직접입력 이메일
+- ❌ **장바구니 미결제** — 장바구니가 localStorage(`ml_cart`) 전용이라 서버 조회 불가. **회원 장바구니 서버 동기화** 선행 필요 → 별도 기능으로 보류
+
+### 작업 분해 (Phase별 독립 배포)
+- **Phase 0 — 쿠폰 통일**: `037` 모델 통합 + `discount_codes` 이관 + `discounts/validate` 단일 경로화 + 공지 `coupon_code` 호환 + `/admin/discounts`→`/admin/coupons` 흡수. ⚠️ 체크아웃(방금 안정화) 건드리므로 신중·후방호환
+- **Phase 1 — 자동쿠폰 + 고객노출**: `lib/promotions.ts`(가입 시 멱등 발급) · `grantSignupBonus` 옆 연결 · `GET /api/account/coupons` + 마이페이지 "내 쿠폰" 탭(**i18n 7개국어**) · `sendCouponEmail()`
+- **Phase 2 — 이벤트 일괄발급**: `POST /api/admin/coupons/bulk`(대상 5종·이메일 배치·상한·중복가드) + 어드민 UI
+- **Phase 3 — 프로모션 CRUD + 대시보드**: `/api/admin/promotions` + 관리 UI + 소스별 발급·사용·전환율 집계, 어드민 네비 메뉴 추가
+
+### 영향 주의
+- **체크아웃 결제 경로**(`discounts/validate`, `save-order`, lemon/toss confirm·webhook의 코드 사용처리)가 통합 모델로 바뀜 → 회귀 테스트 필수
+- i18n은 **고객 노출분만 7개국어**(내 쿠폰 탭·쿠폰 이메일), 어드민은 한국어
 
 ---
 
