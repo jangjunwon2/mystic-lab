@@ -75,6 +75,28 @@ export interface InstaHighlight {
   cover: string; // dataURL/URL (빈 값이면 기본)
 }
 
+// 피드 전용 게시물 — '다른 계정'이 올린 것처럼 보이게 작성자(username/avatar)를 가진다.
+// 본인 게시물(InstaPost)은 프로필 그리드+피드에, feedPosts는 피드에만 섞여 노출된다.
+export interface InstaFeedPost {
+  id: string;
+  username: string;
+  avatar: string; // 빈 값이면 이니셜 그라데이션 아바타
+  verified: boolean;
+  image: string;
+  caption: LocalizedText;
+  likes: number;
+  date: LocalizedText;
+  audio?: string;
+  comments: InstaComment[];
+}
+
+// 사용자명 기반 결정적 그라데이션 — 빈 아바타를 계정별로 다른 색 원으로 표시(자산 없이 자연스럽게).
+export function avatarGradient(seed: string): string {
+  let h = 0;
+  for (const ch of seed || "?") h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `linear-gradient(135deg, hsl(${h} 62% 52%), hsl(${(h + 40) % 360} 62% 42%))`;
+}
+
 // DM 메시지/스레드
 export interface InstaDMMessage {
   fromMe: boolean;
@@ -99,6 +121,7 @@ export interface InstaConfig {
   following: number;
   appLocale: InstaLocale;
   posts: InstaPost[];
+  feedPosts: InstaFeedPost[];
   stories: InstaStory[];
   highlights: InstaHighlight[];
   reels: InstaReel[];
@@ -201,9 +224,45 @@ export function defaultInstaConfig(locale: string): InstaConfig {
         comments: [],
       },
     ],
+    feedPosts: [
+      {
+        id: "f1", username: "cardistry.daily", avatar: "", verified: true, image: "/images/magic/instagram-post.png",
+        caption: { en: "New flourish drop today 🃏 which deck should I cut next?", ko: "오늘 새 플러리시 공개 🃏 다음엔 어떤 덱으로 할까요?", ja: "新しいフラリッシュ公開 🃏 次はどのデック？" },
+        likes: 8421, date: { en: "2 hours ago", ko: "2시간 전", ja: "2時間前", "zh-CN": "2小时前", es: "hace 2 horas", fr: "il y a 2 heures", de: "vor 2 Stunden" },
+        audio: "Original audio",
+        comments: [{ user: "deckcollector", text: { en: "The bicycle one!! 🔥", ko: "바이시클로!! 🔥" } }],
+      },
+      {
+        id: "f2", username: "mentalism.lab", avatar: "", verified: false, image: "/images/magic/instagram-post.png",
+        caption: { en: "Reading a room is 90% listening. 🧠", ko: "독심은 90%가 경청이에요. 🧠", ja: "読心の9割は傾聴。🧠" },
+        likes: 3127, date: { en: "5 hours ago", ko: "5시간 전", ja: "5時間前", "zh-CN": "5小时前", es: "hace 5 horas", fr: "il y a 5 heures", de: "vor 5 Stunden" },
+        comments: [],
+      },
+      {
+        id: "f3", username: "the_prop_shop", avatar: "", verified: true, image: "/images/magic/instagram-post.png",
+        caption: { en: "Restock alert — the gimmick coins are back in stock. Link in bio.", ko: "재입고 — 기믹 코인 다시 입고됐어요. 링크는 바이오에.", ja: "再入荷 — ギミックコイン入荷しました。リンクはプロフへ。" },
+        likes: 1894, date: { en: "8 hours ago", ko: "8시간 전", ja: "8時間前", "zh-CN": "8小时前", es: "hace 8 horas", fr: "il y a 8 heures", de: "vor 8 Stunden" },
+        comments: [{ user: "coinmagic_kr", text: { en: "Finally 🙌", ko: "드디어 🙌" } }],
+      },
+      {
+        id: "f4", username: "sara.sleights", avatar: "", verified: false, image: "/images/magic/instagram-post.png",
+        caption: { en: "Practicing this pass for 6 months straight. Worth it. ✨", ko: "이 패스 6개월째 연습 중. 할 만해요. ✨", ja: "このパスを半年練習中。やる価値あり。✨" },
+        likes: 5230, date: { en: "1 day ago", ko: "1일 전", ja: "1日前", "zh-CN": "1天前", es: "hace 1 día", fr: "il y a 1 jour", de: "vor 1 Tag" },
+        audio: "Original audio",
+        comments: [],
+      },
+      {
+        id: "f5", username: "close.up.collective", avatar: "", verified: false, image: "/images/magic/instagram-post.png",
+        caption: { en: "Table-hopping tonight downtown. Come say hi 👋", ko: "오늘 밤 시내에서 테이블 마술해요. 들러서 인사해요 👋", ja: "今夜ダウンタウンでテーブルマジック。声かけてね 👋" },
+        likes: 942, date: { en: "1 day ago", ko: "1일 전", ja: "1日前", "zh-CN": "1天前", es: "hace 1 día", fr: "il y a 1 jour", de: "vor 1 Tag" },
+        comments: [],
+      },
+    ],
     stories: [
       { id: "s1", username: "alex_mental", avatar: "", image: "/images/magic/instagram-post.png" },
       { id: "s2", username: "sarah_mystique", avatar: "", image: "/images/magic/instagram-post.png" },
+      { id: "s3", username: "cardistry.daily", avatar: "", image: "/images/magic/instagram-post.png" },
+      { id: "s4", username: "the_prop_shop", avatar: "", image: "/images/magic/instagram-post.png" },
     ],
     highlights: [
       { id: "h1", title: { en: "Shows", ko: "공연", ja: "ショー", "zh-CN": "演出", es: "Shows", fr: "Spectacles", de: "Shows" }, cover: "/images/magic/instagram-post.png" },
@@ -223,11 +282,23 @@ export function defaultInstaConfig(locale: string): InstaConfig {
         messages: [
           { fromMe: false, text: "That last trick was unreal 🤯" },
           { fromMe: true, text: "Magic never lies 😉" },
+          { fromMe: false, text: "You have to teach me that one day 🙏" },
         ],
       },
       {
         id: "d2", username: "sarah_mystique", avatar: "", online: false,
         messages: [{ fromMe: false, text: "How did you know my number??" }],
+      },
+      {
+        id: "d3", username: "cardistry.daily", avatar: "", online: true,
+        messages: [
+          { fromMe: false, text: "Loved your latest reel 🔥" },
+          { fromMe: false, text: "Collab sometime?" },
+        ],
+      },
+      {
+        id: "d4", username: "the_prop_shop", avatar: "", online: false,
+        messages: [{ fromMe: false, text: "Your order has shipped 📦 tracking inside" }],
       },
     ],
   };
@@ -277,6 +348,23 @@ function normalizeHighlight(h: any): InstaHighlight {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeFeedPost(f: any): InstaFeedPost {
+  return {
+    id: String(f?.id ?? `f${Date.now()}`),
+    username: String(f?.username ?? ""),
+    avatar: typeof f?.avatar === "string" ? f.avatar : "",
+    verified: !!f?.verified,
+    image: typeof f?.image === "string" ? f.image : "",
+    caption: toLocalized(f?.caption),
+    likes: Number(f?.likes) || 0,
+    date: toLocalized(f?.date),
+    audio: typeof f?.audio === "string" && f.audio ? f.audio : undefined,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    comments: Array.isArray(f?.comments) ? f.comments.map((c: any) => ({ user: String(c?.user ?? ""), text: toLocalized(c?.text) })) : [],
+  };
+}
+
 export function loadInstaConfig(locale: string): InstaConfig {
   const base = defaultInstaConfig(locale);
   try {
@@ -287,6 +375,7 @@ export function loadInstaConfig(locale: string): InstaConfig {
       ...base,
       ...parsed,
       posts: Array.isArray(parsed.posts) ? parsed.posts.map(normalizePost) : base.posts,
+      feedPosts: Array.isArray(parsed.feedPosts) ? parsed.feedPosts.map(normalizeFeedPost) : base.feedPosts,
       stories: Array.isArray(parsed.stories) ? parsed.stories : base.stories,
       highlights: Array.isArray(parsed.highlights) ? parsed.highlights.map(normalizeHighlight) : base.highlights,
       reels: Array.isArray(parsed.reels) ? parsed.reels.map(normalizeReel) : base.reels,

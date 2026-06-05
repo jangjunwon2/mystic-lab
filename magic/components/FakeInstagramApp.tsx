@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, Send, Bookmark, Home, Search, Film, Settings, X, Plus, Trash2, Upload, ChevronLeft, BadgeCheck, Grid3x3, Music, MoreHorizontal, Phone, Video, Camera, Menu, ChevronDown, AtSign, UserPlus, Repeat, User } from "lucide-react";
 import {
-  type InstaConfig, type InstaPost, type InstaStory, type InstaReel, type InstaThread, type InstaDMMessage, type InstaHighlight, type LocalizedText,
-  loadInstaConfig, saveInstaConfig, fileToScaledDataUrl, formatCount, defaultInstaConfig, pickText, formatPostDate,
+  type InstaConfig, type InstaPost, type InstaStory, type InstaReel, type InstaThread, type InstaDMMessage, type InstaHighlight, type InstaFeedPost, type LocalizedText,
+  loadInstaConfig, saveInstaConfig, fileToScaledDataUrl, formatCount, defaultInstaConfig, pickText, formatPostDate, avatarGradient,
 } from "./instagram-config";
 
 interface Props {
@@ -38,18 +38,32 @@ interface SettingsStrings {
   reels: string; addReel: string; music: string; commentCount: string; dm: string; addThread: string; partnerId: string;
   online: string; messagesLabel: string; me: string; partner: string; addMessage: string; reset: string; goCalc: string; done: string;
   resetConfirm: string; audio: string; highlights: string; addHighlight: string; highlightTitle: string;
+  feedPosts: string; addFeedPost: string; feedHint: string;
 }
 const SETTINGS: Record<string, SettingsStrings> = {
-  en: { title: "Instagram Settings", language: "Language", profile: "Profile", profilePhoto: "Profile photo", username: "Username (@)", displayName: "Name", bio: "Bio", posts: "Posts", followers: "Followers", following: "Following", verifiedBadge: "Show verified badge (blue check)", addPost: "Add post", langHint: (l) => `Captions, dates and comments are saved in the current language (${l}). Switch "Language" above to enter content for other languages.`, photo: "Photo", caption: "Caption", likes: "Likes", relDate: "Relative date", relDatePh: "3 weeks ago", exactDate: "Exact post date (overrides relative date)", clear: "Clear", comments: "Comments", userId: "Username", content: "Text", addComment: "+ Add comment", stories: "Stories", addStory: "Add story", reels: "Reels", addReel: "Add reel", music: "Audio/Music", commentCount: "Comments", dm: "DM", addThread: "Add chat", partnerId: "Their username", online: "Active", messagesLabel: "Messages (toggle sender)", me: "Me", partner: "Them", addMessage: "+ Add message", reset: "Reset", goCalc: "Go to calculator", done: "Done", resetConfirm: "Reset to defaults?", audio: "Audio line (e.g. Original audio)", highlights: "Highlights", addHighlight: "Add highlight", highlightTitle: "Title" },
-  ko: { title: "Instagram 설정", language: "언어", profile: "프로필", profilePhoto: "프로필 사진", username: "사용자명 (@)", displayName: "이름", bio: "소개 (bio)", posts: "게시물", followers: "팔로워", following: "팔로잉", verifiedBadge: "인증 배지(파란 체크) 표시", addPost: "게시물 추가", langHint: (l) => `캡션·날짜·댓글은 현재 언어(${l})로 저장됩니다. 상단 '언어'를 바꿔 다른 언어 내용을 따로 입력하세요.`, photo: "사진", caption: "캡션", likes: "좋아요", relDate: "상대 날짜", relDatePh: "3주 전", exactDate: "정확한 게시일 (설정 시 상대 날짜 대신 표시)", clear: "지우기", comments: "댓글", userId: "아이디", content: "내용", addComment: "+ 댓글 추가", stories: "스토리", addStory: "스토리 추가", reels: "릴스", addReel: "릴스 추가", music: "오디오/음악", commentCount: "댓글 수", dm: "DM", addThread: "대화 추가", partnerId: "상대 아이디", online: "접속중", messagesLabel: "메시지 (보낸이 토글)", me: "나", partner: "상대", addMessage: "+ 메시지 추가", reset: "초기화", goCalc: "계산기로 이동", done: "완료", resetConfirm: "기본 설정으로 초기화할까요?", audio: "음원 라인 (예: Original audio)", highlights: "하이라이트", addHighlight: "하이라이트 추가", highlightTitle: "제목" },
-  ja: { title: "Instagram 設定", language: "言語", profile: "プロフィール", profilePhoto: "プロフィール写真", username: "ユーザーネーム (@)", displayName: "名前", bio: "自己紹介", posts: "投稿", followers: "フォロワー", following: "フォロー中", verifiedBadge: "認証バッジ(青チェック)を表示", addPost: "投稿を追加", langHint: (l) => `キャプション・日付・コメントは現在の言語(${l})で保存されます。上の「言語」を変えて他言語の内容を入力してください。`, photo: "写真", caption: "キャプション", likes: "いいね", relDate: "相対日付", relDatePh: "3週間前", exactDate: "正確な投稿日(設定時は相対日付の代わりに表示)", clear: "消去", comments: "コメント", userId: "ID", content: "内容", addComment: "+ コメント追加", stories: "ストーリー", addStory: "ストーリー追加", reels: "リール", addReel: "リール追加", music: "オーディオ/音楽", commentCount: "コメント数", dm: "DM", addThread: "チャットを追加", partnerId: "相手のID", online: "アクティブ", messagesLabel: "メッセージ(送信者を切替)", me: "自分", partner: "相手", addMessage: "+ メッセージ追加", reset: "リセット", goCalc: "電卓へ移動", done: "完了", resetConfirm: "初期設定にリセットしますか？", audio: "オーディオ行 (例: Original audio)", highlights: "ハイライト", addHighlight: "ハイライトを追加", highlightTitle: "タイトル" },
-  "zh-CN": { title: "Instagram 设置", language: "语言", profile: "个人资料", profilePhoto: "头像", username: "用户名 (@)", displayName: "姓名", bio: "简介", posts: "帖子", followers: "粉丝", following: "关注", verifiedBadge: "显示认证徽章(蓝勾)", addPost: "添加帖子", langHint: (l) => `标题、日期和评论将以当前语言(${l})保存。切换上方“语言”以输入其他语言内容。`, photo: "照片", caption: "标题", likes: "点赞", relDate: "相对日期", relDatePh: "3周前", exactDate: "精确发布日期(设置后替代相对日期)", clear: "清除", comments: "评论", userId: "用户名", content: "内容", addComment: "+ 添加评论", stories: "快拍", addStory: "添加快拍", reels: "Reels", addReel: "添加 Reel", music: "音频/音乐", commentCount: "评论数", dm: "私信", addThread: "添加对话", partnerId: "对方用户名", online: "在线", messagesLabel: "消息(切换发送者)", me: "我", partner: "对方", addMessage: "+ 添加消息", reset: "重置", goCalc: "前往计算器", done: "完成", resetConfirm: "恢复默认设置？", audio: "音频行 (例: Original audio)", highlights: "精彩集锦", addHighlight: "添加精彩集锦", highlightTitle: "标题" },
-  es: { title: "Configuración de Instagram", language: "Idioma", profile: "Perfil", profilePhoto: "Foto de perfil", username: "Usuario (@)", displayName: "Nombre", bio: "Biografía", posts: "Publicaciones", followers: "Seguidores", following: "Seguidos", verifiedBadge: "Mostrar insignia verificada (check azul)", addPost: "Añadir publicación", langHint: (l) => `Los pies de foto, fechas y comentarios se guardan en el idioma actual (${l}). Cambia "Idioma" arriba para otros idiomas.`, photo: "Foto", caption: "Pie de foto", likes: "Me gusta", relDate: "Fecha relativa", relDatePh: "hace 3 semanas", exactDate: "Fecha exacta (reemplaza la fecha relativa)", clear: "Borrar", comments: "Comentarios", userId: "Usuario", content: "Texto", addComment: "+ Añadir comentario", stories: "Historias", addStory: "Añadir historia", reels: "Reels", addReel: "Añadir reel", music: "Audio/Música", commentCount: "Comentarios", dm: "DM", addThread: "Añadir chat", partnerId: "Usuario del otro", online: "Activo(a)", messagesLabel: "Mensajes (alternar remitente)", me: "Yo", partner: "Otro", addMessage: "+ Añadir mensaje", reset: "Restablecer", goCalc: "Ir a la calculadora", done: "Hecho", resetConfirm: "¿Restablecer a valores predeterminados?", audio: "Línea de audio (ej. Original audio)", highlights: "Destacadas", addHighlight: "Añadir destacada", highlightTitle: "Título" },
-  fr: { title: "Paramètres Instagram", language: "Langue", profile: "Profil", profilePhoto: "Photo de profil", username: "Nom d'utilisateur (@)", displayName: "Nom", bio: "Bio", posts: "Publications", followers: "Abonnés", following: "Abonnements", verifiedBadge: "Afficher le badge vérifié (coche bleue)", addPost: "Ajouter une publication", langHint: (l) => `Les légendes, dates et commentaires sont enregistrés dans la langue actuelle (${l}). Changez « Langue » ci-dessus pour d'autres langues.`, photo: "Photo", caption: "Légende", likes: "J'aime", relDate: "Date relative", relDatePh: "il y a 3 semaines", exactDate: "Date exacte (remplace la date relative)", clear: "Effacer", comments: "Commentaires", userId: "Nom d'utilisateur", content: "Texte", addComment: "+ Ajouter un commentaire", stories: "Stories", addStory: "Ajouter une story", reels: "Reels", addReel: "Ajouter un reel", music: "Audio/Musique", commentCount: "Commentaires", dm: "DM", addThread: "Ajouter une conversation", partnerId: "Son nom d'utilisateur", online: "Actif", messagesLabel: "Messages (changer l'expéditeur)", me: "Moi", partner: "Lui/Elle", addMessage: "+ Ajouter un message", reset: "Réinitialiser", goCalc: "Aller à la calculatrice", done: "Terminé", resetConfirm: "Réinitialiser par défaut ?", audio: "Ligne audio (ex. Original audio)", highlights: "À la une", addHighlight: "Ajouter à la une", highlightTitle: "Titre" },
-  de: { title: "Instagram-Einstellungen", language: "Sprache", profile: "Profil", profilePhoto: "Profilbild", username: "Benutzername (@)", displayName: "Name", bio: "Bio", posts: "Beiträge", followers: "Follower", following: "Gefolgt", verifiedBadge: "Verifiziert-Abzeichen (blauer Haken) zeigen", addPost: "Beitrag hinzufügen", langHint: (l) => `Bildunterschriften, Daten und Kommentare werden in der aktuellen Sprache (${l}) gespeichert. Oben "Sprache" wechseln für andere Sprachen.`, photo: "Foto", caption: "Bildunterschrift", likes: "Gefällt mir", relDate: "Relatives Datum", relDatePh: "vor 3 Wochen", exactDate: "Genaues Datum (ersetzt relatives Datum)", clear: "Löschen", comments: "Kommentare", userId: "Benutzername", content: "Text", addComment: "+ Kommentar hinzufügen", stories: "Storys", addStory: "Story hinzufügen", reels: "Reels", addReel: "Reel hinzufügen", music: "Audio/Musik", commentCount: "Kommentare", dm: "DM", addThread: "Chat hinzufügen", partnerId: "Benutzername", online: "Aktiv", messagesLabel: "Nachrichten (Absender wechseln)", me: "Ich", partner: "Andere", addMessage: "+ Nachricht hinzufügen", reset: "Zurücksetzen", goCalc: "Zum Rechner", done: "Fertig", resetConfirm: "Auf Standard zurücksetzen?", audio: "Audiozeile (z. B. Original audio)", highlights: "Highlights", addHighlight: "Highlight hinzufügen", highlightTitle: "Titel" },
+  en: { title: "Instagram Settings", language: "Language", profile: "Profile", profilePhoto: "Profile photo", username: "Username (@)", displayName: "Name", bio: "Bio", posts: "Posts", followers: "Followers", following: "Following", verifiedBadge: "Show verified badge (blue check)", addPost: "Add post", langHint: (l) => `Captions, dates and comments are saved in the current language (${l}). Switch "Language" above to enter content for other languages.`, photo: "Photo", caption: "Caption", likes: "Likes", relDate: "Relative date", relDatePh: "3 weeks ago", exactDate: "Exact post date (overrides relative date)", clear: "Clear", comments: "Comments", userId: "Username", content: "Text", addComment: "+ Add comment", stories: "Stories", addStory: "Add story", reels: "Reels", addReel: "Add reel", music: "Audio/Music", commentCount: "Comments", dm: "DM", addThread: "Add chat", partnerId: "Their username", online: "Active", messagesLabel: "Messages (toggle sender)", me: "Me", partner: "Them", addMessage: "+ Add message", reset: "Reset", goCalc: "Go to calculator", done: "Done", resetConfirm: "Reset to defaults?", audio: "Audio line (e.g. Original audio)", highlights: "Highlights", addHighlight: "Add highlight", highlightTitle: "Title", feedPosts: "Feed posts (other accounts)", addFeedPost: "Add feed post", feedHint: "These appear in the feed as if posted by other accounts (not on your profile grid)." },
+  ko: { title: "Instagram 설정", language: "언어", profile: "프로필", profilePhoto: "프로필 사진", username: "사용자명 (@)", displayName: "이름", bio: "소개 (bio)", posts: "게시물", followers: "팔로워", following: "팔로잉", verifiedBadge: "인증 배지(파란 체크) 표시", addPost: "게시물 추가", langHint: (l) => `캡션·날짜·댓글은 현재 언어(${l})로 저장됩니다. 상단 '언어'를 바꿔 다른 언어 내용을 따로 입력하세요.`, photo: "사진", caption: "캡션", likes: "좋아요", relDate: "상대 날짜", relDatePh: "3주 전", exactDate: "정확한 게시일 (설정 시 상대 날짜 대신 표시)", clear: "지우기", comments: "댓글", userId: "아이디", content: "내용", addComment: "+ 댓글 추가", stories: "스토리", addStory: "스토리 추가", reels: "릴스", addReel: "릴스 추가", music: "오디오/음악", commentCount: "댓글 수", dm: "DM", addThread: "대화 추가", partnerId: "상대 아이디", online: "접속중", messagesLabel: "메시지 (보낸이 토글)", me: "나", partner: "상대", addMessage: "+ 메시지 추가", reset: "초기화", goCalc: "계산기로 이동", done: "완료", resetConfirm: "기본 설정으로 초기화할까요?", audio: "음원 라인 (예: Original audio)", highlights: "하이라이트", addHighlight: "하이라이트 추가", highlightTitle: "제목", feedPosts: "피드 게시물 (다른 계정)", addFeedPost: "피드 게시물 추가", feedHint: "피드에 '다른 계정'이 올린 것처럼 노출됩니다(내 프로필 그리드에는 안 보임)." },
+  ja: { title: "Instagram 設定", language: "言語", profile: "プロフィール", profilePhoto: "プロフィール写真", username: "ユーザーネーム (@)", displayName: "名前", bio: "自己紹介", posts: "投稿", followers: "フォロワー", following: "フォロー中", verifiedBadge: "認証バッジ(青チェック)を表示", addPost: "投稿を追加", langHint: (l) => `キャプション・日付・コメントは現在の言語(${l})で保存されます。上の「言語」を変えて他言語の内容を入力してください。`, photo: "写真", caption: "キャプション", likes: "いいね", relDate: "相対日付", relDatePh: "3週間前", exactDate: "正確な投稿日(設定時は相対日付の代わりに表示)", clear: "消去", comments: "コメント", userId: "ID", content: "内容", addComment: "+ コメント追加", stories: "ストーリー", addStory: "ストーリー追加", reels: "リール", addReel: "リール追加", music: "オーディオ/音楽", commentCount: "コメント数", dm: "DM", addThread: "チャットを追加", partnerId: "相手のID", online: "アクティブ", messagesLabel: "メッセージ(送信者を切替)", me: "自分", partner: "相手", addMessage: "+ メッセージ追加", reset: "リセット", goCalc: "電卓へ移動", done: "完了", resetConfirm: "初期設定にリセットしますか？", audio: "オーディオ行 (例: Original audio)", highlights: "ハイライト", addHighlight: "ハイライトを追加", highlightTitle: "タイトル", feedPosts: "フィード投稿 (他アカウント)", addFeedPost: "フィード投稿を追加", feedHint: "他のアカウントが投稿したようにフィードに表示されます(プロフィールには出ません)。" },
+  "zh-CN": { title: "Instagram 设置", language: "语言", profile: "个人资料", profilePhoto: "头像", username: "用户名 (@)", displayName: "姓名", bio: "简介", posts: "帖子", followers: "粉丝", following: "关注", verifiedBadge: "显示认证徽章(蓝勾)", addPost: "添加帖子", langHint: (l) => `标题、日期和评论将以当前语言(${l})保存。切换上方“语言”以输入其他语言内容。`, photo: "照片", caption: "标题", likes: "点赞", relDate: "相对日期", relDatePh: "3周前", exactDate: "精确发布日期(设置后替代相对日期)", clear: "清除", comments: "评论", userId: "用户名", content: "内容", addComment: "+ 添加评论", stories: "快拍", addStory: "添加快拍", reels: "Reels", addReel: "添加 Reel", music: "音频/音乐", commentCount: "评论数", dm: "私信", addThread: "添加对话", partnerId: "对方用户名", online: "在线", messagesLabel: "消息(切换发送者)", me: "我", partner: "对方", addMessage: "+ 添加消息", reset: "重置", goCalc: "前往计算器", done: "完成", resetConfirm: "恢复默认设置？", audio: "音频行 (例: Original audio)", highlights: "精彩集锦", addHighlight: "添加精彩集锦", highlightTitle: "标题", feedPosts: "动态帖子 (其他账号)", addFeedPost: "添加动态帖子", feedHint: "将作为'其他账号'的帖子显示在动态中(不会出现在你的主页网格)。" },
+  es: { title: "Configuración de Instagram", language: "Idioma", profile: "Perfil", profilePhoto: "Foto de perfil", username: "Usuario (@)", displayName: "Nombre", bio: "Biografía", posts: "Publicaciones", followers: "Seguidores", following: "Seguidos", verifiedBadge: "Mostrar insignia verificada (check azul)", addPost: "Añadir publicación", langHint: (l) => `Los pies de foto, fechas y comentarios se guardan en el idioma actual (${l}). Cambia "Idioma" arriba para otros idiomas.`, photo: "Foto", caption: "Pie de foto", likes: "Me gusta", relDate: "Fecha relativa", relDatePh: "hace 3 semanas", exactDate: "Fecha exacta (reemplaza la fecha relativa)", clear: "Borrar", comments: "Comentarios", userId: "Usuario", content: "Texto", addComment: "+ Añadir comentario", stories: "Historias", addStory: "Añadir historia", reels: "Reels", addReel: "Añadir reel", music: "Audio/Música", commentCount: "Comentarios", dm: "DM", addThread: "Añadir chat", partnerId: "Usuario del otro", online: "Activo(a)", messagesLabel: "Mensajes (alternar remitente)", me: "Yo", partner: "Otro", addMessage: "+ Añadir mensaje", reset: "Restablecer", goCalc: "Ir a la calculadora", done: "Hecho", resetConfirm: "¿Restablecer a valores predeterminados?", audio: "Línea de audio (ej. Original audio)", highlights: "Destacadas", addHighlight: "Añadir destacada", highlightTitle: "Título", feedPosts: "Publicaciones del feed (otras cuentas)", addFeedPost: "Añadir publicación al feed", feedHint: "Aparecen en el feed como si las publicaran otras cuentas (no en tu cuadrícula de perfil)." },
+  fr: { title: "Paramètres Instagram", language: "Langue", profile: "Profil", profilePhoto: "Photo de profil", username: "Nom d'utilisateur (@)", displayName: "Nom", bio: "Bio", posts: "Publications", followers: "Abonnés", following: "Abonnements", verifiedBadge: "Afficher le badge vérifié (coche bleue)", addPost: "Ajouter une publication", langHint: (l) => `Les légendes, dates et commentaires sont enregistrés dans la langue actuelle (${l}). Changez « Langue » ci-dessus pour d'autres langues.`, photo: "Photo", caption: "Légende", likes: "J'aime", relDate: "Date relative", relDatePh: "il y a 3 semaines", exactDate: "Date exacte (remplace la date relative)", clear: "Effacer", comments: "Commentaires", userId: "Nom d'utilisateur", content: "Texte", addComment: "+ Ajouter un commentaire", stories: "Stories", addStory: "Ajouter une story", reels: "Reels", addReel: "Ajouter un reel", music: "Audio/Musique", commentCount: "Commentaires", dm: "DM", addThread: "Ajouter une conversation", partnerId: "Son nom d'utilisateur", online: "Actif", messagesLabel: "Messages (changer l'expéditeur)", me: "Moi", partner: "Lui/Elle", addMessage: "+ Ajouter un message", reset: "Réinitialiser", goCalc: "Aller à la calculatrice", done: "Terminé", resetConfirm: "Réinitialiser par défaut ?", audio: "Ligne audio (ex. Original audio)", highlights: "À la une", addHighlight: "Ajouter à la une", highlightTitle: "Titre", feedPosts: "Publications du fil (autres comptes)", addFeedPost: "Ajouter une publication", feedHint: "Apparaissent dans le fil comme publiées par d'autres comptes (pas sur votre grille de profil)." },
+  de: { title: "Instagram-Einstellungen", language: "Sprache", profile: "Profil", profilePhoto: "Profilbild", username: "Benutzername (@)", displayName: "Name", bio: "Bio", posts: "Beiträge", followers: "Follower", following: "Gefolgt", verifiedBadge: "Verifiziert-Abzeichen (blauer Haken) zeigen", addPost: "Beitrag hinzufügen", langHint: (l) => `Bildunterschriften, Daten und Kommentare werden in der aktuellen Sprache (${l}) gespeichert. Oben "Sprache" wechseln für andere Sprachen.`, photo: "Foto", caption: "Bildunterschrift", likes: "Gefällt mir", relDate: "Relatives Datum", relDatePh: "vor 3 Wochen", exactDate: "Genaues Datum (ersetzt relatives Datum)", clear: "Löschen", comments: "Kommentare", userId: "Benutzername", content: "Text", addComment: "+ Kommentar hinzufügen", stories: "Storys", addStory: "Story hinzufügen", reels: "Reels", addReel: "Reel hinzufügen", music: "Audio/Musik", commentCount: "Kommentare", dm: "DM", addThread: "Chat hinzufügen", partnerId: "Benutzername", online: "Aktiv", messagesLabel: "Nachrichten (Absender wechseln)", me: "Ich", partner: "Andere", addMessage: "+ Nachricht hinzufügen", reset: "Zurücksetzen", goCalc: "Zum Rechner", done: "Fertig", resetConfirm: "Auf Standard zurücksetzen?", audio: "Audiozeile (z. B. Original audio)", highlights: "Highlights", addHighlight: "Highlight hinzufügen", highlightTitle: "Titel", feedPosts: "Feed-Beiträge (andere Konten)", addFeedPost: "Feed-Beitrag hinzufügen", feedHint: "Erscheinen im Feed, als wären sie von anderen Konten gepostet (nicht in deinem Profilraster)." },
 };
 
 const AVATAR_FALLBACK = "/images/magic/instagram-post.png";
+
+// 아바타 — 이미지가 있으면 원형 이미지, 없으면 사용자명 기반 이니셜+그라데이션(계정별로 다른 색).
+// 부모 컨테이너 크기를 채운다(w-full h-full). fontPx는 이니셜 글자 크기.
+function Avatar({ src, name, fontPx }: { src: string; name: string; fontPx: number }) {
+  if (src) {
+    return <div className="w-full h-full rounded-full bg-cover bg-center" style={{ backgroundImage: `url('${src}')` }} />;
+  }
+  return (
+    <div className="w-full h-full rounded-full flex items-center justify-center text-white font-semibold" style={{ background: avatarGradient(name), fontSize: fontPx }}>
+      {(name.trim()[0] ?? "?").toUpperCase()}
+    </div>
+  );
+}
 
 export default function FakeInstagramApp({ locale }: Props) {
   const router = useRouter();
@@ -243,6 +257,22 @@ export default function FakeInstagramApp({ locale }: Props) {
   );
 }
 
+// 피드 노출 순서 — 다른 계정(feedPosts)과 본인 게시물(posts)을 번갈아 섞어 실제 피드처럼 보이게 한다.
+// (본인 게시물은 프로필 그리드에도 노출되지만 feedPosts는 피드 전용)
+type FeedEntry = { post: InstaPost; author?: { username: string; avatar: string; verified: boolean } };
+function buildFeed(config: InstaConfig): FeedEntry[] {
+  const out: FeedEntry[] = [];
+  const own = config.posts;
+  const others = config.feedPosts;
+  const maxLen = Math.max(own.length, others.length);
+  for (let i = 0; i < maxLen; i++) {
+    const o = others[i];
+    if (o) out.push({ post: o, author: { username: o.username, avatar: o.avatar, verified: o.verified } });
+    if (own[i]) out.push({ post: own[i] });
+  }
+  return out;
+}
+
 // ─── 피드 ───
 function FeedView({ config, ui, likes, likeCount, onLike, onOpenStory, onOpenDM }: {
   config: InstaConfig; ui: UiStrings; likes: Record<string, boolean>; likeCount: (p: InstaPost) => number; onLike: (p: InstaPost) => void;
@@ -265,10 +295,10 @@ function FeedView({ config, ui, likes, likeCount, onLike, onOpenStory, onOpenDM 
       </div>
       <div className="flex-1 overflow-y-auto overscroll-contain pb-2">
         <StoriesRing config={config} ui={ui} onOpenStory={onOpenStory} />
-        {config.posts.map((post) => (
-          <PostCard key={post.id} post={post} config={config} ui={ui} liked={!!likes[post.id]} likeCount={likeCount} onLike={onLike} />
+        {buildFeed(config).map(({ post, author }) => (
+          <PostCard key={post.id} post={post} author={author} config={config} ui={ui} liked={!!likes[post.id]} likeCount={likeCount} onLike={onLike} />
         ))}
-        {config.posts.length === 0 && (
+        {config.posts.length === 0 && config.feedPosts.length === 0 && (
           <div className="py-24 text-center text-gray-500 text-sm">{ui.noPosts}</div>
         )}
       </div>
@@ -291,7 +321,7 @@ function StoriesRing({ config, ui, onOpenStory }: { config: InstaConfig; ui: UiS
         <button key={s.id} onClick={() => onOpenStory(i + 1)} className="flex flex-col items-center gap-1 shrink-0 w-[68px]">
           <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#F9C900] via-[#E1306C] to-[#C13584]">
             <div className="w-full h-full rounded-full bg-black p-[2px]">
-              <div className="w-full h-full rounded-full bg-cover bg-center" style={{ backgroundImage: `url('${s.avatar || s.image || AVATAR_FALLBACK}')` }} />
+              <Avatar src={s.avatar} name={s.username} fontPx={22} />
             </div>
           </div>
           <span className="text-[11px] text-gray-200 truncate w-full text-center">{s.username}</span>
@@ -302,22 +332,27 @@ function StoriesRing({ config, ui, onOpenStory }: { config: InstaConfig; ui: UiS
 }
 
 // ─── 게시물 카드 ───
-function PostCard({ post, config, ui, liked, likeCount, onLike }: {
+// author 미지정 = 본인 게시물(프로필 소유자). 지정 시 '다른 계정' 피드 게시물로 표시.
+function PostCard({ post, config, ui, liked, likeCount, onLike, author }: {
   post: InstaPost; config: InstaConfig; ui: typeof UI["en"]; liked: boolean; likeCount: (p: InstaPost) => number; onLike: (p: InstaPost) => void;
+  author?: { username: string; avatar: string; verified: boolean };
 }) {
+  const authorName = author?.username ?? config.username;
+  const authorAvatar = author?.avatar ?? config.avatar;
+  const authorVerified = author?.verified ?? config.verified;
   return (
     <div className="mb-2">
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full p-[1.5px] bg-gradient-to-tr from-[#F9C900] via-[#E1306C] to-[#C13584]">
             <div className="w-full h-full rounded-full bg-black p-[1px]">
-              <div className="w-full h-full rounded-full bg-cover bg-center" style={{ backgroundImage: `url('${config.avatar || AVATAR_FALLBACK}')` }} />
+              <Avatar src={authorAvatar} name={authorName} fontPx={11} />
             </div>
           </div>
           <div className="leading-tight">
             <div className="flex items-center gap-1">
-              <span className="text-[13px] font-semibold text-white">{config.username}</span>
-              {config.verified && <BadgeCheck className="w-3.5 h-3.5 text-[#3897F0] fill-[#3897F0]" stroke="#000" strokeWidth={1.5} />}
+              <span className="text-[13px] font-semibold text-white">{authorName}</span>
+              {authorVerified && <BadgeCheck className="w-3.5 h-3.5 text-[#3897F0] fill-[#3897F0]" stroke="#000" strokeWidth={1.5} />}
             </div>
             {post.audio && (
               <div className="flex items-center gap-1 mt-0.5">
@@ -341,9 +376,9 @@ function PostCard({ post, config, ui, liked, likeCount, onLike }: {
         </div>
         <Bookmark style={{ width: 26, height: 26 }} className="text-white" strokeWidth={2} />
       </div>
-      <div className="px-3 pb-1 text-sm text-white">{ui.likedBy(config.username, formatCount(likeCount(post)))}</div>
+      <div className="px-3 pb-1 text-sm text-white">{ui.likedBy(authorName, formatCount(likeCount(post)))}</div>
       <div className="px-3 pb-1 text-[13.5px] leading-relaxed text-gray-100">
-        <strong className="text-white mr-1.5">{config.username}</strong>
+        <strong className="text-white mr-1.5">{authorName}</strong>
         <span className="whitespace-pre-line select-text">{pickText(post.caption, config.appLocale)}</span>
       </div>
       {post.comments.length > 0 && (
@@ -500,7 +535,7 @@ function StoryViewer({ config, ui, startIndex, onClose }: {
       </div>
       {/* 헤더 */}
       <div className="flex items-center gap-2 px-3 py-2.5">
-        <div className="w-8 h-8 rounded-full bg-cover bg-center" style={{ backgroundImage: `url('${cur.avatar || cur.image || AVATAR_FALLBACK}')` }} />
+        <div className="w-8 h-8 shrink-0"><Avatar src={cur.avatar} name={cur.username} fontPx={13} /></div>
         <span className="text-sm font-semibold text-white">{idx === 0 ? ui.yourStory : cur.username}</span>
         <button onClick={onClose} className="ml-auto p-1 active:opacity-60"><X className="w-6 h-6 text-white" /></button>
       </div>
@@ -597,7 +632,8 @@ function DMListView({ config, ui, onBack, onOpenThread }: {
           const last = d.messages[d.messages.length - 1];
           return (
             <button key={d.id} onClick={() => onOpenThread(d.id)} className="w-full flex items-center gap-3 px-3 py-2.5 active:bg-[#1A1A1A]">
-              <div className="relative w-14 h-14 rounded-full bg-cover bg-center shrink-0" style={{ backgroundImage: `url('${d.avatar || AVATAR_FALLBACK}')` }}>
+              <div className="relative w-14 h-14 shrink-0">
+                <Avatar src={d.avatar} name={d.username} fontPx={20} />
                 {d.online && <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#2ECC71] border-2 border-black" />}
               </div>
               <div className="flex-1 min-w-0 text-left">
@@ -636,7 +672,7 @@ function DMThreadView({ thread, ui, onBack }: {
     <>
       <div className="h-14 border-b border-[#262626] bg-black flex items-center gap-3 px-3 shrink-0">
         <button onClick={onBack} className="active:opacity-60"><ChevronLeft className="w-6 h-6 text-white" /></button>
-        <div className="w-8 h-8 rounded-full bg-cover bg-center shrink-0" style={{ backgroundImage: `url('${thread.avatar || AVATAR_FALLBACK}')` }} />
+        <div className="w-8 h-8 shrink-0"><Avatar src={thread.avatar} name={thread.username} fontPx={13} /></div>
         <div className="leading-tight min-w-0">
           <p className="text-sm font-semibold text-white truncate">{thread.username}</p>
           {thread.online && <p className="text-[11px] text-gray-400">{ui.active}</p>}
@@ -680,10 +716,12 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
   const storyFileRef = useRef<HTMLInputElement>(null);
   const reelFileRef = useRef<HTMLInputElement>(null);
   const highlightFileRef = useRef<HTMLInputElement>(null);
+  const feedFileRef = useRef<HTMLInputElement>(null);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [editingReelId, setEditingReelId] = useState<string | null>(null);
   const [editingHighlightId, setEditingHighlightId] = useState<string | null>(null);
+  const [editingFeedId, setEditingFeedId] = useState<string | null>(null);
 
   const inputCls = "w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white px-3 py-2 text-sm focus:outline-none focus:border-[#7C3AED]";
   const labelCls = "text-xs text-[#9CA3AF] block mb-1";
@@ -705,6 +743,9 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
   const setHighlights = (highlights: InstaHighlight[]) => onUpdate({ highlights });
   const updateHighlight = (id: string, patch: Partial<InstaHighlight>) =>
     setHighlights(config.highlights.map((h) => (h.id === id ? { ...h, ...patch } : h)));
+  const setFeedPosts = (feedPosts: InstaFeedPost[]) => onUpdate({ feedPosts });
+  const updateFeedPost = (id: string, patch: Partial<InstaFeedPost>) =>
+    setFeedPosts(config.feedPosts.map((f) => (f.id === id ? { ...f, ...patch } : f)));
   const setDms = (dms: InstaThread[]) => onUpdate({ dms });
   const updateThread = (id: string, patch: Partial<InstaThread>) =>
     setDms(config.dms.map((d) => (d.id === id ? { ...d, ...patch } : d)));
@@ -734,6 +775,11 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
     updateHighlight(editingHighlightId, { cover: await fileToScaledDataUrl(f, 320) });
     e.target.value = "";
   };
+  const onFeedImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f || !editingFeedId) return;
+    updateFeedPost(editingFeedId, { image: await fileToScaledDataUrl(f) });
+    e.target.value = "";
+  };
   const addPost = () => {
     const id = `p${Date.now()}`;
     setPosts([{ id, image: "", caption: {}, likes: 100, date: {}, comments: [] }, ...config.posts]);
@@ -756,6 +802,11 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
     setEditingHighlightId(id);
     highlightFileRef.current?.click();
   };
+  const addFeedPost = () => {
+    const id = `f${Date.now()}`;
+    setFeedPosts([{ id, username: "", avatar: "", verified: false, image: "", caption: {}, likes: 500, date: {}, comments: [] }, ...config.feedPosts]);
+    setEditingFeedId(id);
+  };
   const addThread = () => {
     const id = `d${Date.now()}`;
     setDms([...config.dms, { id, username: "", avatar: "", online: false, messages: [] }]);
@@ -769,6 +820,7 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
       <input ref={storyFileRef} type="file" accept="image/*" className="hidden" onChange={onStoryImage} />
       <input ref={reelFileRef} type="file" accept="image/*" className="hidden" onChange={onReelImage} />
       <input ref={highlightFileRef} type="file" accept="image/*" className="hidden" onChange={onHighlightImage} />
+      <input ref={feedFileRef} type="file" accept="image/*" className="hidden" onChange={onFeedImage} />
 
       <div className="max-w-md mx-auto space-y-5 pb-20 pt-6">
         <div className="flex items-center justify-between border-b border-[#2D2D4E] pb-4">
@@ -843,6 +895,35 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
                   </div>
                 ))}
                 <button onClick={() => updatePost(p.id, { comments: [...p.comments, { user: "", text: {} }] })} className="text-xs" style={{ color: "#A855F7" }}>{tx.addComment}</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 피드 게시물 (다른 계정) */}
+        <div className="rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[#A855F7]">{tx.feedPosts} ({config.feedPosts.length})</h3>
+            <button onClick={addFeedPost} className="flex items-center gap-1 text-xs px-2 py-1 rounded" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Plus className="w-3.5 h-3.5" /> {tx.addFeedPost}</button>
+          </div>
+          <p className="text-[11px] text-[#6B7280] leading-snug">{tx.feedHint}</p>
+          {config.feedPosts.map((f) => (
+            <div key={f.id} className="rounded-lg border border-[#2D2D4E] bg-[#13131F] p-3 space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded bg-cover bg-center border border-[#2D2D4E] shrink-0" style={{ backgroundImage: `url('${f.image || AVATAR_FALLBACK}')` }} />
+                <button onClick={() => { setEditingFeedId(f.id); feedFileRef.current?.click(); }} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Upload className="w-3.5 h-3.5" /> {tx.photo}</button>
+                <button onClick={() => setFeedPosts(config.feedPosts.filter((x) => x.id !== f.id))} className="ml-auto p-1.5 rounded" style={{ color: "#EF4444" }}><Trash2 className="w-4 h-4" /></button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input value={f.username} onChange={(e) => updateFeedPost(f.id, { username: e.target.value })} placeholder={tx.userId} className={inputCls} style={{ flex: 1 }} />
+                <label className="flex items-center gap-1 text-xs text-white shrink-0 cursor-pointer">
+                  <input type="checkbox" checked={f.verified} onChange={(e) => updateFeedPost(f.id, { verified: e.target.checked })} className="accent-[#7C3AED]" /> ✔
+                </label>
+              </div>
+              <textarea value={f.caption[loc] ?? ""} onChange={(e) => updateFeedPost(f.id, { caption: setLoc(f.caption, e.target.value) })} placeholder={`${tx.caption} (${loc.toUpperCase()})`} rows={2} className={`${inputCls} resize-none`} />
+              <div className="grid grid-cols-2 gap-2">
+                <div><label className={labelCls}>{tx.likes}</label><input type="number" value={f.likes} onChange={(e) => updateFeedPost(f.id, { likes: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
+                <div><label className={labelCls}>{tx.relDate} ({loc.toUpperCase()})</label><input value={f.date[loc] ?? ""} onChange={(e) => updateFeedPost(f.id, { date: setLoc(f.date, e.target.value) })} placeholder={tx.relDatePh} className={inputCls} /></div>
               </div>
             </div>
           ))}
