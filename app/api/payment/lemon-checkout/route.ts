@@ -10,11 +10,12 @@ import type { OrderPayload } from "@/lib/payments/types";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items, customerEmail, locale, discountAmount, discountCodeId, discountCode, referralCode, shippingMethod, shippingAddress, pointsUsed } = body as OrderPayload & {
+    const { items, customerEmail, locale, discountAmount, discountCodeId, discountCode, referralCode, couponCode, shippingMethod, shippingAddress, pointsUsed } = body as OrderPayload & {
       discountAmount?: number;
       discountCodeId?: string | null;
       discountCode?: string | null;
       referralCode?: string | null;
+      couponCode?: string | null;
       shippingMethod?: string;
       shippingAddress?: Record<string, string>;
       pointsUsed?: number;
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
       pointsSpent,
       pointsHoldRef,
       referralCode ?? undefined,
+      couponCode ?? undefined,
     );
 
     // pointsSpent·pointsHoldRef를 클라이언트에 반환 → 성공페이지 폴백(lemon-confirm)도 동일 포인트 정산 가능

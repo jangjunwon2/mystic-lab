@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
   let items: CartItem[] = [];
   let appliedDiscountCode: string | undefined;
   let appliedReferralCode: string | undefined;
+  let appliedCouponCode: string | undefined;
   try {
     const meta = event.meta as Record<string, unknown> | undefined;
     const custom = (meta?.custom_data as Record<string, string>) ?? {};
@@ -86,6 +87,9 @@ export async function POST(request: NextRequest) {
     }
     if (custom.referral_code) {
       appliedReferralCode = custom.referral_code;
+    }
+    if (custom.coupon_code) {
+      appliedCouponCode = custom.coupon_code;
     }
   } catch {
     console.error("[lemon-webhook] Failed to parse custom_data");
@@ -114,6 +118,7 @@ export async function POST(request: NextRequest) {
     totalUsd,
     appliedDiscountCode,
     appliedReferralCode,
+    appliedCouponCode,
     shippingMethod,
     shippingAddress,
     pointsSpent,

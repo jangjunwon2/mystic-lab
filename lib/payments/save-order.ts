@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { sendLowStockAlert } from "@/lib/resend";
 import { earnPointsForUsd, addPoints, consumeHold } from "@/lib/points";
 import { getPointEarnRate } from "@/lib/settings";
+import { issueCoupon, redeemCouponByCode } from "@/lib/coupons";
 import type { SaveOrderInput } from "./types";
 
 const LOW_STOCK_THRESHOLD = 3;
@@ -129,19 +130,34 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     }
   }
 
-  // 레퍼럴/제휴 코드 사용횟수 증가 — 코드로 적용된 주문이면 1회 증가.
-  // 멱등성: 같은 결제는 위 dup 가드에서 early-return되므로 여기까지 오면 신규 주문 1건뿐 → 정확히 1회 증가.
-  // (lemon-confirm·lemon-webhook·toss-confirm 어느 경로로 저장돼도 동일하게 처리)
+  // 개인 발급 쿠폰 사용 처리(멱등) — dup 가드로 신규 주문 1건만 도달.
+  if (input.appliedCouponCode) {
+    await redeemCouponByCode(supabase, input.appliedCouponCode, order.id);
+  }
+
+  // 레퍼럴/제휴 코드 — 사용횟수 증가 + 추천인 보상 쿠폰 발급.
+  // 멱등성: 같은 결제는 위 dup 가드에서 early-return되므로 여기까지 오면 신규 주문 1건뿐.
   if (input.appliedReferralCode) {
     const { data: rc } = await supabase
       .from("referral_codes")
-      .select("id")
+      .select("id, referrer_email, referrer_reward_type, referrer_reward_value")
       .eq("code", input.appliedReferralCode)
       .maybeSingle();
     if (rc?.id) {
       await supabase
         .rpc("increment_referral_uses", { code_id: rc.id })
         .catch(() => { /* 집계 실패는 주문에 영향 없음 */ });
+      // 추천인 보상 쿠폰(설정된 경우) — 추천인 이메일→회원 매칭 후 발급.
+      if (rc.referrer_reward_type && Number(rc.referrer_reward_value) > 0 && rc.referrer_email) {
+        const referrerUserId = await resolveUserId(supabase, rc.referrer_email);
+        await issueCoupon(supabase, {
+          userId: referrerUserId,
+          email: rc.referrer_email,
+          type: rc.referrer_reward_type === "fixed" ? "fixed" : "percent",
+          value: Number(rc.referrer_reward_value),
+          source: "referral",
+        }).catch(() => { /* 발급 실패는 주문에 영향 없음 */ });
+      }
     }
   }
 

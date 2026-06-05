@@ -26,10 +26,11 @@ interface Props {
   shippingUsd?: number;
   referralCode?: string | null;
   discountCode?: string | null;
+  couponCode?: string | null;
   onBeforePay?: () => Promise<void>;
 }
 
-export default function TossPaymentWidget({ amountKrw, locale, email, items, totalUsd, shippingAddress, pointsUsed = 0, couponDiscount = 0, shippingUsd = 0, referralCode = null, discountCode = null, onBeforePay }: Props) {
+export default function TossPaymentWidget({ amountKrw, locale, email, items, totalUsd, shippingAddress, pointsUsed = 0, couponDiscount = 0, shippingUsd = 0, referralCode = null, discountCode = null, couponCode = null, onBeforePay }: Props) {
   const widgetRef = useRef<PaymentWidgetInstance | null>(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -81,7 +82,7 @@ export default function TossPaymentWidget({ amountKrw, locale, email, items, tot
       // Store cart data in sessionStorage so success page can confirm
       sessionStorage.setItem(
         "toss_pending",
-        JSON.stringify({ items, customerEmail: email, totalUsd, orderId, shippingAddress, pointsUsed, couponDiscount, shippingUsd, referralCode, discountCode })
+        JSON.stringify({ items, customerEmail: email, totalUsd, orderId, shippingAddress, pointsUsed, couponDiscount, shippingUsd, referralCode, discountCode, couponCode })
       );
 
       await widgetRef.current.requestPayment({

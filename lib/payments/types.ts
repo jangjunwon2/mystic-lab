@@ -33,6 +33,7 @@ export interface SaveOrderInput {
   totalKrw?: number;
   appliedDiscountCode?: string;
   appliedReferralCode?: string;
+  appliedCouponCode?: string; // 개인 발급 쿠폰(issued_coupons) 코드 — 결제 성공 시 사용 처리
   customerNote?: string;
   shippingAddress?: ShippingAddress;
   shippingMethod?: string;

@@ -10,7 +10,7 @@ import type { CartItem } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const { paymentKey, orderId, amount, items, customerEmail, totalUsd, shippingAddress, pointsUsed, couponDiscount, shippingUsd, referralCode, discountCode } =
+    const { paymentKey, orderId, amount, items, customerEmail, totalUsd, shippingAddress, pointsUsed, couponDiscount, shippingUsd, referralCode, discountCode, couponCode } =
       await request.json();
 
     if (!paymentKey || !orderId || !amount) {
@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
       totalKrw: amount,
       appliedDiscountCode: discountCode ?? undefined,
       appliedReferralCode: referralCode ?? undefined,
+      appliedCouponCode: couponCode ?? undefined,
       shippingAddress: shippingAddress ?? undefined,
       pointsSpent,
       pointsHoldRef: paymentKey,

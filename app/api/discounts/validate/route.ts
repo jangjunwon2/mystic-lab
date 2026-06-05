@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
+import { findUsableCoupon } from "@/lib/coupons";
 
 export async function POST(request: NextRequest) {
   // 코드 브루트포스 방지 — IP당 분당 10회
@@ -63,28 +64,52 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // 2) 레퍼럴(제휴) 코드 — 할인 코드에 없으면 조회. 구매자에게 정률(%) 할인.
-  //    사용횟수 증가는 결제 성공 시 save-order에서 서버측으로 처리(멱등).
+  // 2) 레퍼럴(제휴) 코드 — 신규 구매자 할인(정률/정액). 사용횟수·추천인 보상은 save-order에서 처리.
   const { data: referral } = await supabase
     .from("referral_codes")
-    .select("id, code, discount_percent")
+    .select("id, code, discount_percent, discount_type")
     .eq("code", codeUpper)
     .eq("is_active", true)
     .maybeSingle();
 
   if (referral) {
-    const r = referral as { id: string; code: string; discount_percent: number };
-    const discountAmount = Math.round(subtotal * (r.discount_percent / 100) * 100) / 100;
+    const r = referral as { id: string; code: string; discount_percent: number; discount_type: string | null };
+    const isFixed = r.discount_type === "fixed";
+    const discountAmount = isFixed
+      ? Math.min(r.discount_percent, subtotal)
+      : Math.round(subtotal * (r.discount_percent / 100) * 100) / 100;
     return NextResponse.json({
       valid: true,
       kind: "referral",
       id: r.id,
       code: r.code,
-      type: "percent",
+      type: isFixed ? "fixed" : "percent",
       value: r.discount_percent,
       discountAmount,
     });
   }
+
+  // 3) 개인 발급 쿠폰(issued_coupons) — 로그인 사용자 소유의 1회용 쿠폰.
+  try {
+    const auth = await createClient();
+    const { data: { user } } = await auth.auth.getUser();
+    if (user) {
+      const coupon = await findUsableCoupon(supabase, {
+        code: codeUpper, userId: user.id, email: user.email ?? null, subtotalUsd: subtotal,
+      });
+      if (coupon) {
+        return NextResponse.json({
+          valid: true,
+          kind: "coupon",
+          id: coupon.id,
+          code: coupon.code,
+          type: coupon.type,
+          value: coupon.value,
+          discountAmount: coupon.discountAmount,
+        });
+      }
+    }
+  } catch { /* 비로그인 등 — 폴백 */ }
 
   return NextResponse.json({ error: "유효하지 않은 할인 코드입니다." }, { status: 404 });
 }

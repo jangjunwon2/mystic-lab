@@ -67,7 +67,7 @@ type SavedAddress = {
 interface AppliedDiscount {
   id: string;
   code: string;
-  kind?: "discount" | "referral";
+  kind?: "discount" | "referral" | "coupon";
   type: "percent" | "fixed";
   value: number;
   discountAmount: number;
@@ -299,7 +299,13 @@ export default function CheckoutPage({ params }: Props) {
     setLsError("");
     setLsLoading(true);
 
-    const isReferral = appliedDiscount?.kind === "referral";
+    // 적용된 코드 종류별로 결제에 전달할 필드 결정(할인/레퍼럴/개인쿠폰)
+    const appliedKind = appliedDiscount?.kind;
+    const appliedCode = appliedDiscount?.code ?? null;
+    const fDiscountCode = appliedKind === "discount" ? appliedCode : null;
+    const fDiscountCodeId = appliedKind === "discount" ? (appliedDiscount?.id ?? null) : null;
+    const fReferralCode = appliedKind === "referral" ? appliedCode : null;
+    const fCouponCode = appliedKind === "coupon" ? appliedCode : null;
 
     // Save address if requested
     if (saveIntlAddress && isLoggedIn) {
@@ -328,9 +334,10 @@ export default function CheckoutPage({ params }: Props) {
           customerEmail: email,
           locale,
           discountAmount: appliedDiscount?.discountAmount ?? 0,
-          discountCodeId: isReferral ? null : (appliedDiscount?.id ?? null),
-          discountCode: isReferral ? null : (appliedDiscount?.code ?? null),
-          referralCode: isReferral ? (appliedDiscount?.code ?? null) : null,
+          discountCodeId: fDiscountCodeId,
+          discountCode: fDiscountCode,
+          referralCode: fReferralCode,
+          couponCode: fCouponCode,
           pointsUsed,
           shippingMethod,
           shippingAddress: {
@@ -365,9 +372,10 @@ export default function CheckoutPage({ params }: Props) {
             city: intlCity.trim(), postal: intlPostal.trim(),
             country: intlCountry.trim().toUpperCase(),
           },
-          discountCode: isReferral ? null : (appliedDiscount?.code ?? null),
-          discountCodeId: isReferral ? null : (appliedDiscount?.id ?? null),
-          referralCode: isReferral ? (appliedDiscount?.code ?? null) : null,
+          discountCode: fDiscountCode,
+          discountCodeId: fDiscountCodeId,
+          referralCode: fReferralCode,
+          couponCode: fCouponCode,
           pointsSpent: data.pointsSpent ?? 0,
           pointsHoldRef: data.pointsHoldRef ?? null,
         }));
@@ -855,7 +863,8 @@ export default function CheckoutPage({ params }: Props) {
                       couponDiscount={couponDiscountUsd}
                       shippingUsd={shippingCostUsd}
                       referralCode={appliedDiscount?.kind === "referral" ? appliedDiscount.code : null}
-                      discountCode={appliedDiscount && appliedDiscount.kind !== "referral" ? appliedDiscount.code : null}
+                      discountCode={appliedDiscount?.kind === "discount" ? appliedDiscount.code : null}
+                      couponCode={appliedDiscount?.kind === "coupon" ? appliedDiscount.code : null}
                       shippingAddress={shippingName ? {
                         name: shippingName,
                         phone: shippingPhone,
