@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/admin/reviews", label: "리뷰 관리", icon: "⭐" },
   { href: "/admin/custom-orders", label: "커스텀 주문", icon: "✉️" },
   { href: "/admin/discounts", label: "할인 코드", icon: "🏷️" },
+  { href: "/admin/coupons", label: "쿠폰 발급", icon: "🎟️" },
   { href: "/admin/videos", label: "영상 관리", icon: "🎬" },
   { href: "/admin/unlock-codes", label: "잠금 해제 코드", icon: "🔑" },
   { href: "/admin/announcements", label: "공지 관리", icon: "📢" },

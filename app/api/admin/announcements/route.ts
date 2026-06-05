@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { message, link_url, link_label, is_active, starts_at, ends_at } = body;
+  const { message, link_url, link_label, is_active, starts_at, ends_at, coupon_code } = body;
 
   if (!message) return NextResponse.json({ error: "message is required" }, { status: 400 });
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createAdminClient() as any;
   const { data, error } = await supabase
     .from("announcements")
-    .insert({ message, link_url: link_url || null, link_label: link_label || null, is_active: !!is_active, starts_at: starts_at || null, ends_at: ends_at || null })
+    .insert({ message, link_url: link_url || null, link_label: link_label || null, is_active: !!is_active, starts_at: starts_at || null, ends_at: ends_at || null, coupon_code: (coupon_code || null) })
     .select()
     .single();
 

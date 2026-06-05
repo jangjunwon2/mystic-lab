@@ -36,6 +36,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
     message: "",
     link_url: "",
     link_label: "",
+    coupon_code: "",
     is_active: true,
     starts_at: "",
     ends_at: "",
@@ -54,7 +55,7 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
     const data = await res.json();
     if (res.ok) {
       setItems((prev) => [data, ...prev]);
-      setForm({ message: "", link_url: "", link_label: "", is_active: true, starts_at: "", ends_at: "" });
+      setForm({ message: "", link_url: "", link_label: "", coupon_code: "", is_active: true, starts_at: "", ends_at: "" });
       setCreating(false);
     } else {
       alert(data.error ?? "생성 실패");
@@ -138,6 +139,15 @@ export default function AnnouncementsAdminClient({ initialAnnouncements }: Props
                 value={form.link_label}
                 onChange={(e) => setForm({ ...form, link_label: e.target.value })}
                 placeholder="지금 보기"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs" style={{ color: "#9CA3AF" }}>쿠폰 코드 (선택 — 배너에 표시)</span>
+              <input
+                style={inputStyle}
+                value={form.coupon_code}
+                onChange={(e) => setForm({ ...form, coupon_code: e.target.value.toUpperCase() })}
+                placeholder="SUMMER20"
               />
             </label>
             <label className="space-y-1">

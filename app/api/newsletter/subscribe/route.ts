@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
+import { getSetting } from "@/lib/settings";
+import { issueCoupon, hasCouponFromSource } from "@/lib/coupons";
 
 export async function POST(request: NextRequest) {
   // 스팸 방지 — IP당 시간당 5회
@@ -35,5 +37,27 @@ export async function POST(request: NextRequest) {
     );
 
   if (error) return NextResponse.json({ error: "Subscription failed. Please try again." }, { status: 500 });
-  return NextResponse.json({ ok: true });
+
+  // 환영 쿠폰 자동발급 — 설정 newsletter_coupon_percent(%, 0이면 비활성). 이메일당 1회.
+  let welcomeCoupon: string | null = null;
+  try {
+    const pct = parseFloat(await getSetting(supabase, "newsletter_coupon_percent", "10"));
+    if (Number.isFinite(pct) && pct > 0) {
+      const already = await hasCouponFromSource(supabase, { email: trimmed, source: "newsletter" });
+      if (!already) {
+        // 로그인 상태면 user_id도 연결
+        let userId: string | null = null;
+        try {
+          const auth = await createClient();
+          const { data: { user } } = await auth.auth.getUser();
+          if (user?.email?.toLowerCase() === trimmed) userId = user.id;
+        } catch { /* 비로그인 */ }
+        welcomeCoupon = await issueCoupon(supabase, {
+          userId, email: trimmed, type: "percent", value: pct, source: "newsletter", expiresMonths: 6,
+        });
+      }
+    }
+  } catch { /* 발급 실패는 구독에 영향 없음 */ }
+
+  return NextResponse.json({ ok: true, welcomeCoupon });
 }

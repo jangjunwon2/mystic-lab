@@ -26,11 +26,17 @@ export async function POST(request: NextRequest) {
     referrer_name: string;
     referrer_email?: string;
     discount_percent: number;
+    discount_type?: "percent" | "fixed";
+    referrer_reward_type?: "percent" | "fixed" | "none";
+    referrer_reward_value?: number;
   };
 
   if (!body.code?.trim() || !body.referrer_name?.trim()) {
     return NextResponse.json({ error: "Code and referrer name are required." }, { status: 400 });
   }
+
+  const rewardType = body.referrer_reward_type === "percent" || body.referrer_reward_type === "fixed"
+    ? body.referrer_reward_type : null;
 
   const admin = await createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,6 +47,9 @@ export async function POST(request: NextRequest) {
       referrer_name: body.referrer_name.trim(),
       referrer_email: body.referrer_email?.trim() || null,
       discount_percent: body.discount_percent ?? 0,
+      discount_type: body.discount_type === "fixed" ? "fixed" : "percent",
+      referrer_reward_type: rewardType,
+      referrer_reward_value: rewardType ? (body.referrer_reward_value ?? 0) : 0,
     })
     .select()
     .single();

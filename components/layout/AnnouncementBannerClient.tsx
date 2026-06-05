@@ -8,6 +8,7 @@ interface Announcement {
   message: string;
   link_url: string | null;
   link_label: string | null;
+  coupon_code: string | null;
 }
 
 interface Props {
@@ -54,6 +55,11 @@ export default function AnnouncementBannerClient({ announcement }: Props) {
       }}
     >
       <span>{announcement.message}</span>
+      {announcement.coupon_code && (
+        <span className="font-mono font-bold rounded px-2 py-0.5" style={{ background: "rgba(255,255,255,0.18)", color: "#fff" }}>
+          {announcement.coupon_code}
+        </span>
+      )}
       {announcement.link_url && (
         <a
           href={announcement.link_url}

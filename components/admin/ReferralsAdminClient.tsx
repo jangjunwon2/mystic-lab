@@ -8,6 +8,9 @@ interface ReferralCode {
   referrer_name: string;
   referrer_email: string | null;
   discount_percent: number;
+  discount_type?: string;
+  referrer_reward_type?: string | null;
+  referrer_reward_value?: number;
   uses: number;
   is_active: boolean;
   created_at: string;
@@ -28,6 +31,9 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
     referrer_name: "",
     referrer_email: "",
     discount_percent: "0",
+    discount_type: "percent",
+    referrer_reward_type: "none",
+    referrer_reward_value: "0",
   });
 
   async function create() {
@@ -52,6 +58,9 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
         referrer_name: form.referrer_name.trim(),
         referrer_email: form.referrer_email.trim() || undefined,
         discount_percent: pct,
+        discount_type: form.discount_type,
+        referrer_reward_type: form.referrer_reward_type,
+        referrer_reward_value: parseFloat(form.referrer_reward_value) || 0,
       }),
     });
 
@@ -62,7 +71,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
       setError(json.error ?? "레퍼럴 코드 생성에 실패했습니다.");
     } else {
       setCodes((prev) => [json as ReferralCode, ...prev]);
-      setForm({ code: "", referrer_name: "", referrer_email: "", discount_percent: "0" });
+      setForm({ code: "", referrer_name: "", referrer_email: "", discount_percent: "0", discount_type: "percent", referrer_reward_type: "none", referrer_reward_value: "0" });
     }
   }
 
@@ -142,12 +151,25 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
           </div>
           <div>
             <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
-              신규 구매자 할인율 (%)
+              신규 구매자 할인 유형
+            </label>
+            <select
+              value={form.discount_type}
+              onChange={(e) => setForm({ ...form, discount_type: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none border focus:border-purple-500 transition-colors"
+              style={{ background: "#13131F", borderColor: "#2D2D4E", color: "#F0E6FF" }}
+            >
+              <option value="percent">정률 (%)</option>
+              <option value="fixed">정액 ($)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
+              신규 구매자 할인 {form.discount_type === "fixed" ? "($)" : "(%)"}
             </label>
             <input
               type="number"
               min={0}
-              max={100}
               step={0.01}
               value={form.discount_percent}
               onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
@@ -155,6 +177,37 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
               style={{ background: "#13131F", borderColor: "#2D2D4E", color: "#F59E0B" }}
             />
           </div>
+          <div>
+            <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
+              추천인 보상 (쿠폰 발급)
+            </label>
+            <select
+              value={form.referrer_reward_type}
+              onChange={(e) => setForm({ ...form, referrer_reward_type: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none border focus:border-purple-500 transition-colors"
+              style={{ background: "#13131F", borderColor: "#2D2D4E", color: "#F0E6FF" }}
+            >
+              <option value="none">없음</option>
+              <option value="percent">정률 쿠폰 (%)</option>
+              <option value="fixed">정액 쿠폰 ($)</option>
+            </select>
+          </div>
+          {form.referrer_reward_type !== "none" && (
+            <div>
+              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
+                추천인 보상 값 {form.referrer_reward_type === "fixed" ? "($)" : "(%)"}
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={form.referrer_reward_value}
+                onChange={(e) => setForm({ ...form, referrer_reward_value: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none border focus:border-purple-500 transition-colors"
+                style={{ background: "#13131F", borderColor: "#2D2D4E", color: "#F59E0B" }}
+              />
+            </div>
+          )}
         </div>
 
         {error && (
@@ -179,7 +232,7 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["코드", "추천인", "할인율", "사용 횟수", "상태", "관리"].map((h) => (
+                {["코드", "추천인", "할인/보상", "사용 횟수", "상태", "관리"].map((h) => (
                   <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
@@ -214,7 +267,12 @@ export default function ReferralsAdminClient({ initialCodes }: Props) {
                       )}
                     </td>
                     <td className="px-6 py-4 font-medium" style={{ color: "#F59E0B" }}>
-                      {rc.discount_percent > 0 ? `${rc.discount_percent}%` : "—"}
+                      {rc.discount_percent > 0 ? (rc.discount_type === "fixed" ? `$${rc.discount_percent}` : `${rc.discount_percent}%`) : "—"}
+                      {rc.referrer_reward_type && (rc.referrer_reward_value ?? 0) > 0 && (
+                        <span className="block text-[11px]" style={{ color: "#A855F7" }}>
+                          추천인 {rc.referrer_reward_type === "fixed" ? `$${rc.referrer_reward_value}` : `${rc.referrer_reward_value}%`}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4" style={{ color: "#F0E6FF" }}>
                       {rc.uses}
