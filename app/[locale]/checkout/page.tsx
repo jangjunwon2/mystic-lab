@@ -73,6 +73,15 @@ interface AppliedDiscount {
   discountAmount: number;
 }
 
+interface MyCoupon {
+  id: string;
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  min_order_usd: number;
+  expires_at: string | null;
+}
+
 interface Props {
   params: Promise<{ locale: string }>;
 }
@@ -93,6 +102,7 @@ export default function CheckoutPage({ params }: Props) {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
+  const [myCoupons, setMyCoupons] = useState<MyCoupon[]>([]);
   const [krwRate, setKrwRate] = useState(USD_TO_KRW);
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard");
   const [shippingName, setShippingName] = useState("");
@@ -136,6 +146,11 @@ export default function CheckoutPage({ params }: Props) {
       fetch("/api/account/points")
         .then((r) => r.json())
         .then((d) => setPointsBalance(typeof d.balance === "number" ? d.balance : 0))
+        .catch(() => { /* ignore */ });
+      // 보유 쿠폰 로드(가입 환영쿠폰 자동발급 포함) — 적용 가능한 쿠폰 드롭다운용
+      fetch("/api/account/coupons")
+        .then((r) => r.json())
+        .then((d) => setMyCoupons(Array.isArray(d.coupons) ? d.coupons : []))
         .catch(() => { /* ignore */ });
       const meta = user.user_metadata?.default_address as Record<string, string> | undefined;
 
@@ -204,6 +219,8 @@ export default function CheckoutPage({ params }: Props) {
 
   const SHIPPING_COSTS = { standard: 0, express: 15 } as const;
   const subtotalUsd = items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
+  // 현재 주문에 적용 가능한 보유 쿠폰(최소 주문액 충족). 서버에서 소유·미사용·미만료만 반환됨.
+  const applicableCoupons = myCoupons.filter((c) => subtotalUsd >= (c.min_order_usd ?? 0));
   const couponDiscountUsd = appliedDiscount?.discountAmount ?? 0;
   // 마일리지: 100P = $1. 쿠폰 차감 후 잔여 금액까지만, 보유 잔액까지만 사용 가능.
   // 단, 총 보유가 최소 사용 한도(MIN_REDEEM_POINTS=$5) 미만이면 사용 불가.
@@ -254,15 +271,16 @@ export default function CheckoutPage({ params }: Props) {
     }
   }
 
-  async function applyCoupon() {
-    if (!couponCode.trim()) return;
+  async function applyCoupon(codeArg?: string) {
+    const code = (codeArg ?? couponCode).trim();
+    if (!code) return;
     setCouponLoading(true);
     setCouponError("");
     try {
       const res = await fetch("/api/discounts/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponCode, totalUsd: subtotalUsd }),
+        body: JSON.stringify({ code, totalUsd: subtotalUsd }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -515,24 +533,41 @@ export default function CheckoutPage({ params }: Props) {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
-                      onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
-                      placeholder="MAGIC20"
-                      className="flex-1 bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] transition-colors placeholder:text-[#4B5563] font-mono"
-                    />
-                    <button
-                      onClick={applyCoupon}
-                      disabled={couponLoading || !couponCode.trim()}
-                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-                      style={{ background: "#1A1A2E", color: "#A855F7", border: "1px solid #2D2D4E" }}
-                    >
-                      {couponLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Tag className="w-3.5 h-3.5" />}
-                      Apply
-                    </button>
+                  <div className="space-y-2">
+                    {applicableCoupons.length > 0 && (
+                      <select
+                        value=""
+                        disabled={couponLoading}
+                        onChange={(e) => { if (e.target.value) applyCoupon(e.target.value); }}
+                        className="w-full bg-[#13131F] border border-[#7C3AED]/40 text-[#F0E6FF] text-sm px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] transition-colors disabled:opacity-50"
+                      >
+                        <option value="">{t("selectCoupon")}</option>
+                        {applicableCoupons.map((c) => (
+                          <option key={c.id} value={c.code}>
+                            {c.type === "fixed" ? `$${c.value}` : `${c.value}%`} OFF · {c.code}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                        onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
+                        placeholder="MAGIC20"
+                        className="flex-1 bg-[#13131F] border border-[#2D2D4E] text-[#F0E6FF] text-sm px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#7C3AED] transition-colors placeholder:text-[#4B5563] font-mono"
+                      />
+                      <button
+                        onClick={() => applyCoupon()}
+                        disabled={couponLoading || !couponCode.trim()}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+                        style={{ background: "#1A1A2E", color: "#A855F7", border: "1px solid #2D2D4E" }}
+                      >
+                        {couponLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Tag className="w-3.5 h-3.5" />}
+                        Apply
+                      </button>
+                    </div>
                   </div>
                 )}
                 {couponError && (

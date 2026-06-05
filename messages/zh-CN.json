@@ -134,6 +134,7 @@
     "tabKorea": "国内支付",
     "emailLabel": "邮箱地址",
     "couponLabel": "优惠码（可选）",
+    "selectCoupon": "从我的优惠券中选择",
     "mileageLabel": "使用积分（可选）",
     "balanceLabel": "余额",
     "useAll": "全部",

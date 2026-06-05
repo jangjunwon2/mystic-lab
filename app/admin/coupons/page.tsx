@@ -1,10 +1,13 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { getSignupCouponConfig } from "@/lib/promotions";
 import CouponsAdminClient, { type IssuedCoupon } from "@/components/admin/CouponsAdminClient";
+import SignupCouponCard from "@/components/admin/SignupCouponCard";
 
 export const metadata = { title: "Coupons — Admin" };
 
 export default async function AdminCouponsPage() {
   const admin = await createAdminClient();
+  const signupCoupon = await getSignupCouponConfig(admin);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
     .from("issued_coupons")
@@ -19,6 +22,9 @@ export default async function AdminCouponsPage() {
         <p className="mt-1 text-sm" style={{ color: "#9CA3AF" }}>
           개인 쿠폰(이메일 1회용) + 공개 쿠폰(누구나 쓰는 다회용 할인코드)을 발급합니다. (뉴스레터·레퍼럴 자동발급분도 함께 표시)
         </p>
+      </div>
+      <div className="mb-8">
+        <SignupCouponCard initial={signupCoupon} />
       </div>
       <CouponsAdminClient initialCoupons={(data ?? []) as IssuedCoupon[]} />
     </div>
