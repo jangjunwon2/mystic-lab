@@ -23,6 +23,63 @@ function GoogleFontsLink() {
   );
 }
 
+// 안전한 사칙연산 파서 (eval 대체) — 숫자·소수점·( )·+ - * / 및 단항 마이너스 지원.
+// 입력은 자기 입력 한정이지만 eval 회피 + 비정상 입력에 NaN 반환으로 안전.
+function safeEval(expr: string): number {
+  const tokens = expr.match(/(\d+\.?\d*|\.\d+|[+\-*/()])/g);
+  if (!tokens) return NaN;
+  const out: (number | string)[] = [];
+  const ops: string[] = [];
+  const prec: Record<string, number> = { "+": 1, "-": 1, "*": 2, "/": 2, u: 3 };
+  let prev: string | null = null;
+  for (const t of tokens) {
+    if (/^[\d.]/.test(t)) {
+      out.push(parseFloat(t));
+      prev = "num";
+    } else if (t === "(") {
+      ops.push(t);
+      prev = "(";
+    } else if (t === ")") {
+      while (ops.length && ops[ops.length - 1] !== "(") out.push(ops.pop()!);
+      if (ops[ops.length - 1] === "(") ops.pop();
+      prev = ")";
+    } else {
+      // 단항 마이너스: 시작/여는괄호/연산자 직후의 '-'
+      const isUnary = t === "-" && (prev === null || prev === "(" || prev === "op");
+      const op = isUnary ? "u" : t;
+      if (op === "u") {
+        ops.push("u");
+      } else {
+        while (
+          ops.length && ops[ops.length - 1] !== "(" &&
+          prec[ops[ops.length - 1]] >= prec[op]
+        ) {
+          out.push(ops.pop()!);
+        }
+        ops.push(op);
+      }
+      prev = "op";
+    }
+  }
+  while (ops.length) out.push(ops.pop()!);
+
+  const st: number[] = [];
+  for (const tok of out) {
+    if (typeof tok === "number") st.push(tok);
+    else if (tok === "u") {
+      const a = st.pop();
+      if (a === undefined) return NaN;
+      st.push(-a);
+    } else {
+      const b = st.pop();
+      const a = st.pop();
+      if (a === undefined || b === undefined) return NaN;
+      st.push(tok === "+" ? a + b : tok === "-" ? a - b : tok === "*" ? a * b : a / b);
+    }
+  }
+  return st.length === 1 ? st[0] : NaN;
+}
+
 // 7개 언어 대응 설명서
 const MANUAL_TEXTS: Record<string, {
   title: string;
@@ -316,9 +373,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
         return;
       }
 
-      // 간단한 사칙연산 수식만 평가 (자기 입력 한정)
-      // eslint-disable-next-line no-eval
-      let res = eval(expr);
+      // 간단한 사칙연산 수식만 평가 (eval 대신 안전한 파서 사용)
+      let res = safeEval(expr);
       if (typeof res !== "number" || isNaN(res) || !isFinite(res)) {
         setDisplay("Error");
       } else {
