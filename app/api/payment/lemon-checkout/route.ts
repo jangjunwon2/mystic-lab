@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url, pointsSpent, pointsHoldRef: pointsHoldRef ?? null });
   } catch (err) {
     console.error("[lemon-checkout]", err);
-    return NextResponse.json({ error: "Checkout failed. Please try again." }, { status: 500 });
+    // [임시 진단] 라이브 결제 실패 원인 파악용 — 원인 확인 후 일반 메시지로 되돌릴 것
+    const detail = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: `Checkout failed: ${detail}` }, { status: 500 });
   }
 }

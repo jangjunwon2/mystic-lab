@@ -5,6 +5,8 @@ import { loadPaymentWidget, ANONYMOUS } from "@tosspayments/payment-widget-sdk";
 import type { PaymentWidgetInstance } from "@tosspayments/payment-widget-sdk";
 import { Loader2, AlertCircle } from "lucide-react";
 
+type PaymentMethodsWidget = Awaited<ReturnType<PaymentWidgetInstance["renderPaymentMethods"]>>;
+
 interface ShippingAddress {
   name: string;
   phone: string;
@@ -32,12 +34,15 @@ interface Props {
 
 export default function TossPaymentWidget({ amountKrw, locale, email, items, totalUsd, shippingAddress, pointsUsed = 0, couponDiscount = 0, shippingUsd = 0, referralCode = null, discountCode = null, couponCode = null, onBeforePay }: Props) {
   const widgetRef = useRef<PaymentWidgetInstance | null>(null);
+  const methodsRef = useRef<PaymentMethodsWidget | null>(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? "test_ck_docs_Ovk5rk1EwkEbP0W43n07xlzm";
 
+  // 위젯은 1회만 초기화한다. 금액 변경 시 재렌더하면 렌더 도중 결제 클릭이
+  // "결제 UI가 아직 렌더링되지 않았습니다" 에러를 내므로, 금액은 아래 updateAmount로만 갱신한다.
   useEffect(() => {
     let cancelled = false;
 
@@ -48,14 +53,14 @@ export default function TossPaymentWidget({ amountKrw, locale, email, items, tot
 
         widgetRef.current = widget;
 
-        await widget.renderPaymentMethods(
+        methodsRef.current = await widget.renderPaymentMethods(
           "#toss-payment-method",
           { value: amountKrw },
           { variantKey: "DEFAULT" }
         );
         await widget.renderAgreement("#toss-agreement", { variantKey: "AGREEMENT" });
 
-        setReady(true);
+        if (!cancelled) setReady(true);
       } catch (e) {
         console.error("Toss widget init error:", e);
         if (!cancelled) setError("결제 위젯을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
@@ -64,7 +69,14 @@ export default function TossPaymentWidget({ amountKrw, locale, email, items, tot
 
     init();
     return () => { cancelled = true; };
-  }, [amountKrw, clientKey]);
+    // amountKrw는 의도적으로 의존성에서 제외(재렌더 방지) — 금액은 updateAmount로 갱신
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientKey]);
+
+  // 금액(환율·쿠폰·포인트)이 바뀌면 위젯을 재생성하지 않고 금액만 갱신한다.
+  useEffect(() => {
+    methodsRef.current?.updateAmount(amountKrw);
+  }, [amountKrw]);
 
   const handlePay = async () => {
     if (!widgetRef.current) return;
