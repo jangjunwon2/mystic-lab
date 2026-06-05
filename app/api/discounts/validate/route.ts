@@ -73,48 +73,5 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // 3) 레거시 할인 코드(discount_codes) 폴백 — 037 백필 후엔 보통 (1)에서 잡히지만,
-  //    미이관/롤백 상황을 위한 후방호환 경로. 사용횟수는 save-order에서 increment_discount_used 처리.
-  const { data: legacy } = await supabase
-    .from("discount_codes")
-    .select("id, code, type, value, max_uses, used_count, expires_at")
-    .eq("code", codeUpper)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (legacy) {
-    const row = legacy as {
-      id: string;
-      code: string;
-      type: "percent" | "fixed";
-      value: number;
-      max_uses: number | null;
-      used_count: number;
-      expires_at: string | null;
-    };
-
-    if (row.expires_at && new Date(row.expires_at) < new Date()) {
-      return NextResponse.json({ error: "만료된 할인 코드입니다." }, { status: 400 });
-    }
-    if (row.max_uses !== null && row.used_count >= row.max_uses) {
-      return NextResponse.json({ error: "사용 한도가 초과된 코드입니다." }, { status: 400 });
-    }
-
-    const discountAmount =
-      row.type === "percent"
-        ? Math.round(subtotal * (row.value / 100) * 100) / 100
-        : Math.min(row.value, subtotal);
-
-    return NextResponse.json({
-      valid: true,
-      kind: "discount",
-      id: row.id,
-      code: row.code,
-      type: row.type,
-      value: row.value,
-      discountAmount,
-    });
-  }
-
   return NextResponse.json({ error: "유효하지 않은 할인 코드입니다." }, { status: 404 });
 }

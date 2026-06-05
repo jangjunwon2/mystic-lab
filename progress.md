@@ -132,7 +132,8 @@
 ### 작업 분해 (Phase별 독립 배포)
 - **Phase 0 — 쿠폰 통일** ✅ **구현(추가·폴백 방식, 037 적용 대기)**: `issued_coupons`에 `scope/max_uses/used_count/is_active` + `redeem_public_coupon` RPC + `discount_codes` 멱등 백필(`037`). `validate`는 통합쿠폰(공개+개인) 우선 → 레퍼럴 → 레거시 `discount_codes` **폴백** 순. 공개쿠폰을 `kind:"coupon"`으로 반환해 **체크아웃 클라이언트·`save-order` 무수정**. 어드민 `/admin/coupons`에 공개쿠폰 발급 폼 추가. **남은 cleanup(추후)**: 라이브 검증 후 `discount_codes`·`/admin/discounts` 폐기, validate 폴백 제거
 - **Phase 1 — 자동쿠폰 + 고객노출** ✅ **구현(새 테이블 없이)**: `lib/promotions.ts`(`grantSignupCoupon` — 가입 환영쿠폰 멱등 발급, `source='signup'` + 기존 `hasCouponFromSource` 재사용) · `account/points`·`account/coupons` 진입 시 보장 호출 · `GET /api/account/coupons`(소유 미사용·미만료 개인쿠폰) + 마이페이지 **"내 쿠폰" 탭**(i18n 7개국어) · `sendCouponEmail()`(발급 시 안내) · **가입쿠폰 enabled/percent/months 설정은 어드민 `/admin/coupons`(쿠폰 발급 메뉴)에 통합**(`SignupCouponCard`, 기본 10%/6개월, `site_settings`). ⚠️ promotions 규칙엔진 테이블은 불필요 → 원래 Phase 3(프로모션 CRUD+대시보드)로 이관
-- **체크아웃 보유쿠폰 드롭다운** ✅: 로그인 시 `/api/account/coupons`로 보유 쿠폰을 불러와, 현재 주문 최소주문액을 충족하는 쿠폰을 **드롭다운으로 선택→즉시 적용**(validate 경유, 수동 코드 입력과 병행). i18n `selectCoupon` 7개국어
+- **체크아웃 보유쿠폰 드롭다운** ✅: 로그인 시 `/api/account/coupons`로 보유 쿠폰을 불러와 **드롭다운 선택→즉시 적용**. 사용 불가(최소주문 미달) 쿠폰도 보이되 **비활성화+사유 표시**. i18n `selectCoupon`·`couponMinOrderShort` 7개국어
+- **할인코드(discount_codes) 폐기** ✅ (#1 cleanup): validate 레거시 폴백·save-order `increment_discount_used`·`/admin/discounts`(페이지·API·네비) 전부 제거. 기능은 공개쿠폰으로 일원화(037 백필 완료). **선택적 `038_drop_discount_codes.sql`**(미사용 테이블·RPC drop, 미실행해도 무방)
 - **Phase 2 — 이벤트 일괄발급**: `POST /api/admin/coupons/bulk`(대상 5종·이메일 배치·상한·중복가드) + 어드민 UI
 - **Phase 3 — 프로모션 CRUD + 대시보드**: `/api/admin/promotions` + 관리 UI + 소스별 발급·사용·전환율 집계, 어드민 네비 메뉴 추가
 
