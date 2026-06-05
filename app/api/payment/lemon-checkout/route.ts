@@ -25,6 +25,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid request." }, { status: 400 });
     }
 
+    // 로그인 회원이면 user_id 캡처 → 주문을 LS 결제 이메일과 무관하게 본인 계정에 연결(저장 시 우선 사용).
+    let authUserId: string | null = null;
+    try {
+      const supaAuth = await createClient();
+      const { data: { user } } = await supaAuth.auth.getUser();
+      authUserId = user?.id ?? null;
+    } catch { /* 비로그인 */ }
+
     const SHIPPING_COSTS: Record<string, number> = { standard: 0, express: 15 };
     const shippingUsd = shippingMethod ? (SHIPPING_COSTS[shippingMethod] ?? 0) : 0;
     // 클라이언트 단가를 신뢰하지 않고 DB 가격(+세트 할인)으로 서버 재계산
@@ -75,6 +83,7 @@ export async function POST(request: NextRequest) {
           items,
           customerEmail,
           locale,
+          userId: authUserId,
           discountCode: discountCode ?? null,
           discountCodeId: discountCodeId ?? null,
           referralCode: referralCode ?? null,

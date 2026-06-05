@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { saveOrderToSupabase } from "@/lib/payments/save-order";
 import { sendOrderConfirmation } from "@/lib/resend";
+import { createClient } from "@/lib/supabase/server";
 import type { CartItem } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
@@ -66,11 +67,20 @@ export async function POST(request: NextRequest) {
     }
     // LS 키 미설정(dev/mock)에서는 검증 생략(운영 환경 아님).
 
+    // 로그인 세션에서 user_id 캡처 → LS 결제 이메일이 계정과 달라도 본인 주문으로 연결.
+    let authUserId: string | null = null;
+    try {
+      const supaAuth = await createClient();
+      const { data: { user } } = await supaAuth.auth.getUser();
+      authUserId = user?.id ?? null;
+    } catch { /* 비로그인 */ }
+
     const dbOrderId = await saveOrderToSupabase({
       gateway: "lemon",
       gatewayRef: lsOrderId ?? `lemon-success-${Date.now()}`,
       items,
       customerEmail,
+      userId: authUserId,
       totalUsd,
       appliedDiscountCode: discountCode ?? undefined,
       appliedReferralCode: referralCode ?? undefined,

@@ -31,6 +31,7 @@ export interface SaveOrderInput {
   customerEmail: string;
   totalUsd: number;
   totalKrw?: number;
+  userId?: string | null; // 체크아웃에서 캡처한 로그인 회원 ID — 게이트웨이 이메일과 무관하게 주문 연결(우선 사용, 없으면 이메일 역추적)
   appliedDiscountCode?: string;
   appliedReferralCode?: string;
   appliedCouponCode?: string; // 개인 발급 쿠폰(issued_coupons) 코드 — 결제 성공 시 사용 처리

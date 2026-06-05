@@ -19,6 +19,14 @@ export async function POST(request: NextRequest) {
 
     const resolvedItemsPre = (items as CartItem[]) ?? [];
 
+    // 로그인 세션에서 user_id 캡처 → 입력 이메일이 계정과 달라도 본인 주문으로 연결(저장 시 우선 사용).
+    let authUserId: string | null = null;
+    try {
+      const supaAuth = await createClient();
+      const { data: { user } } = await supaAuth.auth.getUser();
+      authUserId = user?.id ?? null;
+    } catch { /* 비로그인 */ }
+
     // 마일리지 사용 — 로그인 회원의 가용 잔액(잔액 − 활성 hold) 내에서 원자적 예약(hold). ref = paymentKey.
     // 동시 결제 시 같은 포인트로 이중 할인되는 race 차단.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,6 +77,7 @@ export async function POST(request: NextRequest) {
       gatewayRef: paymentKey,
       items: resolvedItems,
       customerEmail: resolvedEmail,
+      userId: authUserId,
       totalUsd: totalUsd ?? 0,
       totalKrw: amount,
       appliedDiscountCode: discountCode ?? undefined,

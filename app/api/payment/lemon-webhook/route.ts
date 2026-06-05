@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
   const custom = (meta?.custom_data as Record<string, string>) ?? {};
 
   let items: CartItem[] = [];
+  let orderUserId: string | undefined;
   let appliedDiscountCode: string | undefined;
   let appliedReferralCode: string | undefined;
   let appliedCouponCode: string | undefined;
@@ -96,6 +97,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       const p = (pending?.payload ?? {}) as Record<string, unknown>;
       if (Array.isArray(p.items)) items = p.items as CartItem[];
+      orderUserId = (p.userId as string) || undefined;
       appliedDiscountCode = (p.discountCode as string) || undefined;
       appliedReferralCode = (p.referralCode as string) || undefined;
       appliedCouponCode = (p.couponCode as string) || undefined;
@@ -142,6 +144,7 @@ export async function POST(request: NextRequest) {
     gatewayRef: orderId,
     items,
     customerEmail: email,
+    userId: orderUserId,
     totalUsd,
     appliedDiscountCode,
     appliedReferralCode,

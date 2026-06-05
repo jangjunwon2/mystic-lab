@@ -44,8 +44,9 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     return dup.id as string;
   }
 
-  // Resolve user_id from email
-  const userId: string | null = await resolveUserId(supabase, input.customerEmail);
+  // 회원 연결 — 체크아웃에서 캡처한 로그인 user_id를 우선 사용(게이트웨이 이메일이 계정과 달라도 정확히 연결).
+  // 없을 때만 이메일로 역추적(비로그인·레거시 폴백).
+  const userId: string | null = input.userId ?? (await resolveUserId(supabase, input.customerEmail));
 
   // 디지털 상품만으로 구성된 주문은 배송이 없으므로 결제 즉시 completed 처리 → 바로 리뷰 작성 가능
   let allDigital = false;
@@ -83,6 +84,16 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     .single();
 
   if (orderError || !order) {
+    // confirm + webhook 동시 저장 race — 유니크 충돌(23505)이면 먼저 저장된 주문 id를 반환(멱등).
+    // 위 dup 가드가 동시성으로 못 잡은 경우의 2차 방어. 에러 아님.
+    if (orderError?.code === "23505") {
+      const { data: existing } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("stripe_payment_intent_id", gatewayKey)
+        .maybeSingle();
+      if (existing?.id) return existing.id as string;
+    }
     console.error(`[${input.gateway}] saveOrder error:`, orderError);
     return null;
   }
