@@ -48,27 +48,29 @@ export default function AnnouncementBannerClient({ announcement }: Props) {
   return (
     <div
       ref={ref}
-      className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-10 py-2.5 text-sm text-center"
+      className="fixed top-0 left-0 right-0 z-[60] px-10 py-2.5 text-sm"
       style={{
         background: "linear-gradient(90deg, #7C3AED, #A855F7, #7C3AED)",
         color: "#fff",
       }}
     >
-      <span>{announcement.message}</span>
-      {announcement.coupon_code && (
-        <span className="font-mono font-bold rounded px-2 py-0.5" style={{ background: "rgba(255,255,255,0.18)", color: "#fff" }}>
-          {announcement.coupon_code}
-        </span>
-      )}
-      {announcement.link_url && (
-        <a
-          href={announcement.link_url}
-          className="font-semibold underline decoration-dotted hover:no-underline transition-all"
-          style={{ color: "#F59E0B" }}
-        >
-          {announcement.link_label ?? "Learn more"}
-        </a>
-      )}
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
+        <span className="whitespace-pre-line break-words">{announcement.message}</span>
+        {announcement.coupon_code && (
+          <span className="font-mono font-bold rounded px-2 py-0.5" style={{ background: "rgba(255,255,255,0.18)", color: "#fff" }}>
+            {announcement.coupon_code}
+          </span>
+        )}
+        {announcement.link_url && (
+          <a
+            href={announcement.link_url}
+            className="font-semibold underline decoration-dotted hover:no-underline transition-all"
+            style={{ color: "#F59E0B" }}
+          >
+            {announcement.link_label ?? "Learn more"}
+          </a>
+        )}
+      </div>
       <button
         onClick={dismiss}
         className="absolute right-4 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 transition-opacity"
