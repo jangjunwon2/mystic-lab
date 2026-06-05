@@ -67,23 +67,32 @@ export interface UsableCoupon {
   discountAmount: number;
 }
 
-// 체크아웃 검증 — 로그인 사용자의 사용가능 개인 쿠폰 조회(소유자·미사용·미만료·최소주문액).
+// 체크아웃 검증 — 통합 쿠폰(issued_coupons) 조회. scope 분기:
+//   - public:   소유자 없음·다회(used_count<max_uses)·비로그인 허용 — 구 discount_codes 대체
+//   - personal: 소유자 한정·1회(is_used) — 로그인 필요
+// 공통: 미만료·최소주문액·비활성 차단.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function findUsableCoupon(admin: any, opts: { code: string; userId?: string | null; email?: string | null; subtotalUsd: number }): Promise<UsableCoupon | null> {
   const codeU = opts.code.toUpperCase().trim();
   const { data } = await admin
     .from("issued_coupons")
-    .select("id, code, type, value, min_order_usd, expires_at, is_used, user_id, email")
+    .select("id, code, type, value, min_order_usd, expires_at, is_used, is_active, scope, max_uses, used_count, user_id, email")
     .eq("code", codeU)
-    .eq("is_used", false)
     .maybeSingle();
   if (!data) return null;
 
-  const ownsByUser = !!data.user_id && !!opts.userId && data.user_id === opts.userId;
-  const ownsByEmail = !!data.email && !!opts.email && data.email.toLowerCase() === opts.email.toLowerCase();
-  if (!ownsByUser && !ownsByEmail) return null;
   if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
   if (opts.subtotalUsd < (data.min_order_usd ?? 0)) return null;
+
+  if ((data.scope ?? "personal") === "public") {
+    if (data.is_active === false) return null;
+    if (data.max_uses != null && (data.used_count ?? 0) >= data.max_uses) return null;
+  } else {
+    if (data.is_used) return null;
+    const ownsByUser = !!data.user_id && !!opts.userId && data.user_id === opts.userId;
+    const ownsByEmail = !!data.email && !!opts.email && data.email.toLowerCase() === opts.email.toLowerCase();
+    if (!ownsByUser && !ownsByEmail) return null;
+  }
 
   const discountAmount =
     data.type === "percent"
@@ -92,17 +101,69 @@ export async function findUsableCoupon(admin: any, opts: { code: string; userId?
   return { id: data.id, code: data.code, type: data.type, value: data.value, discountAmount };
 }
 
-// 사용 처리(멱등) — 결제 성공 후 코드로 사용 표시.
+// 사용 처리(멱등) — 결제 성공 후 코드로 사용 표시. scope 분기:
+//   - public:   used_count 원자적 증가(RPC, 한도 초과 차단)
+//   - personal: is_used 표시
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function redeemCouponByCode(admin: any, code: string, orderId: string | null): Promise<void> {
   if (!code) return;
+  const codeU = code.toUpperCase().trim();
   try {
-    await admin
-      .from("issued_coupons")
-      .update({ is_used: true, used_order_id: orderId ?? null, used_at: new Date().toISOString() })
-      .eq("code", code.toUpperCase().trim())
-      .eq("is_used", false);
+    const { data } = await admin.from("issued_coupons").select("scope").eq("code", codeU).maybeSingle();
+    if ((data?.scope ?? "personal") === "public") {
+      await admin.rpc("redeem_public_coupon", { p_code: codeU });
+    } else {
+      await admin
+        .from("issued_coupons")
+        .update({ is_used: true, used_order_id: orderId ?? null, used_at: new Date().toISOString() })
+        .eq("code", codeU)
+        .eq("is_used", false);
+    }
   } catch {
     /* 집계 실패는 주문에 영향 없음 */
   }
+}
+
+export interface IssuePublicCouponParams {
+  code?: string | null;            // 지정 코드(대문자화) — 미지정 시 자동 생성
+  type: "percent" | "fixed";
+  value: number;
+  maxUses?: number | null;         // null = 무제한
+  minOrderUsd?: number;
+  expiresMonths?: number | null;   // null = 무기한 (기본 무기한)
+}
+
+// 공개 쿠폰 발급(scope='public') — 어드민용. 성공 시 코드 반환.
+// 지정 코드가 이미 있으면 null(충돌). 미지정 시 유니크 코드 생성·재시도.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function issuePublicCoupon(admin: any, params: IssuePublicCouponParams): Promise<string | null> {
+  if (!params.value || params.value <= 0) return null;
+  const months = params.expiresMonths === undefined ? null : params.expiresMonths;
+  const expiresAt = months == null ? null : new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
+  const row = {
+    type: params.type,
+    value: params.value,
+    source: "promo",
+    scope: "public",
+    max_uses: params.maxUses ?? null,
+    min_order_usd: params.minOrderUsd ?? 0,
+    is_active: true,
+    expires_at: expiresAt,
+  };
+
+  // 지정 코드 — 충돌 시 실패(어드민이 다른 코드로 재시도).
+  if (params.code && params.code.trim()) {
+    const code = params.code.toUpperCase().trim();
+    const { error } = await admin.from("issued_coupons").insert({ code, ...row });
+    return error ? null : code;
+  }
+
+  // 자동 생성 — 코드 충돌 시 재시도.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = genCode();
+    const { error } = await admin.from("issued_coupons").insert({ code, ...row });
+    if (!error) return code;
+    if (!String(error.message ?? "").toLowerCase().includes("duplicate")) return null;
+  }
+  return null;
 }

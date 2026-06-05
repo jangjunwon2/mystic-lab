@@ -80,6 +80,7 @@
 > 마이그레이션 **019~035 적용 완료** (포인트 hold·site_settings·쿠폰/레퍼럴 등) — 재확인 불필요.
 
 - [ ] **Supabase 마이그레이션 `036_pending_checkouts.sql`** — ⚠️ **해외결제 항목 5개+ 처리에 필수**. 미적용 시 압축 폴백(4개까지만). LS custom 255자 제한 우회용 대기 장바구니 테이블
+- [ ] **Supabase 마이그레이션 `037_unify_coupons.sql`** — 쿠폰 통합 Phase 0. `issued_coupons`에 공개쿠폰(scope/max_uses/used_count) 추가 + `discount_codes` 백필 + `redeem_public_coupon` RPC. ⚠️ 미적용 시 어드민 공개쿠폰 발급/검증 동작 안 함(레거시 `discount_codes`는 폴백으로 계속 동작). **후방호환**: `discount_codes`·`/admin/discounts`는 보존(추후 cleanup에서 폐기)
 - [ ] **법적고지 `/legal-notice` 자리표시자 기입** — 대표자명·사업장 주소·연락처·통신판매업 신고번호(+EU 판매 시 VAT). ⚠️ 모든 법률 문구는 템플릿이며 **변호사/법률 서비스 검토 후** 적용 권장
 - [ ] **상품 등록 + 인증코드 발급**: slug `magic-calculator`, `fake-instagram` (없으면 `/calc`·`/insta` 게이트·자동발급 동작 안 함)
 - [ ] **Vercel 환경변수 확인**: `CRON_SECRET`(포인트 만료 cron), `ADMIN_EMAIL`, `RESEND_FROM_EMAIL`(문의 메일 수신)
@@ -128,7 +129,7 @@
 - ❌ **장바구니 미결제** — 장바구니가 localStorage(`ml_cart`) 전용이라 서버 조회 불가. **회원 장바구니 서버 동기화** 선행 필요 → 별도 기능으로 보류
 
 ### 작업 분해 (Phase별 독립 배포)
-- **Phase 0 — 쿠폰 통일**: `037` 모델 통합 + `discount_codes` 이관 + `discounts/validate` 단일 경로화 + 공지 `coupon_code` 호환 + `/admin/discounts`→`/admin/coupons` 흡수. ⚠️ 체크아웃(방금 안정화) 건드리므로 신중·후방호환
+- **Phase 0 — 쿠폰 통일** ✅ **구현(추가·폴백 방식, 037 적용 대기)**: `issued_coupons`에 `scope/max_uses/used_count/is_active` + `redeem_public_coupon` RPC + `discount_codes` 멱등 백필(`037`). `validate`는 통합쿠폰(공개+개인) 우선 → 레퍼럴 → 레거시 `discount_codes` **폴백** 순. 공개쿠폰을 `kind:"coupon"`으로 반환해 **체크아웃 클라이언트·`save-order` 무수정**. 어드민 `/admin/coupons`에 공개쿠폰 발급 폼 추가. **남은 cleanup(추후)**: 라이브 검증 후 `discount_codes`·`/admin/discounts` 폐기, validate 폴백 제거
 - **Phase 1 — 자동쿠폰 + 고객노출**: `lib/promotions.ts`(가입 시 멱등 발급) · `grantSignupBonus` 옆 연결 · `GET /api/account/coupons` + 마이페이지 "내 쿠폰" 탭(**i18n 7개국어**) · `sendCouponEmail()`
 - **Phase 2 — 이벤트 일괄발급**: `POST /api/admin/coupons/bulk`(대상 5종·이메일 배치·상한·중복가드) + 어드민 UI
 - **Phase 3 — 프로모션 CRUD + 대시보드**: `/api/admin/promotions` + 관리 UI + 소스별 발급·사용·전환율 집계, 어드민 네비 메뉴 추가
