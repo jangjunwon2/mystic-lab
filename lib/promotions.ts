@@ -52,3 +52,93 @@ export async function grantSignupCoupon(admin: any, userId: string | null, email
     /* 발급 실패는 무시 */
   }
 }
+
+export const WISHLIST_COUPON_DEFAULT_DAYS = 7;
+export const WISHLIST_COUPON_DEFAULT_PERCENT = 10;
+export const WISHLIST_COUPON_DEFAULT_MONTHS = 1;
+export const WISHLIST_COUPON_DEFAULT_NAME = "위시리스트 특별 할인";
+
+export interface WishlistCouponConfig {
+  enabled: boolean;
+  days: number;     // 위시리스트 잔존 일수 임계
+  percent: number;
+  months: number;   // 발급 쿠폰 유효기간(개월)
+  name: string;
+}
+
+// 위시리스트 트리거 쿠폰 설정 — site_settings(미설정 시 기본). 기본 OFF(운영자가 켜야 동작).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getWishlistCouponConfig(admin: any): Promise<WishlistCouponConfig> {
+  const enabled = (await getSetting(admin, "wishlist_coupon_enabled", "false")) === "true";
+  const days = parseInt(await getSetting(admin, "wishlist_coupon_days", String(WISHLIST_COUPON_DEFAULT_DAYS)), 10);
+  const percent = parseFloat(await getSetting(admin, "wishlist_coupon_percent", String(WISHLIST_COUPON_DEFAULT_PERCENT)));
+  const months = parseInt(await getSetting(admin, "wishlist_coupon_months", String(WISHLIST_COUPON_DEFAULT_MONTHS)), 10);
+  const name = (await getSetting(admin, "wishlist_coupon_name", WISHLIST_COUPON_DEFAULT_NAME)) || WISHLIST_COUPON_DEFAULT_NAME;
+  return {
+    enabled,
+    days: Number.isFinite(days) && days > 0 && days <= 365 ? days : WISHLIST_COUPON_DEFAULT_DAYS,
+    percent: Number.isFinite(percent) && percent > 0 && percent <= 100 ? percent : WISHLIST_COUPON_DEFAULT_PERCENT,
+    months: Number.isFinite(months) && months > 0 && months <= 60 ? months : WISHLIST_COUPON_DEFAULT_MONTHS,
+    name,
+  };
+}
+
+// 위시리스트 N일+ 잔존 상품 → 해당 회원에게 그 상품 한정 개인 쿠폰 자동 발급(재구매 유도).
+// 멱등: 이미 활성(미사용·미만료) 트리거 쿠폰을 같은 (회원, 상품)으로 가진 경우 건너뜀. cron 호출.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function runWishlistCoupons(admin: any): Promise<{ issued: number }> {
+  const cfg = await getWishlistCouponConfig(admin);
+  if (!cfg.enabled) return { issued: 0 };
+
+  const cutoff = new Date(Date.now() - cfg.days * 24 * 60 * 60 * 1000).toISOString();
+  const { data: rows } = await admin
+    .from("wishlists")
+    .select("user_id, product_id")
+    .lte("created_at", cutoff)
+    .limit(500);
+  const wl = (rows ?? []) as { user_id: string; product_id: string }[];
+  if (wl.length === 0) return { issued: 0 };
+
+  // 이미 활성 트리거 쿠폰을 가진 (회원, 상품) 조합 수집 → 중복 발급 방지.
+  const userIds = [...new Set(wl.map((r) => r.user_id))];
+  const { data: existing } = await admin
+    .from("issued_coupons")
+    .select("id, user_id")
+    .eq("source", "trigger")
+    .eq("is_used", false)
+    .eq("is_active", true)
+    .in("user_id", userIds);
+  const existRows = (existing ?? []) as { id: string; user_id: string }[];
+  const covered = new Set<string>();
+  if (existRows.length > 0) {
+    const byCoupon = new Map(existRows.map((e) => [e.id, e.user_id]));
+    const { data: cps } = await admin.from("coupon_products").select("coupon_id, product_id").in("coupon_id", existRows.map((e) => e.id));
+    for (const cp of (cps ?? []) as { coupon_id: string; product_id: string }[]) {
+      const uid = byCoupon.get(cp.coupon_id);
+      if (uid) covered.add(`${uid}:${cp.product_id}`);
+    }
+  }
+
+  let issued = 0;
+  for (const r of wl) {
+    const key = `${r.user_id}:${r.product_id}`;
+    if (covered.has(key)) continue;
+    covered.add(key);
+
+    let email: string | null = null;
+    try {
+      const { data: u } = await admin.auth.admin.getUserById(r.user_id);
+      email = u?.user?.email ?? null;
+    } catch { /* 이메일 조회 실패 — 쿠폰은 그래도 발급(앱 내 노출) */ }
+
+    const code = await issueCoupon(admin, {
+      userId: r.user_id, email, type: "percent", value: cfg.percent,
+      source: "trigger", expiresMonths: cfg.months, productIds: [r.product_id], name: cfg.name,
+    });
+    if (code) {
+      issued++;
+      if (email) await sendCouponEmail({ to: email, code, type: "percent", value: cfg.percent }).catch(() => {});
+    }
+  }
+  return { issued };
+}
