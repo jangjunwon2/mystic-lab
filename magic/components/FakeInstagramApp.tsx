@@ -29,6 +29,26 @@ const UI: Record<string, UiStrings> = {
   de: { posts: "Beiträge", followers: "Follower", following: "Gefolgt", viewAll: (n) => `Alle ${n} Kommentare ansehen`, edit: "Profil bearbeiten", follow: "Folgen", message: "Nachricht", yourStory: "Deine Story", reels: "Reels", messages: "Nachrichten", active: "Aktiv", messagePlaceholder: "Nachricht...", share: "Profil teilen", addBanner: "Banner hinzufügen", likedBy: (u, n) => `Gefällt ${u} und ${n} weiteren Personen`, youPrefix: "Du: ", noPosts: "Noch keine Beiträge", noReels: "Noch keine Reels", noMessages: "Noch keine Nachrichten" },
 };
 
+// 비밀 설정창 7개 언어 (사용자=마술사용)
+interface SettingsStrings {
+  title: string; language: string; profile: string; profilePhoto: string; username: string; displayName: string; bio: string;
+  posts: string; followers: string; following: string; verifiedBadge: string; addPost: string; langHint: (loc: string) => string;
+  photo: string; caption: string; likes: string; relDate: string; relDatePh: string; exactDate: string; clear: string;
+  comments: string; userId: string; content: string; addComment: string; stories: string; addStory: string;
+  reels: string; addReel: string; music: string; commentCount: string; dm: string; addThread: string; partnerId: string;
+  online: string; messagesLabel: string; me: string; partner: string; addMessage: string; reset: string; goCalc: string; done: string;
+  resetConfirm: string;
+}
+const SETTINGS: Record<string, SettingsStrings> = {
+  en: { title: "Instagram Settings", language: "Language", profile: "Profile", profilePhoto: "Profile photo", username: "Username (@)", displayName: "Name", bio: "Bio", posts: "Posts", followers: "Followers", following: "Following", verifiedBadge: "Show verified badge (blue check)", addPost: "Add post", langHint: (l) => `Captions, dates and comments are saved in the current language (${l}). Switch "Language" above to enter content for other languages.`, photo: "Photo", caption: "Caption", likes: "Likes", relDate: "Relative date", relDatePh: "3 weeks ago", exactDate: "Exact post date (overrides relative date)", clear: "Clear", comments: "Comments", userId: "Username", content: "Text", addComment: "+ Add comment", stories: "Stories", addStory: "Add story", reels: "Reels", addReel: "Add reel", music: "Audio/Music", commentCount: "Comments", dm: "DM", addThread: "Add chat", partnerId: "Their username", online: "Active", messagesLabel: "Messages (toggle sender)", me: "Me", partner: "Them", addMessage: "+ Add message", reset: "Reset", goCalc: "Go to calculator", done: "Done", resetConfirm: "Reset to defaults?" },
+  ko: { title: "Instagram 설정", language: "언어", profile: "프로필", profilePhoto: "프로필 사진", username: "사용자명 (@)", displayName: "이름", bio: "소개 (bio)", posts: "게시물", followers: "팔로워", following: "팔로잉", verifiedBadge: "인증 배지(파란 체크) 표시", addPost: "게시물 추가", langHint: (l) => `캡션·날짜·댓글은 현재 언어(${l})로 저장됩니다. 상단 '언어'를 바꿔 다른 언어 내용을 따로 입력하세요.`, photo: "사진", caption: "캡션", likes: "좋아요", relDate: "상대 날짜", relDatePh: "3주 전", exactDate: "정확한 게시일 (설정 시 상대 날짜 대신 표시)", clear: "지우기", comments: "댓글", userId: "아이디", content: "내용", addComment: "+ 댓글 추가", stories: "스토리", addStory: "스토리 추가", reels: "릴스", addReel: "릴스 추가", music: "오디오/음악", commentCount: "댓글 수", dm: "DM", addThread: "대화 추가", partnerId: "상대 아이디", online: "접속중", messagesLabel: "메시지 (보낸이 토글)", me: "나", partner: "상대", addMessage: "+ 메시지 추가", reset: "초기화", goCalc: "계산기로 이동", done: "완료", resetConfirm: "기본 설정으로 초기화할까요?" },
+  ja: { title: "Instagram 設定", language: "言語", profile: "プロフィール", profilePhoto: "プロフィール写真", username: "ユーザーネーム (@)", displayName: "名前", bio: "自己紹介", posts: "投稿", followers: "フォロワー", following: "フォロー中", verifiedBadge: "認証バッジ(青チェック)を表示", addPost: "投稿を追加", langHint: (l) => `キャプション・日付・コメントは現在の言語(${l})で保存されます。上の「言語」を変えて他言語の内容を入力してください。`, photo: "写真", caption: "キャプション", likes: "いいね", relDate: "相対日付", relDatePh: "3週間前", exactDate: "正確な投稿日(設定時は相対日付の代わりに表示)", clear: "消去", comments: "コメント", userId: "ID", content: "内容", addComment: "+ コメント追加", stories: "ストーリー", addStory: "ストーリー追加", reels: "リール", addReel: "リール追加", music: "オーディオ/音楽", commentCount: "コメント数", dm: "DM", addThread: "チャットを追加", partnerId: "相手のID", online: "アクティブ", messagesLabel: "メッセージ(送信者を切替)", me: "自分", partner: "相手", addMessage: "+ メッセージ追加", reset: "リセット", goCalc: "電卓へ移動", done: "完了", resetConfirm: "初期設定にリセットしますか？" },
+  "zh-CN": { title: "Instagram 设置", language: "语言", profile: "个人资料", profilePhoto: "头像", username: "用户名 (@)", displayName: "姓名", bio: "简介", posts: "帖子", followers: "粉丝", following: "关注", verifiedBadge: "显示认证徽章(蓝勾)", addPost: "添加帖子", langHint: (l) => `标题、日期和评论将以当前语言(${l})保存。切换上方“语言”以输入其他语言内容。`, photo: "照片", caption: "标题", likes: "点赞", relDate: "相对日期", relDatePh: "3周前", exactDate: "精确发布日期(设置后替代相对日期)", clear: "清除", comments: "评论", userId: "用户名", content: "内容", addComment: "+ 添加评论", stories: "快拍", addStory: "添加快拍", reels: "Reels", addReel: "添加 Reel", music: "音频/音乐", commentCount: "评论数", dm: "私信", addThread: "添加对话", partnerId: "对方用户名", online: "在线", messagesLabel: "消息(切换发送者)", me: "我", partner: "对方", addMessage: "+ 添加消息", reset: "重置", goCalc: "前往计算器", done: "完成", resetConfirm: "恢复默认设置？" },
+  es: { title: "Configuración de Instagram", language: "Idioma", profile: "Perfil", profilePhoto: "Foto de perfil", username: "Usuario (@)", displayName: "Nombre", bio: "Biografía", posts: "Publicaciones", followers: "Seguidores", following: "Seguidos", verifiedBadge: "Mostrar insignia verificada (check azul)", addPost: "Añadir publicación", langHint: (l) => `Los pies de foto, fechas y comentarios se guardan en el idioma actual (${l}). Cambia "Idioma" arriba para otros idiomas.`, photo: "Foto", caption: "Pie de foto", likes: "Me gusta", relDate: "Fecha relativa", relDatePh: "hace 3 semanas", exactDate: "Fecha exacta (reemplaza la fecha relativa)", clear: "Borrar", comments: "Comentarios", userId: "Usuario", content: "Texto", addComment: "+ Añadir comentario", stories: "Historias", addStory: "Añadir historia", reels: "Reels", addReel: "Añadir reel", music: "Audio/Música", commentCount: "Comentarios", dm: "DM", addThread: "Añadir chat", partnerId: "Usuario del otro", online: "Activo(a)", messagesLabel: "Mensajes (alternar remitente)", me: "Yo", partner: "Otro", addMessage: "+ Añadir mensaje", reset: "Restablecer", goCalc: "Ir a la calculadora", done: "Hecho", resetConfirm: "¿Restablecer a valores predeterminados?" },
+  fr: { title: "Paramètres Instagram", language: "Langue", profile: "Profil", profilePhoto: "Photo de profil", username: "Nom d'utilisateur (@)", displayName: "Nom", bio: "Bio", posts: "Publications", followers: "Abonnés", following: "Abonnements", verifiedBadge: "Afficher le badge vérifié (coche bleue)", addPost: "Ajouter une publication", langHint: (l) => `Les légendes, dates et commentaires sont enregistrés dans la langue actuelle (${l}). Changez « Langue » ci-dessus pour d'autres langues.`, photo: "Photo", caption: "Légende", likes: "J'aime", relDate: "Date relative", relDatePh: "il y a 3 semaines", exactDate: "Date exacte (remplace la date relative)", clear: "Effacer", comments: "Commentaires", userId: "Nom d'utilisateur", content: "Texte", addComment: "+ Ajouter un commentaire", stories: "Stories", addStory: "Ajouter une story", reels: "Reels", addReel: "Ajouter un reel", music: "Audio/Musique", commentCount: "Commentaires", dm: "DM", addThread: "Ajouter une conversation", partnerId: "Son nom d'utilisateur", online: "Actif", messagesLabel: "Messages (changer l'expéditeur)", me: "Moi", partner: "Lui/Elle", addMessage: "+ Ajouter un message", reset: "Réinitialiser", goCalc: "Aller à la calculatrice", done: "Terminé", resetConfirm: "Réinitialiser par défaut ?" },
+  de: { title: "Instagram-Einstellungen", language: "Sprache", profile: "Profil", profilePhoto: "Profilbild", username: "Benutzername (@)", displayName: "Name", bio: "Bio", posts: "Beiträge", followers: "Follower", following: "Gefolgt", verifiedBadge: "Verifiziert-Abzeichen (blauer Haken) zeigen", addPost: "Beitrag hinzufügen", langHint: (l) => `Bildunterschriften, Daten und Kommentare werden in der aktuellen Sprache (${l}) gespeichert. Oben "Sprache" wechseln für andere Sprachen.`, photo: "Foto", caption: "Bildunterschrift", likes: "Gefällt mir", relDate: "Relatives Datum", relDatePh: "vor 3 Wochen", exactDate: "Genaues Datum (ersetzt relatives Datum)", clear: "Löschen", comments: "Kommentare", userId: "Benutzername", content: "Text", addComment: "+ Kommentar hinzufügen", stories: "Storys", addStory: "Story hinzufügen", reels: "Reels", addReel: "Reel hinzufügen", music: "Audio/Musik", commentCount: "Kommentare", dm: "DM", addThread: "Chat hinzufügen", partnerId: "Benutzername", online: "Aktiv", messagesLabel: "Nachrichten (Absender wechseln)", me: "Ich", partner: "Andere", addMessage: "+ Nachricht hinzufügen", reset: "Zurücksetzen", goCalc: "Zum Rechner", done: "Fertig", resetConfirm: "Auf Standard zurücksetzen?" },
+};
+
 const AVATAR_FALLBACK = "/images/magic/instagram-post.png";
 
 export default function FakeInstagramApp({ locale }: Props) {
@@ -645,6 +665,7 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
 
   const inputCls = "w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white px-3 py-2 text-sm focus:outline-none focus:border-[#7C3AED]";
   const labelCls = "text-xs text-[#9CA3AF] block mb-1";
+  const tx = SETTINGS[config.appLocale] ?? SETTINGS.en;
 
   const setPosts = (posts: InstaPost[]) => onUpdate({ posts });
   const updatePost = (id: string, patch: Partial<InstaPost>) =>
@@ -714,13 +735,13 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
 
       <div className="max-w-md mx-auto space-y-5 pb-20 pt-6">
         <div className="flex items-center justify-between border-b border-[#2D2D4E] pb-4">
-          <div className="flex items-center gap-2"><Settings className="w-5 h-5 text-[#A855F7]" /><h2 className="text-lg font-bold text-[#F0E6FF]">Instagram 설정</h2></div>
+          <div className="flex items-center gap-2"><Settings className="w-5 h-5 text-[#A855F7]" /><h2 className="text-lg font-bold text-[#F0E6FF]">{tx.title}</h2></div>
           <button onClick={onClose} className="p-1 rounded-lg bg-[#1A1A2E] text-[#9CA3AF] hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
         {/* 언어 */}
         <div>
-          <label className={labelCls}>언어 (Language)</label>
+          <label className={labelCls}>{tx.language}</label>
           <select value={config.appLocale} onChange={(e) => onUpdate({ appLocale: e.target.value as InstaConfig["appLocale"] })} className={inputCls}>
             <option value="ko">한국어</option><option value="en">English</option><option value="ja">日本語</option>
             <option value="zh-CN">简体中文</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option>
@@ -729,61 +750,61 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
 
         {/* 프로필 */}
         <div className="rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-[#A855F7]">프로필</h3>
+          <h3 className="text-sm font-semibold text-[#A855F7]">{tx.profile}</h3>
           <div className="flex items-center gap-3">
             <div className="w-14 h-14 rounded-full bg-cover bg-center border border-[#2D2D4E]" style={{ backgroundImage: `url('${config.avatar || AVATAR_FALLBACK}')` }} />
-            <button onClick={() => avatarRef.current?.click()} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Upload className="w-3.5 h-3.5" /> 프로필 사진</button>
+            <button onClick={() => avatarRef.current?.click()} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Upload className="w-3.5 h-3.5" /> {tx.profilePhoto}</button>
           </div>
-          <div><label className={labelCls}>사용자명 (@)</label><input value={config.username} onChange={(e) => onUpdate({ username: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>이름</label><input value={config.displayName} onChange={(e) => onUpdate({ displayName: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>소개 (bio)</label><textarea value={config.bio} onChange={(e) => onUpdate({ bio: e.target.value })} rows={3} className={`${inputCls} resize-none`} /></div>
+          <div><label className={labelCls}>{tx.username}</label><input value={config.username} onChange={(e) => onUpdate({ username: e.target.value })} className={inputCls} /></div>
+          <div><label className={labelCls}>{tx.displayName}</label><input value={config.displayName} onChange={(e) => onUpdate({ displayName: e.target.value })} className={inputCls} /></div>
+          <div><label className={labelCls}>{tx.bio}</label><textarea value={config.bio} onChange={(e) => onUpdate({ bio: e.target.value })} rows={3} className={`${inputCls} resize-none`} /></div>
           <div className="grid grid-cols-3 gap-2">
-            <div><label className={labelCls}>게시물</label><input type="number" value={config.postsCount} onChange={(e) => onUpdate({ postsCount: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
-            <div><label className={labelCls}>팔로워</label><input type="number" value={config.followers} onChange={(e) => onUpdate({ followers: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
-            <div><label className={labelCls}>팔로잉</label><input type="number" value={config.following} onChange={(e) => onUpdate({ following: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx.posts}</label><input type="number" value={config.postsCount} onChange={(e) => onUpdate({ postsCount: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx.followers}</label><input type="number" value={config.followers} onChange={(e) => onUpdate({ followers: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx.following}</label><input type="number" value={config.following} onChange={(e) => onUpdate({ following: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
           </div>
           <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
-            <input type="checkbox" checked={config.verified} onChange={(e) => onUpdate({ verified: e.target.checked })} className="accent-[#7C3AED]" /> 인증 배지(파란 체크) 표시
+            <input type="checkbox" checked={config.verified} onChange={(e) => onUpdate({ verified: e.target.checked })} className="accent-[#7C3AED]" /> {tx.verifiedBadge}
           </label>
         </div>
 
         {/* 게시물 */}
         <div className="rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#A855F7]">게시물 ({config.posts.length})</h3>
-            <button onClick={addPost} className="flex items-center gap-1 text-xs px-2 py-1 rounded" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Plus className="w-3.5 h-3.5" /> 게시물 추가</button>
+            <h3 className="text-sm font-semibold text-[#A855F7]">{tx.posts} ({config.posts.length})</h3>
+            <button onClick={addPost} className="flex items-center gap-1 text-xs px-2 py-1 rounded" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Plus className="w-3.5 h-3.5" /> {tx.addPost}</button>
           </div>
-          <p className="text-[11px] text-[#6B7280] leading-snug">캡션·날짜·댓글은 현재 언어 <span className="text-[#A855F7] font-semibold">{loc.toUpperCase()}</span> 로 저장됩니다. 상단 “언어”를 바꿔 다른 언어 내용을 따로 입력하세요(설정 언어에 맞춰 게시물이 표시).</p>
+          <p className="text-[11px] text-[#6B7280] leading-snug">{tx.langHint(loc.toUpperCase())}</p>
           {config.posts.map((p) => (
             <div key={p.id} className="rounded-lg border border-[#2D2D4E] bg-[#13131F] p-3 space-y-2">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded bg-cover bg-center border border-[#2D2D4E] shrink-0" style={{ backgroundImage: `url('${p.image || AVATAR_FALLBACK}')` }} />
-                <button onClick={() => { setEditingPostId(p.id); postFileRef.current?.click(); }} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Upload className="w-3.5 h-3.5" /> 사진</button>
+                <button onClick={() => { setEditingPostId(p.id); postFileRef.current?.click(); }} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Upload className="w-3.5 h-3.5" /> {tx.photo}</button>
                 <button onClick={() => setPosts(config.posts.filter((x) => x.id !== p.id))} className="ml-auto p-1.5 rounded" style={{ color: "#EF4444" }}><Trash2 className="w-4 h-4" /></button>
               </div>
-              <textarea value={p.caption[loc] ?? ""} onChange={(e) => updatePost(p.id, { caption: setLoc(p.caption, e.target.value) })} placeholder={`캡션 (${loc.toUpperCase()})`} rows={2} className={`${inputCls} resize-none`} />
+              <textarea value={p.caption[loc] ?? ""} onChange={(e) => updatePost(p.id, { caption: setLoc(p.caption, e.target.value) })} placeholder={`${tx.caption} (${loc.toUpperCase()})`} rows={2} className={`${inputCls} resize-none`} />
               <div className="grid grid-cols-2 gap-2">
-                <div><label className={labelCls}>좋아요</label><input type="number" value={p.likes} onChange={(e) => updatePost(p.id, { likes: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
-                <div><label className={labelCls}>상대 날짜 ({loc.toUpperCase()})</label><input value={p.date[loc] ?? ""} onChange={(e) => updatePost(p.id, { date: setLoc(p.date, e.target.value) })} placeholder="3주 전" className={inputCls} disabled={!!p.exactDate} style={p.exactDate ? { opacity: 0.5 } : undefined} /></div>
+                <div><label className={labelCls}>{tx.likes}</label><input type="number" value={p.likes} onChange={(e) => updatePost(p.id, { likes: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
+                <div><label className={labelCls}>{tx.relDate} ({loc.toUpperCase()})</label><input value={p.date[loc] ?? ""} onChange={(e) => updatePost(p.id, { date: setLoc(p.date, e.target.value) })} placeholder={tx.relDatePh} className={inputCls} disabled={!!p.exactDate} style={p.exactDate ? { opacity: 0.5 } : undefined} /></div>
               </div>
               <div>
-                <label className={labelCls}>정확한 게시일 (설정 시 상대 날짜 대신 이 날짜로 표시)</label>
+                <label className={labelCls}>{tx.exactDate}</label>
                 <div className="flex items-center gap-2">
                   <input type="date" value={p.exactDate ?? ""} onChange={(e) => updatePost(p.id, { exactDate: e.target.value || undefined })} className={inputCls} style={{ flex: 1 }} />
-                  {p.exactDate && <button onClick={() => updatePost(p.id, { exactDate: undefined })} className="text-xs px-2 py-2 rounded shrink-0" style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444" }}>지우기</button>}
+                  {p.exactDate && <button onClick={() => updatePost(p.id, { exactDate: undefined })} className="text-xs px-2 py-2 rounded shrink-0" style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444" }}>{tx.clear}</button>}
                 </div>
               </div>
               {/* 댓글 */}
               <div className="space-y-1.5">
-                <label className={labelCls}>댓글 (내용은 {loc.toUpperCase()} 기준)</label>
+                <label className={labelCls}>{tx.comments} ({loc.toUpperCase()})</label>
                 {p.comments.map((c, ci) => (
                   <div key={ci} className="flex items-center gap-1.5">
-                    <input value={c.user} onChange={(e) => updatePost(p.id, { comments: p.comments.map((x, j) => j === ci ? { ...x, user: e.target.value } : x) })} placeholder="아이디" className={inputCls} style={{ width: "35%" }} />
-                    <input value={c.text[loc] ?? ""} onChange={(e) => updatePost(p.id, { comments: p.comments.map((x, j) => j === ci ? { ...x, text: setLoc(x.text, e.target.value) } : x) })} placeholder="내용" className={inputCls} style={{ flex: 1 }} />
+                    <input value={c.user} onChange={(e) => updatePost(p.id, { comments: p.comments.map((x, j) => j === ci ? { ...x, user: e.target.value } : x) })} placeholder={tx.userId} className={inputCls} style={{ width: "35%" }} />
+                    <input value={c.text[loc] ?? ""} onChange={(e) => updatePost(p.id, { comments: p.comments.map((x, j) => j === ci ? { ...x, text: setLoc(x.text, e.target.value) } : x) })} placeholder={tx.content} className={inputCls} style={{ flex: 1 }} />
                     <button onClick={() => updatePost(p.id, { comments: p.comments.filter((_, j) => j !== ci) })} className="p-1 shrink-0" style={{ color: "#EF4444" }}><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
-                <button onClick={() => updatePost(p.id, { comments: [...p.comments, { user: "", text: {} }] })} className="text-xs" style={{ color: "#A855F7" }}>+ 댓글 추가</button>
+                <button onClick={() => updatePost(p.id, { comments: [...p.comments, { user: "", text: {} }] })} className="text-xs" style={{ color: "#A855F7" }}>{tx.addComment}</button>
               </div>
             </div>
           ))}
@@ -792,14 +813,14 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
         {/* 스토리 */}
         <div className="rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#A855F7]">스토리 ({config.stories.length})</h3>
-            <button onClick={addStory} className="flex items-center gap-1 text-xs px-2 py-1 rounded" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Plus className="w-3.5 h-3.5" /> 스토리 추가</button>
+            <h3 className="text-sm font-semibold text-[#A855F7]">{tx.stories} ({config.stories.length})</h3>
+            <button onClick={addStory} className="flex items-center gap-1 text-xs px-2 py-1 rounded" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Plus className="w-3.5 h-3.5" /> {tx.addStory}</button>
           </div>
           {config.stories.map((s) => (
             <div key={s.id} className="rounded-lg border border-[#2D2D4E] bg-[#13131F] p-3 flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-cover bg-center border border-[#2D2D4E] shrink-0" style={{ backgroundImage: `url('${s.image || AVATAR_FALLBACK}')` }} />
-              <button onClick={() => { setEditingStoryId(s.id); storyFileRef.current?.click(); }} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg shrink-0" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Upload className="w-3.5 h-3.5" /> 사진</button>
-              <input value={s.username} onChange={(e) => updateStory(s.id, { username: e.target.value })} placeholder="아이디" className={inputCls} style={{ flex: 1 }} />
+              <button onClick={() => { setEditingStoryId(s.id); storyFileRef.current?.click(); }} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg shrink-0" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Upload className="w-3.5 h-3.5" /> {tx.photo}</button>
+              <input value={s.username} onChange={(e) => updateStory(s.id, { username: e.target.value })} placeholder={tx.userId} className={inputCls} style={{ flex: 1 }} />
               <button onClick={() => setStories(config.stories.filter((x) => x.id !== s.id))} className="p-1.5 shrink-0" style={{ color: "#EF4444" }}><Trash2 className="w-4 h-4" /></button>
             </div>
           ))}
@@ -808,21 +829,21 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
         {/* 릴스 */}
         <div className="rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#A855F7]">릴스 ({config.reels.length})</h3>
-            <button onClick={addReel} className="flex items-center gap-1 text-xs px-2 py-1 rounded" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Plus className="w-3.5 h-3.5" /> 릴스 추가</button>
+            <h3 className="text-sm font-semibold text-[#A855F7]">{tx.reels} ({config.reels.length})</h3>
+            <button onClick={addReel} className="flex items-center gap-1 text-xs px-2 py-1 rounded" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Plus className="w-3.5 h-3.5" /> {tx.addReel}</button>
           </div>
           {config.reels.map((r) => (
             <div key={r.id} className="rounded-lg border border-[#2D2D4E] bg-[#13131F] p-3 space-y-2">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded bg-cover bg-center border border-[#2D2D4E] shrink-0" style={{ backgroundImage: `url('${r.image || AVATAR_FALLBACK}')` }} />
-                <button onClick={() => { setEditingReelId(r.id); reelFileRef.current?.click(); }} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Upload className="w-3.5 h-3.5" /> 사진</button>
+                <button onClick={() => { setEditingReelId(r.id); reelFileRef.current?.click(); }} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Upload className="w-3.5 h-3.5" /> {tx.photo}</button>
                 <button onClick={() => setReels(config.reels.filter((x) => x.id !== r.id))} className="ml-auto p-1.5 rounded" style={{ color: "#EF4444" }}><Trash2 className="w-4 h-4" /></button>
               </div>
-              <textarea value={r.caption} onChange={(e) => updateReel(r.id, { caption: e.target.value })} placeholder="캡션" rows={2} className={`${inputCls} resize-none`} />
-              <input value={r.music} onChange={(e) => updateReel(r.id, { music: e.target.value })} placeholder="오디오/음악" className={inputCls} />
+              <textarea value={r.caption} onChange={(e) => updateReel(r.id, { caption: e.target.value })} placeholder={tx.caption} rows={2} className={`${inputCls} resize-none`} />
+              <input value={r.music} onChange={(e) => updateReel(r.id, { music: e.target.value })} placeholder={tx.music} className={inputCls} />
               <div className="grid grid-cols-2 gap-2">
-                <div><label className={labelCls}>좋아요</label><input type="number" value={r.likes} onChange={(e) => updateReel(r.id, { likes: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
-                <div><label className={labelCls}>댓글 수</label><input type="number" value={r.comments} onChange={(e) => updateReel(r.id, { comments: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
+                <div><label className={labelCls}>{tx.likes}</label><input type="number" value={r.likes} onChange={(e) => updateReel(r.id, { likes: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
+                <div><label className={labelCls}>{tx.commentCount}</label><input type="number" value={r.comments} onChange={(e) => updateReel(r.id, { comments: parseInt(e.target.value, 10) || 0 })} className={inputCls} /></div>
               </div>
             </div>
           ))}
@@ -831,41 +852,41 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
         {/* DM */}
         <div className="rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#A855F7]">DM ({config.dms.length})</h3>
-            <button onClick={addThread} className="flex items-center gap-1 text-xs px-2 py-1 rounded" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Plus className="w-3.5 h-3.5" /> 대화 추가</button>
+            <h3 className="text-sm font-semibold text-[#A855F7]">{tx.dm} ({config.dms.length})</h3>
+            <button onClick={addThread} className="flex items-center gap-1 text-xs px-2 py-1 rounded" style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7" }}><Plus className="w-3.5 h-3.5" /> {tx.addThread}</button>
           </div>
           {config.dms.map((d) => (
             <div key={d.id} className="rounded-lg border border-[#2D2D4E] bg-[#13131F] p-3 space-y-2">
               <div className="flex items-center gap-2">
-                <input value={d.username} onChange={(e) => updateThread(d.id, { username: e.target.value })} placeholder="상대 아이디" className={inputCls} style={{ flex: 1 }} />
+                <input value={d.username} onChange={(e) => updateThread(d.id, { username: e.target.value })} placeholder={tx.partnerId} className={inputCls} style={{ flex: 1 }} />
                 <label className="flex items-center gap-1 text-xs text-white shrink-0 cursor-pointer">
-                  <input type="checkbox" checked={d.online} onChange={(e) => updateThread(d.id, { online: e.target.checked })} className="accent-[#7C3AED]" /> 접속중
+                  <input type="checkbox" checked={d.online} onChange={(e) => updateThread(d.id, { online: e.target.checked })} className="accent-[#7C3AED]" /> {tx.online}
                 </label>
                 <button onClick={() => setDms(config.dms.filter((x) => x.id !== d.id))} className="p-1.5 shrink-0" style={{ color: "#EF4444" }}><Trash2 className="w-4 h-4" /></button>
               </div>
               <div className="space-y-1.5">
-                <label className={labelCls}>메시지 (보낸이 ↔ 받은이 토글)</label>
+                <label className={labelCls}>{tx.messagesLabel}</label>
                 {d.messages.map((m, mi) => (
                   <div key={mi} className="flex items-center gap-1.5">
                     <button
                       onClick={() => updateThread(d.id, { messages: d.messages.map((x, j) => j === mi ? { ...x, fromMe: !x.fromMe } : x) })}
                       className="text-xs px-2 py-1.5 rounded shrink-0 w-14"
                       style={{ background: m.fromMe ? "rgba(55,151,240,0.2)" : "rgba(120,120,120,0.2)", color: m.fromMe ? "#3797F0" : "#9CA3AF" }}
-                    >{m.fromMe ? "나" : "상대"}</button>
-                    <input value={m.text} onChange={(e) => updateThread(d.id, { messages: d.messages.map((x, j) => j === mi ? { ...x, text: e.target.value } : x) })} placeholder="내용" className={inputCls} style={{ flex: 1 }} />
+                    >{m.fromMe ? tx.me : tx.partner}</button>
+                    <input value={m.text} onChange={(e) => updateThread(d.id, { messages: d.messages.map((x, j) => j === mi ? { ...x, text: e.target.value } : x) })} placeholder={tx.content} className={inputCls} style={{ flex: 1 }} />
                     <button onClick={() => updateThread(d.id, { messages: d.messages.filter((_, j) => j !== mi) })} className="p-1 shrink-0" style={{ color: "#EF4444" }}><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
-                <button onClick={() => updateThread(d.id, { messages: [...d.messages, { fromMe: false, text: "" }] })} className="text-xs" style={{ color: "#A855F7" }}>+ 메시지 추가</button>
+                <button onClick={() => updateThread(d.id, { messages: [...d.messages, { fromMe: false, text: "" }] })} className="text-xs" style={{ color: "#A855F7" }}>{tx.addMessage}</button>
               </div>
             </div>
           ))}
         </div>
 
         <div className="flex gap-2 pt-2 border-t border-[#2D2D4E]">
-          <button onClick={() => { if (confirm("기본 설정으로 초기화할까요?")) onUpdate(defaultInstaConfig(locale)); }} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-red-950/20 border border-red-500/30 text-red-400">초기화</button>
-          <button onClick={onExit} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-[#1A1A2E] border border-[#2D2D4E] text-[#9CA3AF]">계산기로 이동</button>
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white">완료</button>
+          <button onClick={() => { if (confirm(tx.resetConfirm)) onUpdate(defaultInstaConfig(locale)); }} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-red-950/20 border border-red-500/30 text-red-400">{tx.reset}</button>
+          <button onClick={onExit} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-[#1A1A2E] border border-[#2D2D4E] text-[#9CA3AF]">{tx.goCalc}</button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white">{tx.done}</button>
         </div>
       </div>
     </motion.div>
