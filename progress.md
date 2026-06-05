@@ -130,6 +130,32 @@
 
 ---
 
+## 🔬 2차 정밀 점검 — 결제·웹훅·데이터접근 (2026-06-05)
+
+### 🔴 새 발견 (우선)
+- [ ] **lemon-confirm 주문 위조 가능** (`app/api/payment/lemon-confirm/route.ts`) — 성공페이지 폴백 엔드포인트가 **인증·결제검증 없이** 클라이언트가 보낸 items·email·totalUsd로 `saveOrderToSupabase`(status=paid)를 호출. LS 주문 조회는 환불용 id 확보 목적뿐이라 **금액/상태 미검증**(없으면 합성 ref로 신규 저장). → 공격자가 임의 주문을 '결제완료'로 만들어 **디지털 상품·해법영상·앱 코드를 무료 취득** 가능.
+  - **안전한 수정안**: LS 키 설정 시 `lemonOrderId`로 LS 주문을 조회해 **status=paid + 금액 일치** 검증 후에만 저장, 검증 실패 시 저장하지 않음(웹훅이 백스톱이라 정상 주문 유실 없음). **결제 라이브 경로라 적용 전 확인 요망.**
+
+### 🟢 기타
+- [ ] **stripe-webhook 데드코드** (`app/api/stripe-webhook/route.ts`) — Stripe 미사용(Toss/Lemon만). 서명검증은 있으나 metadata의 클라이언트 가격을 신뢰. 미설정 시 503이라 현재 위험 없음 → 제거 권장(또는 활성화 시 서버 가격 재계산 필수).
+
+### ✅ 점검 양호 (이상 없음)
+- `lemon-webhook` 서명검증·환불 복원·멱등 / `toss-confirm` 서버 가격검증(5% 허용)·포인트 hold·확정 / `lemon-checkout` 서버 재계산·hold(에러 메시지도 일반화 완료) / `cron/expire-points` CRON_SECRET / `community` 구매검증·작성권한·길이제한 / `magic/my-code` 구매검증 / `account/points` 본인 한정 — 모두 적정.
+
+---
+
+## 📋 의도적 보류 / 운영자 항목 (현황)
+- **Cloudflare Stream 실제 키** — 미발급(mock 모드). 해법영상 자체호스팅(서명 URL) 불가 → 현재 Vimeo 임베드로 대체. 키 발급 시 자체호스팅 전환 가능.
+- **PortOne 결제** — 미구현(타입만 존재). KakaoPay·NaverPay 등 추가 시 필요.
+- **계산기 `eval()` → 파서** — 자기입력 한정·클라이언트라 보안위험 없음, 회귀위험 있어 보류.
+- **`as any` 타입 정합화** — 런타임 정상, 대규모 리팩터라 점진 개선.
+- **인스타 비밀설정 패널 현지화** — 운영자 전용이라 한국어 유지.
+- **계산기 NFC 매뉴얼 도메인 하드코딩** — 커스텀 도메인 전환 시 수정.
+- **stripe-webhook 제거** — 선택(미사용 데드코드).
+- ~~설정창 PIN~~ — 불필요 확정(마술용, 관객 접근 불가).
+
+---
+
 ## 환경변수
 - **필수**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_EMAIL`, `NEXT_PUBLIC_SITE_URL`
 - **결제**: `LEMON_SQUEEZY_API_KEY`/`STORE_ID`/`VARIANT_ID`/`WEBHOOK_SECRET`, `NEXT_PUBLIC_TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`
