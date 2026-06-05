@@ -51,6 +51,47 @@ interface Props {
   categories: string[];
 }
 
+// 상품/카테고리 한정 선택기 — 미선택 시 전체 적용.
+function TargetPicker({ products, categories, productIds, categoriesSel, onToggleProduct, onToggleCategory }: {
+  products: ProductOption[]; categories: string[];
+  productIds: string[]; categoriesSel: string[];
+  onToggleProduct: (id: string) => void; onToggleCategory: (c: string) => void;
+}) {
+  return (
+    <div className="mb-4">
+      <label className="block text-xs font-medium mb-1.5 uppercase tracking-wider" style={{ color: "#9CA3AF" }}>적용 한정 (선택 — 미선택 시 전체 상품)</label>
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {categories.map((cat) => {
+            const on = categoriesSel.includes(cat);
+            return (
+              <button key={cat} type="button" onClick={() => onToggleCategory(cat)}
+                className="px-2.5 py-1 rounded-lg text-xs transition-colors"
+                style={{ background: on ? "#7C3AED" : "#13131F", color: on ? "#fff" : "#9CA3AF", border: `1px solid ${on ? "#7C3AED" : "#2D2D4E"}` }}>
+                카테고리: {cat}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div className="max-h-32 overflow-y-auto rounded-lg border p-2 space-y-1" style={{ background: "#13131F", borderColor: "#2D2D4E" }}>
+        {products.length === 0 ? (
+          <p className="text-xs px-1" style={{ color: "#6B7280" }}>상품이 없습니다.</p>
+        ) : products.map((p) => {
+          const on = productIds.includes(p.id);
+          return (
+            <label key={p.id} className="flex items-center gap-2 text-xs cursor-pointer px-1 py-0.5" style={{ color: on ? "#F0E6FF" : "#9CA3AF" }}>
+              <input type="checkbox" checked={on} onChange={() => onToggleProduct(p.id)} />
+              <span className="truncate">{p.name}</span>
+              {p.category && <span style={{ color: "#6B7280" }}>· {p.category}</span>}
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const inputCls = "w-full px-3 py-2 rounded-lg text-sm outline-none border focus:border-purple-500";
 const inputStyle = { background: "#13131F", borderColor: "#2D2D4E", color: "#F0E6FF" } as const;
 const labelCls = "block text-xs font-medium mb-1.5 uppercase tracking-wider";
@@ -58,9 +99,11 @@ const labelCls = "block text-xs font-medium mb-1.5 uppercase tracking-wider";
 export default function CouponsAdminClient({ initialCoupons, products, categories }: Props) {
   const [coupons, setCoupons] = useState(initialCoupons);
   const [tab, setTab] = useState<CouponCategory>("all");
-  // 공개쿠폰 상품/카테고리 한정 선택
+  // 상품/카테고리 한정 선택 — 공개(b)·개인(p) 폼 각각
   const [targetProductIds, setTargetProductIds] = useState<string[]>([]);
   const [targetCategories, setTargetCategories] = useState<string[]>([]);
+  const [pTargetProductIds, setPTargetProductIds] = useState<string[]>([]);
+  const [pTargetCategories, setPTargetCategories] = useState<string[]>([]);
   const toggle = (arr: string[], v: string) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
   // 개인 쿠폰 폼
@@ -93,6 +136,8 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
         type: pForm.type,
         value,
         minOrderUsd: parseFloat(pForm.minOrderUsd) || 0,
+        productIds: pTargetProductIds,
+        categories: pTargetCategories,
       }),
     });
     const json = await res.json();
@@ -101,6 +146,7 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
     setPIssued(json.code);
     refresh();
     setPForm({ ...pForm, email: "" });
+    setPTargetProductIds([]); setPTargetCategories([]);
   }
 
   async function createPublic() {
@@ -176,6 +222,11 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
                 className={inputCls} style={{ ...inputStyle, color: "#F59E0B" }} />
             </div>
           </div>
+          {/* 상품/카테고리 한정 — 선택 시 해당 상품에서만 사용·할인. 회원 드롭다운에 대상 상품 있을 때만 활성. */}
+          <TargetPicker products={products} categories={categories}
+            productIds={pTargetProductIds} categoriesSel={pTargetCategories}
+            onToggleProduct={(id) => setPTargetProductIds((a) => toggle(a, id))}
+            onToggleCategory={(c) => setPTargetCategories((a) => toggle(a, c))} />
           {pError && <p className="text-sm mb-3" style={{ color: "#EF4444" }}>{pError}</p>}
           {pIssued && <p className="text-sm mb-3" style={{ color: "#10B981" }}>발급 완료: <span className="font-mono font-bold">{pIssued}</span></p>}
           <button onClick={createPersonal} disabled={pCreating} className="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
@@ -234,37 +285,10 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
           </div>
 
           {/* 상품/카테고리 한정 — 선택 시 해당 상품 소계에만 할인. 미선택=전체 적용 */}
-          <div className="mb-4">
-            <label className={labelCls} style={{ color: "#9CA3AF" }}>적용 한정 (선택 — 미선택 시 전체 상품)</label>
-            {categories.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {categories.map((cat) => {
-                  const on = targetCategories.includes(cat);
-                  return (
-                    <button key={cat} type="button" onClick={() => setTargetCategories((a) => toggle(a, cat))}
-                      className="px-2.5 py-1 rounded-lg text-xs transition-colors"
-                      style={{ background: on ? "#7C3AED" : "#13131F", color: on ? "#fff" : "#9CA3AF", border: `1px solid ${on ? "#7C3AED" : "#2D2D4E"}` }}>
-                      카테고리: {cat}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <div className="max-h-32 overflow-y-auto rounded-lg border p-2 space-y-1" style={{ background: "#13131F", borderColor: "#2D2D4E" }}>
-              {products.length === 0 ? (
-                <p className="text-xs px-1" style={{ color: "#6B7280" }}>상품이 없습니다.</p>
-              ) : products.map((p) => {
-                const on = targetProductIds.includes(p.id);
-                return (
-                  <label key={p.id} className="flex items-center gap-2 text-xs cursor-pointer px-1 py-0.5" style={{ color: on ? "#F0E6FF" : "#9CA3AF" }}>
-                    <input type="checkbox" checked={on} onChange={() => setTargetProductIds((a) => toggle(a, p.id))} />
-                    <span className="truncate">{p.name}</span>
-                    {p.category && <span style={{ color: "#6B7280" }}>· {p.category}</span>}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
+          <TargetPicker products={products} categories={categories}
+            productIds={targetProductIds} categoriesSel={targetCategories}
+            onToggleProduct={(id) => setTargetProductIds((a) => toggle(a, id))}
+            onToggleCategory={(c) => setTargetCategories((a) => toggle(a, c))} />
 
           {bError && <p className="text-sm mb-3" style={{ color: "#EF4444" }}>{bError}</p>}
           {bIssued && <p className="text-sm mb-3" style={{ color: "#10B981" }}>발급 완료: <span className="font-mono font-bold">{bIssued}</span></p>}

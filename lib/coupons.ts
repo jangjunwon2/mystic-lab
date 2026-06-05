@@ -19,6 +19,8 @@ export interface IssueCouponParams {
   source: string; // 'newsletter' | 'referral' | 'manual' | 'promo' | 'signup'
   minOrderUsd?: number;
   expiresMonths?: number | null; // null = 무기한 (기본 6개월)
+  productIds?: string[];         // 한정 상품(비어있으면 전체)
+  categories?: string[];         // 한정 카테고리(비어있으면 전체)
 }
 
 // 쿠폰 발급(유니크 코드 생성·재시도). 성공 시 발급 코드 반환.
@@ -31,7 +33,7 @@ export async function issueCoupon(admin: any, params: IssueCouponParams): Promis
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = genCode();
-    const { error } = await admin.from("issued_coupons").insert({
+    const { data, error } = await admin.from("issued_coupons").insert({
       code,
       user_id: params.userId ?? null,
       email: params.email ? params.email.toLowerCase() : null,
@@ -40,10 +42,13 @@ export async function issueCoupon(admin: any, params: IssueCouponParams): Promis
       source: params.source,
       min_order_usd: params.minOrderUsd ?? 0,
       expires_at: expiresAt,
-    });
-    if (!error) return code;
+    }).select("id").single();
+    if (!error && data) {
+      await insertCouponTargets(admin, data.id, params.productIds, params.categories);
+      return code;
+    }
     // 코드 충돌 외 오류면 중단
-    if (!String(error.message ?? "").toLowerCase().includes("duplicate")) return null;
+    if (!String(error?.message ?? "").toLowerCase().includes("duplicate")) return null;
   }
   return null;
 }

@@ -88,6 +88,8 @@ export async function POST(request: NextRequest) {
     source: "manual",
     minOrderUsd: body.minOrderUsd ?? 0,
     expiresMonths: body.expiresMonths === undefined ? 6 : body.expiresMonths,
+    productIds: Array.isArray(body.productIds) ? body.productIds : [],
+    categories: Array.isArray(body.categories) ? body.categories : [],
   });
   if (!code) return NextResponse.json({ error: "발급에 실패했습니다." }, { status: 500 });
   return NextResponse.json({ ok: true, code }, { status: 201 });
