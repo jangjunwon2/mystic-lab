@@ -62,6 +62,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           shippingMethod?: string;
           shippingAddress?: Record<string, string>;
           discountCode?: string | null;
+          referralCode?: string | null;
           pointsSpent?: number;
           pointsHoldRef?: string | null;
         } | null = null;
@@ -83,6 +84,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
               shippingMethod: pending.shippingMethod,
               shippingAddress: pending.shippingAddress,
               discountCode: pending.discountCode,
+              referralCode: pending.referralCode,
               pointsSpent: pending.pointsSpent,
               pointsHoldRef: pending.pointsHoldRef,
             }),
@@ -111,6 +113,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           pointsUsed?: number;
           couponDiscount?: number;
           shippingUsd?: number;
+          referralCode?: string | null;
         } | null = null;
         try {
           const raw = sessionStorage.getItem("toss_pending");
@@ -134,6 +137,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
             pointsUsed: pending?.pointsUsed ?? 0,
             couponDiscount: pending?.couponDiscount ?? 0,
             shippingUsd: pending?.shippingUsd ?? 0,
+            referralCode: pending?.referralCode ?? null,
           }),
         });
 

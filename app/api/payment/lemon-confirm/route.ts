@@ -14,11 +14,12 @@ export async function POST(request: NextRequest) {
       shippingAddress?: Record<string, string>;
       discountCode?: string | null;
       discountCodeId?: string | null;
+      referralCode?: string | null;
       pointsSpent?: number;
       pointsHoldRef?: string | null;
     };
 
-    const { items, customerEmail, totalUsd, shippingMethod, shippingAddress, discountCode, pointsSpent, pointsHoldRef } = body;
+    const { items, customerEmail, totalUsd, shippingMethod, shippingAddress, discountCode, referralCode, pointsSpent, pointsHoldRef } = body;
 
     if (!customerEmail || !items?.length) {
       return NextResponse.json({ error: "Invalid request." }, { status: 400 });
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       customerEmail,
       totalUsd,
       appliedDiscountCode: discountCode ?? undefined,
+      appliedReferralCode: referralCode ?? undefined,
       shippingMethod,
       shippingAddress,
       pointsSpent: pointsSpent ?? undefined,

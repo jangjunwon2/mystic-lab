@@ -113,6 +113,22 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     }).catch(() => { /* 차감 실패는 주문에 영향 없음 */ });
   }
 
+  // 레퍼럴/제휴 코드 사용횟수 증가 — 코드로 적용된 주문이면 1회 증가.
+  // 멱등성: 같은 결제는 위 dup 가드에서 early-return되므로 여기까지 오면 신규 주문 1건뿐 → 정확히 1회 증가.
+  // (lemon-confirm·lemon-webhook·toss-confirm 어느 경로로 저장돼도 동일하게 처리)
+  if (input.appliedReferralCode) {
+    const { data: rc } = await supabase
+      .from("referral_codes")
+      .select("id")
+      .eq("code", input.appliedReferralCode)
+      .maybeSingle();
+    if (rc?.id) {
+      await supabase
+        .rpc("increment_referral_uses", { code_id: rc.id })
+        .catch(() => { /* 집계 실패는 주문에 영향 없음 */ });
+    }
+  }
+
   // 마일리지 적립 — 회원이며 결제 금액이 있을 때 (5%). 적립분은 12개월 후 만료.
   if (userId && input.totalUsd > 0) {
     const earned = earnPointsForUsd(input.totalUsd);

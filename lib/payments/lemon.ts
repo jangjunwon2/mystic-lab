@@ -25,7 +25,8 @@ export async function createLemonCheckout(
   shippingMethod?: string,
   shippingAddress?: Record<string, string>,
   pointsUsed?: number,
-  pointsHoldRef?: string
+  pointsHoldRef?: string,
+  referralCode?: string
 ): Promise<string> {
   const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
   const storeId = process.env.LEMON_SQUEEZY_STORE_ID;
@@ -69,6 +70,7 @@ export async function createLemonCheckout(
               ),
               ...(discountCodeId ? { discount_code_id: discountCodeId } : {}),
               ...(discountCode ? { discount_code: discountCode } : {}),
+              ...(referralCode ? { referral_code: referralCode } : {}),
               ...(shippingMethod ? { shipping_method: shippingMethod } : {}),
               ...(shippingAddress ? { shipping_address: JSON.stringify(shippingAddress) } : {}),
               ...(pointsUsed && pointsUsed > 0 ? { points_used: String(pointsUsed) } : {}),
