@@ -61,12 +61,14 @@ export async function createLemonCheckout(
             email: payload.customerEmail,
             custom: {
               locale: payload.locale,
+              // LS custom 필드는 255자 제한 → 최소 키(i=id, q=qty, p=price)로 압축.
+              // 전체 항목 정보는 성공페이지(lemon-confirm)가 sessionStorage로 처리하고,
+              // 웹훅은 이 압축본으로 재고 차감·주문 라인 저장에 필요한 최소치만 복원한다.
               order_items: JSON.stringify(
                 payload.items.map((i) => ({
-                  id: i.id,
-                  slug: i.slug,
-                  qty: i.quantity,
-                  price: i.price_usd,
+                  i: i.id,
+                  q: i.quantity,
+                  p: i.price_usd,
                 }))
               ),
               ...(discountCodeId ? { discount_code_id: discountCodeId } : {}),

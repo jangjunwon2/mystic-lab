@@ -80,7 +80,15 @@ export async function POST(request: NextRequest) {
     const meta = event.meta as Record<string, unknown> | undefined;
     const custom = (meta?.custom_data as Record<string, string>) ?? {};
     if (custom.order_items) {
-      items = JSON.parse(custom.order_items);
+      // 압축 포맷({i,q,p}) → CartItem 복원. (구 포맷 {id,qty,price}도 호환)
+      const raw = JSON.parse(custom.order_items) as Array<{ i?: string; id?: string; q?: number; qty?: number; p?: number; price?: number }>;
+      items = raw.map((r) => ({
+        id: r.i ?? r.id ?? "",
+        slug: "",
+        name: "",
+        price_usd: r.p ?? r.price ?? 0,
+        quantity: r.q ?? r.qty ?? 1,
+      }));
     }
     if (custom.discount_code) {
       appliedDiscountCode = custom.discount_code;
