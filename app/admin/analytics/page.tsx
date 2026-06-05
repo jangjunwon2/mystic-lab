@@ -388,7 +388,7 @@ export default async function AdminAnalyticsPage() {
   for (const s of shares) shareByChannel[s.channel] = (shareByChannel[s.channel] ?? 0) + 1;
   const totalShares = shares.length;
   const SHARE_LABELS: Record<string, string> = {
-    native: "공유시트", facebook: "Facebook", x: "X", whatsapp: "WhatsApp", telegram: "Telegram", line: "LINE", copy: "링크복사",
+    native: "공유시트", facebook: "Facebook", x: "X", whatsapp: "WhatsApp", telegram: "Telegram", line: "LINE", copy: "링크복사", instagram: "Instagram",
   };
 
   // ───── 결제수단·국가별 분포 (결제완료+ 기준) ─────

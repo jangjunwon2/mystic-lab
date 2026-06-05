@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
   ShoppingCart, Zap, Play, ArrowLeft,
-  CheckCircle2, AlertCircle, Star, Share2, Copy, Check,
+  CheckCircle2, AlertCircle, Star, Share2, Copy, Check, X,
 } from "lucide-react";
 import SolutionVideoSection from "@/components/video/SolutionVideoSection";
 import CloudflarePlayer from "@/components/video/CloudflarePlayer";
@@ -22,14 +22,14 @@ import type {
   SolutionVideo,
 } from "@/app/[locale]/products/[slug]/page";
 
-const SHARE_LABELS: Record<string, { share: string; shareBtn: string; copyAria: string; shareAria: string; copied: string; hint: string }> = {
-  en: { share: "Share", shareBtn: "Share", copyAria: "Copy link", shareAria: "Share", copied: "Copied!", hint: "Instagram, KakaoTalk, WeChat, Messenger and more are available via the Share button (mobile)." },
-  ko: { share: "공유", shareBtn: "공유하기", copyAria: "링크 복사", shareAria: "공유", copied: "복사됨!", hint: "인스타그램·카카오톡·위챗·메신저 등은 공유하기 버튼(모바일)에서 선택할 수 있어요." },
-  ja: { share: "シェア", shareBtn: "共有", copyAria: "リンクをコピー", shareAria: "で共有", copied: "コピーしました!", hint: "Instagram・カカオトーク・WeChat・メッセンジャーなどは「共有」ボタン（モバイル）から選べます。" },
-  "zh-CN": { share: "分享", shareBtn: "分享", copyAria: "复制链接", shareAria: "分享", copied: "已复制!", hint: "Instagram、KakaoTalk、微信、Messenger 等可通过“分享”按钮（移动端）选择。" },
-  es: { share: "Compartir", shareBtn: "Compartir", copyAria: "Copiar enlace", shareAria: "Compartir en", copied: "¡Copiado!", hint: "Instagram, KakaoTalk, WeChat, Messenger y más están disponibles con el botón Compartir (móvil)." },
-  fr: { share: "Partager", shareBtn: "Partager", copyAria: "Copier le lien", shareAria: "Partager sur", copied: "Copié !", hint: "Instagram, KakaoTalk, WeChat, Messenger, etc. sont disponibles via le bouton Partager (mobile)." },
-  de: { share: "Teilen", shareBtn: "Teilen", copyAria: "Link kopieren", shareAria: "Teilen auf", copied: "Kopiert!", hint: "Instagram, KakaoTalk, WeChat, Messenger usw. sind über die Schaltfläche „Teilen“ (mobil) verfügbar." },
+const SHARE_LABELS: Record<string, { share: string; shareBtn: string; copyAria: string; shareAria: string; copied: string; hint: string; more: string; igHint: string }> = {
+  en: { share: "Share", shareBtn: "Share", copyAria: "Copy link", shareAria: "Share", copied: "Copied!", hint: "Instagram, KakaoTalk, WeChat, Messenger and more are available via the Share button (mobile).", more: "More", igHint: "Link copied — paste it into Instagram." },
+  ko: { share: "공유", shareBtn: "공유하기", copyAria: "링크 복사", shareAria: "공유", copied: "복사됨!", hint: "인스타그램·카카오톡·위챗·메신저 등은 공유하기 버튼(모바일)에서 선택할 수 있어요.", more: "더보기", igHint: "링크를 복사했어요 — 인스타그램에 붙여넣어 공유하세요." },
+  ja: { share: "シェア", shareBtn: "共有", copyAria: "リンクをコピー", shareAria: "で共有", copied: "コピーしました!", hint: "Instagram・カカオトーク・WeChat・メッセンジャーなどは「共有」ボタン（モバイル）から選べます。", more: "その他", igHint: "リンクをコピーしました — Instagramに貼り付けて共有してください。" },
+  "zh-CN": { share: "分享", shareBtn: "分享", copyAria: "复制链接", shareAria: "分享", copied: "已复制!", hint: "Instagram、KakaoTalk、微信、Messenger 等可通过“分享”按钮（移动端）选择。", more: "更多", igHint: "已复制链接 — 粘贴到 Instagram 分享。" },
+  es: { share: "Compartir", shareBtn: "Compartir", copyAria: "Copiar enlace", shareAria: "Compartir en", copied: "¡Copiado!", hint: "Instagram, KakaoTalk, WeChat, Messenger y más están disponibles con el botón Compartir (móvil).", more: "Más", igHint: "Enlace copiado: pégalo en Instagram." },
+  fr: { share: "Partager", shareBtn: "Partager", copyAria: "Copier le lien", shareAria: "Partager sur", copied: "Copié !", hint: "Instagram, KakaoTalk, WeChat, Messenger, etc. sont disponibles via le bouton Partager (mobile).", more: "Plus", igHint: "Lien copié — collez-le dans Instagram." },
+  de: { share: "Teilen", shareBtn: "Teilen", copyAria: "Link kopieren", shareAria: "Teilen auf", copied: "Kopiert!", hint: "Instagram, KakaoTalk, WeChat, Messenger usw. sind über die Schaltfläche „Teilen“ (mobil) verfügbar.", more: "Mehr", igHint: "Link kopiert – füge ihn in Instagram ein." },
 };
 
 const OPTION_LABELS: Record<string, { together: string; totalLabel: string }> = {
@@ -485,10 +485,13 @@ function ReviewCard({ review, locale }: { review: ReviewWithProfile; locale: str
 }
 
 function ShareButtons({ name, productId, locale }: { name: string; productId: string; locale: string }) {
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [igCopied, setIgCopied] = useState(false);
   const sl = SHARE_LABELS[locale] ?? SHARE_LABELS.en;
   const shareText = `Check out "${name}" on Mystic Lab ✨`;
   const getUrl = () => (typeof window !== "undefined" ? window.location.href : "");
+  const hasNativeShare = typeof navigator !== "undefined" && !!navigator.share;
 
   // 공유 트래킹 (통계용) — 실패해도 조용히 무시
   function track(channel: string) {
@@ -500,12 +503,12 @@ function ShareButtons({ name, productId, locale }: { name: string; productId: st
     }).catch(() => { /* ignore */ });
   }
 
-  // 네이티브 공유 시트 — 인스타그램·카카오톡·위챗·메신저 등 설치된 앱 전체 지원(주로 모바일)
   async function nativeShare() {
-    if (typeof navigator !== "undefined" && navigator.share) {
+    if (hasNativeShare) {
       try {
         await navigator.share({ title: name, text: shareText, url: getUrl() });
         track("native");
+        setOpen(false);
       } catch { /* 사용자가 취소 */ }
     } else {
       copyLink();
@@ -526,6 +529,19 @@ function ShareButtons({ name, productId, locale }: { name: string; productId: st
     const t = encodeURIComponent(shareText);
     track(channel);
     window.open(make(u, t), "_blank", "noopener,noreferrer");
+    setOpen(false);
+  }
+
+  // 인스타그램은 웹 공유 URL이 없음 → 모바일은 네이티브 시트, 아니면 링크 복사 후 인스타 열기
+  async function shareInstagram() {
+    track("instagram");
+    if (hasNativeShare) {
+      try { await navigator.share({ title: name, text: shareText, url: getUrl() }); setOpen(false); return; } catch { /* 취소 시 폴백 */ }
+    }
+    try { await navigator.clipboard.writeText(getUrl()); } catch { /* ignore */ }
+    setIgCopied(true);
+    setTimeout(() => setIgCopied(false), 3000);
+    window.open("https://www.instagram.com", "_blank", "noopener,noreferrer");
   }
 
   const targets: { key: string; label: string; bg: string; make: (u: string, t: string) => string }[] = [
@@ -535,45 +551,89 @@ function ShareButtons({ name, productId, locale }: { name: string; productId: st
     { key: "telegram", label: "Telegram", bg: "#229ED9", make: (u, t) => `https://t.me/share/url?url=${u}&text=${t}` },
     { key: "line", label: "LINE", bg: "#06C755", make: (u) => `https://social-plugins.line.me/lineit/share?url=${u}` },
   ];
+  const INSTAGRAM_BG = "linear-gradient(135deg,#F9CE34,#EE2A7B,#6228D7)";
 
   return (
-    <div className="flex flex-col gap-3 pt-5 border-t border-[#2D2D4E]">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="flex items-center gap-1.5 text-xs text-[#6B7280] mr-1">
-          <Share2 className="w-3.5 h-3.5" />
-          {sl.share}
-        </span>
-        <button
-          onClick={nativeShare}
-          className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:opacity-90 transition-opacity"
+    <div className="pt-5 border-t border-[#2D2D4E]">
+      {/* 단일 공유 버튼 → 팝업 */}
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:opacity-90 transition-opacity"
+      >
+        <Share2 className="w-4 h-4" />
+        {sl.shareBtn}
+      </button>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/60 p-4"
+          onClick={() => setOpen(false)}
         >
-          {sl.shareBtn}
-        </button>
-        {targets.map((s) => (
-          <button
-            key={s.key}
-            onClick={() => openShare(s.key, s.make)}
-            aria-label={`${s.label} ${sl.shareAria}`}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
-            style={{ background: s.bg }}
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl border p-5"
+            style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}
           >
-            {s.label}
-          </button>
-        ))}
-        <button
-          onClick={copyLink}
-          aria-label={sl.copyAria}
-          className={`flex items-center justify-center w-8 h-8 rounded-full border transition-all ${
-            copied
-              ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
-              : "bg-[#1A1A2E] border-[#2D2D4E] text-[#9CA3AF] hover:border-[#7C3AED]/60 hover:text-[#A855F7]"
-          }`}
-        >
-          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-        </button>
-        {copied && <span className="text-xs text-emerald-400">{sl.copied}</span>}
-      </div>
-      <p className="text-[11px] text-[#6B7280]">{sl.hint}</p>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-[#F0E6FF] flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-[#A855F7]" /> {sl.share}
+              </h3>
+              <button onClick={() => setOpen(false)} aria-label="close" className="p-1 rounded-lg text-[#9CA3AF] hover:text-[#F0E6FF]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2.5">
+              {/* Instagram */}
+              <button
+                onClick={shareInstagram}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                style={{ background: INSTAGRAM_BG }}
+              >
+                <Share2 className="w-4 h-4" /> Instagram
+              </button>
+              {targets.map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => openShare(s.key, s.make)}
+                  className="flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                  style={{ background: s.bg }}
+                >
+                  <Share2 className="w-4 h-4" /> {s.label}
+                </button>
+              ))}
+              {/* 링크 복사 */}
+              <button
+                onClick={copyLink}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-semibold border transition-all"
+                style={{
+                  background: copied ? "rgba(16,185,129,0.15)" : "#13131F",
+                  borderColor: copied ? "rgba(16,185,129,0.4)" : "#2D2D4E",
+                  color: copied ? "#34D399" : "#9CA3AF",
+                }}
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? sl.copied : sl.copyAria}
+              </button>
+              {/* 기기 공유 시트 (모바일) */}
+              {hasNativeShare && (
+                <button
+                  onClick={nativeShare}
+                  className="flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-semibold border transition-colors text-[#9CA3AF] hover:text-[#F0E6FF]"
+                  style={{ background: "#13131F", borderColor: "#2D2D4E" }}
+                >
+                  <Share2 className="w-4 h-4" /> {sl.more}
+                </button>
+              )}
+            </div>
+
+            {igCopied && <p className="text-[11px] text-emerald-400 mt-3">{sl.igHint}</p>}
+            <p className="text-[11px] text-[#6B7280] mt-3">{sl.hint}</p>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

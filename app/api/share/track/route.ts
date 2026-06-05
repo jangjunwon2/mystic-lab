@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
-const VALID_CHANNELS = ["native", "facebook", "x", "whatsapp", "telegram", "line", "copy"];
+const VALID_CHANNELS = ["native", "facebook", "x", "whatsapp", "telegram", "line", "copy", "instagram"];
 
 // POST /api/share/track { product_id, channel } — 공유 버튼 클릭 트래킹 (공개)
 export async function POST(request: NextRequest) {
