@@ -610,9 +610,11 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
   const trackingUrl = order.tracking_carrier && order.tracking_number
     ? (CARRIER_URLS[order.tracking_carrier] ?? null)
     : null;
-  // 마술 계산기(앱) 구매 항목 — 인증 코드 표시용
-  const magicItem = order.order_items.find((i) => i.products?.slug === "magic-calculator");
-  const magicProductId = magicItem?.products?.id ?? null;
+  // 웹앱 상품(계산기·인스타) 구매 항목 — 인증 코드/웹앱 열기 표시용. 중복 상품은 1개만.
+  const APP_SLUGS = ["magic-calculator", "fake-instagram"];
+  const appItems = order.order_items
+    .filter((i) => i.products && APP_SLUGS.includes(i.products.slug))
+    .filter((i, idx, arr) => arr.findIndex((x) => x.products?.id === i.products?.id) === idx);
 
   return (
     <div className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] p-5">
@@ -719,10 +721,10 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
         })}
       </div>
 
-      {/* 마술 계산기(앱) 인증 코드 — 해당 상품 구매 주문에 표시 */}
-      {magicProductId && (
-        <MagicMemberAccess productId={magicProductId} locale={locale} />
-      )}
+      {/* 웹앱(계산기·인스타) 인증 코드 + 웹앱 열기 — 구매한 앱마다 표시 */}
+      {appItems.map((i) => i.products && (
+        <MagicMemberAccess key={i.products.id} productId={i.products.id} slug={i.products.slug} locale={locale} />
+      ))}
     </div>
   );
 }
