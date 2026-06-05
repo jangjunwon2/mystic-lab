@@ -12,7 +12,7 @@ export async function GET() {
   const supabase = (await createAdminClient()) as any;
   const { data, error } = await supabase
     .from("issued_coupons")
-    .select("id, code, email, user_id, type, value, source, scope, max_uses, used_count, is_active, min_order_usd, is_used, starts_at, expires_at, created_at")
+    .select("id, code, email, user_id, type, value, source, scope, max_uses, per_user_limit, used_count, is_active, min_order_usd, is_used, starts_at, expires_at, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     type?: "percent" | "fixed";
     value?: number;
     maxUses?: number | null;
+    perUserLimit?: number | null;
     minOrderUsd?: number;
     startsAt?: string | null;
     expiresAt?: string | null;
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
       code: reqCode || undefined,
       type, value,
       maxUses: body.maxUses == null ? null : Number(body.maxUses),
+      perUserLimit: body.perUserLimit == null ? null : Number(body.perUserLimit),
       minOrderUsd: body.minOrderUsd ?? 0,
       startsAt: body.startsAt || null,
       expiresAt: body.expiresAt || null,

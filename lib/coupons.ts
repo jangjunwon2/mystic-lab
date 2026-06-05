@@ -76,7 +76,7 @@ export async function findUsableCoupon(admin: any, opts: { code: string; userId?
   const codeU = opts.code.toUpperCase().trim();
   const { data } = await admin
     .from("issued_coupons")
-    .select("id, code, type, value, min_order_usd, starts_at, expires_at, is_used, is_active, scope, max_uses, used_count, user_id, email")
+    .select("id, code, type, value, min_order_usd, starts_at, expires_at, is_used, is_active, scope, max_uses, used_count, per_user_limit, user_id, email")
     .eq("code", codeU)
     .maybeSingle();
   if (!data) return null;
@@ -85,6 +85,16 @@ export async function findUsableCoupon(admin: any, opts: { code: string; userId?
   if (data.starts_at && new Date(data.starts_at) > now) return null; // 아직 사용기간 전
   if (data.expires_at && new Date(data.expires_at) < now) return null;
   if (opts.subtotalUsd < (data.min_order_usd ?? 0)) return null;
+
+  // 1인당 사용 한도 — 로그인 회원의 이 코드 사용 이력 ≥ 한도면 사용 불가. (비로그인은 검증 불가 → 통과)
+  if (data.per_user_limit != null && opts.userId) {
+    const { count } = await admin
+      .from("coupon_redemptions")
+      .select("id", { count: "exact", head: true })
+      .eq("code", codeU)
+      .eq("user_id", opts.userId);
+    if ((count ?? 0) >= data.per_user_limit) return null;
+  }
 
   if ((data.scope ?? "personal") === "public") {
     if (data.is_active === false) return null;
@@ -126,11 +136,27 @@ export async function redeemCouponByCode(admin: any, code: string, orderId: stri
   }
 }
 
+// 사용 이력 기록(멱등은 호출측 dup 가드에 의존) — 1인당 한도 집계용. 로그인 회원만.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function recordCouponRedemption(admin: any, code: string, userId: string | null, orderId: string | null): Promise<void> {
+  if (!code || !userId) return;
+  try {
+    await admin.from("coupon_redemptions").insert({
+      code: code.toUpperCase().trim(),
+      user_id: userId,
+      order_id: orderId ?? null,
+    });
+  } catch {
+    /* 집계 실패는 주문에 영향 없음 */
+  }
+}
+
 export interface IssuePublicCouponParams {
   code?: string | null;            // 지정 코드(대문자화) — 미지정 시 자동 생성
   type: "percent" | "fixed";
   value: number;
-  maxUses?: number | null;         // null = 무제한
+  maxUses?: number | null;         // null = 무제한(전체)
+  perUserLimit?: number | null;    // null = 무제한(1인당)
   minOrderUsd?: number;
   startsAt?: string | null;        // 사용 시작 ISO (null = 즉시)
   expiresAt?: string | null;       // 사용 종료 ISO (null = 무기한) — expiresMonths보다 우선
@@ -156,6 +182,7 @@ export async function issuePublicCoupon(admin: any, params: IssuePublicCouponPar
     source: "promo",
     scope: "public",
     max_uses: params.maxUses ?? null,
+    per_user_limit: params.perUserLimit ?? null,
     min_order_usd: params.minOrderUsd ?? 0,
     is_active: true,
     starts_at: params.startsAt || null,

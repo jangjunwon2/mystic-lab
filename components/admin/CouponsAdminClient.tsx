@@ -12,6 +12,7 @@ export interface IssuedCoupon {
   source: string | null;
   scope: "personal" | "public" | null;
   max_uses: number | null;
+  per_user_limit: number | null;
   used_count: number;
   is_active: boolean;
   min_order_usd: number;
@@ -60,7 +61,7 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
   const [bCreating, setBCreating] = useState(false);
   const [bError, setBError] = useState("");
   const [bIssued, setBIssued] = useState("");
-  const [bForm, setBForm] = useState({ code: "", type: "percent", value: "10", maxUses: "", minOrderUsd: "", startsAt: "", expiresAt: "" });
+  const [bForm, setBForm] = useState({ code: "", type: "percent", value: "10", maxUses: "", perUserLimit: "", minOrderUsd: "", startsAt: "", expiresAt: "" });
 
   async function refresh() {
     fetch("/api/admin/coupons").then((r) => r.json()).then((d) => Array.isArray(d) && setCoupons(d)).catch(() => {});
@@ -103,6 +104,7 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
         type: bForm.type,
         value,
         maxUses: bForm.maxUses.trim() === "" ? null : parseInt(bForm.maxUses, 10),
+        perUserLimit: bForm.perUserLimit.trim() === "" ? null : parseInt(bForm.perUserLimit, 10),
         minOrderUsd: parseFloat(bForm.minOrderUsd) || 0,
         startsAt: bForm.startsAt ? new Date(bForm.startsAt).toISOString() : null,
         expiresAt: bForm.expiresAt ? new Date(bForm.expiresAt).toISOString() : null,
@@ -121,7 +123,8 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
   const usageLabel = (c: IssuedCoupon) => {
     if ((c.scope ?? "personal") === "public") {
       const total = c.max_uses == null ? "∞" : c.max_uses;
-      return `${c.used_count ?? 0} / ${total}`;
+      const perUser = c.per_user_limit != null ? ` · 1인 ${c.per_user_limit}회` : "";
+      return `${c.used_count ?? 0} / ${total}${perUser}`;
     }
     return c.is_used ? "사용됨" : "미사용";
   };
@@ -191,6 +194,11 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
             <div>
               <label className={labelCls} style={{ color: "#9CA3AF" }}>최대 사용 횟수 (선택)</label>
               <input type="number" min={1} step={1} value={bForm.maxUses} onChange={(e) => setBForm({ ...bForm, maxUses: e.target.value })} placeholder="무제한"
+                className={inputCls} style={inputStyle} />
+            </div>
+            <div>
+              <label className={labelCls} style={{ color: "#9CA3AF" }}>1인당 사용 한도 (선택)</label>
+              <input type="number" min={1} step={1} value={bForm.perUserLimit} onChange={(e) => setBForm({ ...bForm, perUserLimit: e.target.value })} placeholder="무제한"
                 className={inputCls} style={inputStyle} />
             </div>
             <div>

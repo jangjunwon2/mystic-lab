@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { sendLowStockAlert } from "@/lib/resend";
 import { earnPointsForUsd, addPoints, consumeHold, pointsToUsd } from "@/lib/points";
 import { getPointEarnRate } from "@/lib/settings";
-import { issueCoupon, redeemCouponByCode } from "@/lib/coupons";
+import { issueCoupon, redeemCouponByCode, recordCouponRedemption } from "@/lib/coupons";
 import type { SaveOrderInput } from "./types";
 
 const LOW_STOCK_THRESHOLD = 3;
@@ -144,6 +144,8 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
   // 개인/공개 쿠폰 사용 처리(멱등) — dup 가드로 신규 주문 1건만 도달.
   if (input.appliedCouponCode) {
     await redeemCouponByCode(supabase, input.appliedCouponCode, order.id);
+    // 1인당 한도 집계용 사용 이력(로그인 회원만).
+    await recordCouponRedemption(supabase, input.appliedCouponCode, userId, order.id);
   }
 
   // 레퍼럴/제휴 코드 — 사용횟수 증가 + 추천인 보상 쿠폰 발급.
