@@ -17,10 +17,12 @@ export async function GET() {
   const email = user.email?.toLowerCase() ?? "";
   const nowIso = new Date().toISOString();
 
-  // 소유자(user_id 또는 이메일)·미사용·미만료 개인 쿠폰. (공개 쿠폰은 '소유' 개념이 없어 제외)
-  const { data } = await admin
+  const SELECT_COLS = "id, code, type, value, source, min_order_usd, expires_at, created_at";
+
+  // 1) 소유 개인 쿠폰 — 소유자(user_id 또는 이메일)·미사용·미만료.
+  const { data: personalData } = await admin
     .from("issued_coupons")
-    .select("id, code, type, value, source, min_order_usd, expires_at, created_at")
+    .select(SELECT_COLS)
     .or(`user_id.eq.${user.id},email.eq.${email}`)
     .neq("scope", "public")
     .eq("is_used", false)
@@ -28,7 +30,41 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const coupons = (data ?? []) as { id: string }[];
+  // 2) 적용 가능한 활성 공개 쿠폰 — 기간 내·전체 한도 미초과·1인당 한도 미초과.
+  const { data: publicRaw } = await admin
+    .from("issued_coupons")
+    .select(`${SELECT_COLS}, max_uses, used_count, per_user_limit`)
+    .eq("scope", "public")
+    .eq("is_active", true)
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+    .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  type PubRow = { id: string; code: string; max_uses: number | null; used_count: number; per_user_limit: number | null };
+  let publicRows = ((publicRaw ?? []) as PubRow[]).filter(
+    (c) => c.max_uses == null || (c.used_count ?? 0) < c.max_uses
+  );
+
+  // 1인당 한도 — 회원의 코드별 사용 횟수 ≥ 한도면 제외.
+  const limited = publicRows.filter((c) => c.per_user_limit != null);
+  if (limited.length > 0) {
+    const { data: reds } = await admin
+      .from("coupon_redemptions")
+      .select("code")
+      .eq("user_id", user.id)
+      .in("code", limited.map((c) => c.code));
+    const usedByCode = new Map<string, number>();
+    for (const r of (reds ?? []) as { code: string }[]) usedByCode.set(r.code, (usedByCode.get(r.code) ?? 0) + 1);
+    publicRows = publicRows.filter((c) => c.per_user_limit == null || (usedByCode.get(c.code) ?? 0) < c.per_user_limit);
+  }
+
+  // 출력 컬럼만 남겨 개인 쿠폰과 합친다(중복 코드는 없음).
+  const allowedIds = new Set(publicRows.map((c) => c.id));
+  const publicData = ((publicRaw ?? []) as Record<string, unknown>[]).filter((c) => allowedIds.has(c.id as string))
+    .map((c) => ({ id: c.id, code: c.code, type: c.type, value: c.value, source: c.source, min_order_usd: c.min_order_usd, expires_at: c.expires_at, created_at: c.created_at }));
+
+  const coupons = ([...(personalData ?? []), ...publicData]) as { id: string }[];
 
   // 상품/카테고리 한정 대상 → 적용 가능 product_ids 산출(드롭다운 활성/비활성용). 한정 없으면 null(전체).
   const productIdsByCoupon = new Map<string, Set<string>>();
