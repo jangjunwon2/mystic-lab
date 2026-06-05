@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendLowStockAlert } from "@/lib/resend";
 import { earnPointsForUsd, addPoints, consumeHold } from "@/lib/points";
+import { getPointEarnRate } from "@/lib/settings";
 import type { SaveOrderInput } from "./types";
 
 const LOW_STOCK_THRESHOLD = 3;
@@ -146,7 +147,8 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
 
   // 마일리지 적립 — 회원이며 결제 금액이 있을 때 (5%). 적립분은 12개월 후 만료.
   if (userId && input.totalUsd > 0) {
-    const earned = earnPointsForUsd(input.totalUsd);
+    const earnRate = await getPointEarnRate(supabase);
+    const earned = earnPointsForUsd(input.totalUsd, earnRate);
     if (earned > 0) {
       await addPoints(supabase, {
         userId,

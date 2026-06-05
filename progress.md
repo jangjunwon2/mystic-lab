@@ -39,6 +39,7 @@
 ### 결제·포인트 정합성
 - 멱등성 가드(gateway key 중복 차단), 재고 낙관적 동시성(CAS+재시도), 유저 RPC 조회
 - 포인트: **12개월 FIFO 만료**(로트 원장 + get/add/spend/expire RPC + 일일 cron), 환불 시 복원, **동시결제 과할인 차단**(포인트 hold/예약)
+- 포인트 정책: **가입 환영 적립 ~$2(200P, 1회·멱등)**, **적립 사용 최소 보유 $5(500P) 하한**(미만 시 사용 불가, 서버 검증), **적립률 어드민 가변 설정**(`/admin/settings`, `site_settings` 테이블 · 기본 5%)
 - 디지털 상품은 결제 즉시 `completed` → 구매 직후 리뷰 가능
 
 ### 마술 계산기 (PWA, `/calc`)
@@ -83,6 +84,7 @@
 
 ## ⏳ 운영자(사장님) To-Do
 - [x] **Supabase 마이그레이션** — `033_point_holds.sql` 포함 019~033 적용 완료
+- [ ] **Supabase 마이그레이션 `034_site_settings.sql`** 실행 — 포인트 적립률 어드민 설정용(미실행 시 기본 5% 동작, 어드민 저장은 안 됨)
 - [ ] **상품 등록 + 인증코드 발급**: slug `magic-calculator`, `fake-instagram` (없으면 `/calc`·`/insta` 게이트·자동발급 동작 안 함)
 - [ ] **Vercel 환경변수 확인**: `CRON_SECRET`(포인트 만료 cron), `ADMIN_EMAIL`, `RESEND_FROM_EMAIL`(문의 메일 수신)
 
