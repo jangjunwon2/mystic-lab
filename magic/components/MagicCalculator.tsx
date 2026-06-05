@@ -203,6 +203,26 @@ const MANUAL_TEXTS: Record<string, {
   }
 };
 
+// 비밀 설정창 7개 언어 라벨 (사용자=마술사용)
+interface SettingsText {
+  panelTitle: string; language: string; forceTarget: string; staticNum: string; timeBased: string;
+  forcedNumber: string; timeFormat: string; minutesOffset: string; minUnit: string; forceBehavior: string;
+  oneTime: string; continuous: string; camouflage: string; printerSettings: string; scanPair: string;
+  receiptTemplate: string; variables: string; printFont: string; fontCursive: string; fontMyeongjo: string;
+  fontGothic: string; printing: string; testPrint: string; clearLogs: string;
+  btScanning: string; btConnecting: string; btConnected: string; btNoChar: string; btFailed: string;
+  prNotConnected: string; prBuilding: string; prDone: string; prFailed: string;
+}
+const SETTINGS_TEXTS: Record<string, SettingsText> = {
+  en: { panelTitle: "Secret Config Panel", language: "Language", forceTarget: "Force Target Value", staticNum: "Static Number", timeBased: "Time-based", forcedNumber: "Forced Number", timeFormat: "Time Format", minutesOffset: "Minutes Offset", minUnit: "min", forceBehavior: "Force Behavior Mode", oneTime: "One-time", continuous: "Continuous", camouflage: "Calculator Camouflage Theme", printerSettings: "Thermal Printer Settings", scanPair: "Scan & Pair Bluetooth Printer", receiptTemplate: "Receipt Template", variables: "Variables", printFont: "Print Font Style", fontCursive: "Cursive", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Printing...", testPrint: "Test Print Receipt", clearLogs: "Clear Background Logs History", btScanning: "Scanning Bluetooth...", btConnecting: "Connecting", btConnected: "✓ Printer connected successfully.", btNoChar: "Characteristic not found.", btFailed: "Connection failed", prNotConnected: "Printer not connected. Please pair it in settings.", prBuilding: "Building receipt image...", prDone: "✓ Receipt printed successfully.", prFailed: "Print failed" },
+  ko: { panelTitle: "비밀 설정", language: "언어", forceTarget: "포스 대상 값", staticNum: "고정 숫자", timeBased: "시간 기반", forcedNumber: "포스할 숫자", timeFormat: "시간 형식", minutesOffset: "분 오프셋", minUnit: "분", forceBehavior: "포스 동작 모드", oneTime: "1회성", continuous: "지속", camouflage: "계산기 위장 테마", printerSettings: "감열 프린터 설정", scanPair: "블루투스 프린터 검색·연결", receiptTemplate: "영수증 템플릿", variables: "변수", printFont: "인쇄 글꼴", fontCursive: "필기체", fontMyeongjo: "명조체", fontGothic: "고딕체", printing: "인쇄 중...", testPrint: "테스트 인쇄", clearLogs: "백그라운드 로그 지우기", btScanning: "블루투스 검색 중...", btConnecting: "연결 시도 중", btConnected: "✓ 프린터가 성공적으로 연결되었습니다.", btNoChar: "특성(Characteristic)을 찾을 수 없습니다.", btFailed: "연결 실패", prNotConnected: "프린터가 연결되지 않았습니다. 설정에서 연결해 주세요.", prBuilding: "영수증 이미지 생성 중...", prDone: "✓ 영수증 출력이 완료되었습니다.", prFailed: "인쇄 실패" },
+  ja: { panelTitle: "シークレット設定", language: "言語", forceTarget: "フォース対象の値", staticNum: "固定数字", timeBased: "時間ベース", forcedNumber: "フォースする数字", timeFormat: "時間フォーマット", minutesOffset: "分オフセット", minUnit: "分", forceBehavior: "フォース動作モード", oneTime: "1回のみ", continuous: "継続", camouflage: "電卓カモフラージュ", printerSettings: "感熱プリンター設定", scanPair: "Bluetoothプリンターを検索・接続", receiptTemplate: "レシートテンプレート", variables: "変数", printFont: "印刷フォント", fontCursive: "筆記体", fontMyeongjo: "明朝体", fontGothic: "ゴシック体", printing: "印刷中...", testPrint: "テスト印刷", clearLogs: "バックグラウンドログを消去", btScanning: "Bluetoothを検索中...", btConnecting: "接続を試行中", btConnected: "✓ プリンターが正常に接続されました。", btNoChar: "Characteristicが見つかりません。", btFailed: "接続失敗", prNotConnected: "プリンターが接続されていません。設定から接続してください。", prBuilding: "レシート画像を生成中...", prDone: "✓ レシートの印刷が完了しました。", prFailed: "印刷失敗" },
+  "zh-CN": { panelTitle: "秘密设置", language: "语言", forceTarget: "强迫目标值", staticNum: "固定数字", timeBased: "基于时间", forcedNumber: "强迫的数字", timeFormat: "时间格式", minutesOffset: "分钟偏移", minUnit: "分", forceBehavior: "强迫行为模式", oneTime: "一次性", continuous: "持续", camouflage: "计算器伪装主题", printerSettings: "热敏打印机设置", scanPair: "扫描并配对蓝牙打印机", receiptTemplate: "小票模板", variables: "变量", printFont: "打印字体", fontCursive: "手写体", fontMyeongjo: "明体", fontGothic: "黑体", printing: "打印中...", testPrint: "测试打印", clearLogs: "清除后台记录", btScanning: "正在扫描蓝牙...", btConnecting: "正在尝试连接", btConnected: "✓ 打印机已成功连接。", btNoChar: "未找到特征(Characteristic)。", btFailed: "连接失败", prNotConnected: "打印机未连接。请在设置中连接。", prBuilding: "正在生成小票图像...", prDone: "✓ 小票打印完成。", prFailed: "打印失败" },
+  es: { panelTitle: "Configuración Secreta", language: "Idioma", forceTarget: "Valor Forzado", staticNum: "Número Fijo", timeBased: "Basado en Tiempo", forcedNumber: "Número a Forzar", timeFormat: "Formato de Hora", minutesOffset: "Desfase de Minutos", minUnit: "min", forceBehavior: "Modo de Forzaje", oneTime: "Una vez", continuous: "Continuo", camouflage: "Tema de Camuflaje", printerSettings: "Impresora Térmica", scanPair: "Buscar y Vincular Impresora Bluetooth", receiptTemplate: "Plantilla de Recibo", variables: "Variables", printFont: "Fuente de Impresión", fontCursive: "Cursiva", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Imprimiendo...", testPrint: "Imprimir Prueba", clearLogs: "Borrar Registros de Fondo", btScanning: "Buscando Bluetooth...", btConnecting: "Conectando", btConnected: "✓ Impresora conectada correctamente.", btNoChar: "Característica no encontrada.", btFailed: "Conexión fallida", prNotConnected: "Impresora no conectada. Vincúlela en ajustes.", prBuilding: "Generando imagen del recibo...", prDone: "✓ Recibo impreso correctamente.", prFailed: "Error de impresión" },
+  fr: { panelTitle: "Configuration Secrète", language: "Langue", forceTarget: "Valeur Forcée", staticNum: "Nombre Fixe", timeBased: "Basé sur l'Heure", forcedNumber: "Nombre à Forcer", timeFormat: "Format de l'Heure", minutesOffset: "Décalage en Minutes", minUnit: "min", forceBehavior: "Mode de Forçage", oneTime: "Une fois", continuous: "Continu", camouflage: "Thème de Camouflage", printerSettings: "Imprimante Thermique", scanPair: "Rechercher et Associer l'Imprimante Bluetooth", receiptTemplate: "Modèle de Reçu", variables: "Variables", printFont: "Police d'Impression", fontCursive: "Cursive", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Impression...", testPrint: "Imprimer un Test", clearLogs: "Effacer les Journaux", btScanning: "Recherche Bluetooth...", btConnecting: "Connexion en cours", btConnected: "✓ Imprimante connectée.", btNoChar: "Caractéristique introuvable.", btFailed: "Échec de la connexion", prNotConnected: "Imprimante non connectée. Associez-la dans les réglages.", prBuilding: "Génération de l'image du reçu...", prDone: "✓ Reçu imprimé.", prFailed: "Échec de l'impression" },
+  de: { panelTitle: "Geheime Einstellungen", language: "Sprache", forceTarget: "Forcier-Zielwert", staticNum: "Feste Zahl", timeBased: "Zeitbasiert", forcedNumber: "Zu forcierende Zahl", timeFormat: "Zeitformat", minutesOffset: "Minuten-Versatz", minUnit: "Min", forceBehavior: "Forcier-Modus", oneTime: "Einmalig", continuous: "Dauerhaft", camouflage: "Rechner-Tarnung", printerSettings: "Thermodrucker", scanPair: "Bluetooth-Drucker suchen & koppeln", receiptTemplate: "Beleg-Vorlage", variables: "Variablen", printFont: "Druckschrift", fontCursive: "Schreibschrift", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Druckt...", testPrint: "Testdruck", clearLogs: "Hintergrund-Logs löschen", btScanning: "Bluetooth wird gesucht...", btConnecting: "Verbindung wird hergestellt", btConnected: "✓ Drucker erfolgreich verbunden.", btNoChar: "Characteristic nicht gefunden.", btFailed: "Verbindung fehlgeschlagen", prNotConnected: "Drucker nicht verbunden. Bitte in den Einstellungen koppeln.", prBuilding: "Beleg-Bild wird erstellt...", prDone: "✓ Beleg erfolgreich gedruckt.", prFailed: "Druck fehlgeschlagen" },
+};
+
 interface Props {
   locale: string;
   productId: string;
@@ -297,6 +317,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
       localStorage.setItem("ml_calc_config", JSON.stringify(newConfig));
     } catch { /* ignore */ }
   };
+
+  // 설정창 라벨 (현재 앱 언어 기준)
+  const st = SETTINGS_TEXTS[config.appLocale] ?? SETTINGS_TEXTS[locale] ?? SETTINGS_TEXTS.en;
 
   // 마술사 전용 미세 깜빡임 피드백 (0.1초 밝기 조절)
   const triggerDimmingFeedback = () => {
@@ -656,14 +679,14 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   // 감열 프린터 연결
   const handleConnectPrinter = async () => {
-    setPrinterStatus("Bluetooth 스캔 중...");
+    setPrinterStatus(st.btScanning);
     try {
       const device = await (navigator as any).bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: ["000018f0-0000-1000-8000-00805f9b34fb"], // 일반 BLE SPP 서비스 UUID
       });
 
-      setPrinterStatus(`연결 시도 중: ${device.name}...`);
+      setPrinterStatus(`${st.btConnecting}: ${device.name}...`);
       const server = await device.gatt?.connect();
       const service = await server?.getPrimaryService("000018f0-0000-1000-8000-00805f9b34fb");
       const char = await service?.getCharacteristic("00002af1-0000-1000-8000-00805f9b34fb");
@@ -671,24 +694,24 @@ export default function MagicCalculator({ locale, productId }: Props) {
       if (char) {
         setPrinterDevice(device);
         setPrinterChar(char);
-        setPrinterStatus("✓ 프린터가 성공적으로 연결되었습니다.");
+        setPrinterStatus(st.btConnected);
       } else {
-        setPrinterStatus("특성(Characteristic)을 찾을 수 없습니다.");
+        setPrinterStatus(st.btNoChar);
       }
     } catch (e: any) {
-      setPrinterStatus(`연결 실패: ${e.message}`);
+      setPrinterStatus(`${st.btFailed}: ${e.message}`);
     }
   };
 
   // 영수증 비트맵 이미지 생성 및 전송
   const handlePrintReceipt = async () => {
     if (!printerChar) {
-      setPrinterStatus("프린터 연결 상태가 아닙니다. 설정에서 연결해주세요.");
+      setPrinterStatus(st.prNotConnected);
       return;
     }
 
     setIsPrinting(true);
-    setPrinterStatus("영수증 이미지 빌드 중...");
+    setPrinterStatus(st.prBuilding);
 
     try {
       // 템플릿 변수 치환
@@ -786,9 +809,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
         await printerChar.writeValueWithResponse(chunk);
       }
 
-      setPrinterStatus("✓ 영수증 출력이 완료되었습니다.");
+      setPrinterStatus(st.prDone);
     } catch (e: any) {
-      setPrinterStatus(`인쇄 실패: ${e.message}`);
+      setPrinterStatus(`${st.prFailed}: ${e.message}`);
     } finally {
       setIsPrinting(false);
     }
@@ -1256,7 +1279,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
               <div className="flex items-center justify-between border-b border-[#2D2D4E] pb-4">
                 <div className="flex items-center gap-2">
                   <Settings className="w-5 h-5 text-[#A855F7]" />
-                  <h2 className="text-lg font-bold text-[#F0E6FF]">Secret Config Panel</h2>
+                  <h2 className="text-lg font-bold text-[#F0E6FF]">{st.panelTitle}</h2>
                 </div>
                 <button
                   onClick={() => setIsSettingsOpen(false)}
@@ -1268,7 +1291,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
               {/* 1. 언어 설정 드롭다운 (사장님 요청) */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-[#9CA3AF] uppercase">Language (Locale)</label>
+                <label className="text-xs font-semibold text-[#9CA3AF] uppercase">{st.language}</label>
                 <select
                   value={config.appLocale}
                   onChange={(e) => {
@@ -1291,7 +1314,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
               {/* 2. 포스 설정 */}
               <div className="space-y-4 rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4">
-                <h3 className="text-sm font-semibold text-[#A855F7]">Force Target Value</h3>
+                <h3 className="text-sm font-semibold text-[#A855F7]">{st.forceTarget}</h3>
                 
                 <div className="flex gap-4">
                   <label className="flex items-center gap-1.5 text-sm text-[#F0E6FF] cursor-pointer">
@@ -1302,7 +1325,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                       onChange={() => saveConfig({ ...config, forceType: "static" })}
                       className="accent-[#7C3AED]"
                     />
-                    Static Number
+                    {st.staticNum}
                   </label>
                   <label className="flex items-center gap-1.5 text-sm text-[#F0E6FF] cursor-pointer">
                     <input
@@ -1312,13 +1335,13 @@ export default function MagicCalculator({ locale, productId }: Props) {
                       onChange={() => saveConfig({ ...config, forceType: "time" })}
                       className="accent-[#7C3AED]"
                     />
-                    Time-based
+                    {st.timeBased}
                   </label>
                 </div>
 
                 {config.forceType === "static" ? (
                   <div className="space-y-2">
-                    <label className="text-xs text-[#9CA3AF]">Forced Number</label>
+                    <label className="text-xs text-[#9CA3AF]">{st.forcedNumber}</label>
                     <input
                       type="text"
                       value={config.staticNumber}
@@ -1329,7 +1352,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 ) : (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-xs text-[#9CA3AF]">Time Format (Dropdown)</label>
+                      <label className="text-xs text-[#9CA3AF]">{st.timeFormat}</label>
                       <select
                         value={config.timeFormat}
                         onChange={(e) => saveConfig({ ...config, timeFormat: e.target.value as any })}
@@ -1350,8 +1373,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
                     <div className="space-y-2">
                       <label className="text-xs text-[#9CA3AF] flex items-center justify-between">
-                        <span>Minutes Offset</span>
-                        <span className="text-[#A855F7] font-semibold">+{config.timeOffset} min</span>
+                        <span>{st.minutesOffset}</span>
+                        <span className="text-[#A855F7] font-semibold">+{config.timeOffset} {st.minUnit}</span>
                       </label>
                       <input
                         type="range"
@@ -1370,7 +1393,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 )}
 
                 <div className="space-y-2 pt-2 border-t border-[#2D2D4E]">
-                  <label className="text-xs text-[#9CA3AF] uppercase">Force Behavior Mode</label>
+                  <label className="text-xs text-[#9CA3AF] uppercase">{st.forceBehavior}</label>
                   <div className="flex gap-4">
                     <label className="flex items-center gap-1.5 text-sm text-[#F0E6FF] cursor-pointer">
                       <input
@@ -1380,7 +1403,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                         onChange={() => saveConfig({ ...config, forceMode: "one-time" })}
                         className="accent-[#7C3AED]"
                       />
-                      One-time
+                      {st.oneTime}
                     </label>
                     <label className="flex items-center gap-1.5 text-sm text-[#F0E6FF] cursor-pointer">
                       <input
@@ -1390,7 +1413,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                         onChange={() => saveConfig({ ...config, forceMode: "continuous" })}
                         className="accent-[#7C3AED]"
                       />
-                      Continuous
+                      {st.continuous}
                     </label>
                   </div>
                 </div>
@@ -1398,7 +1421,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
               {/* 3. 위장 테마 설정 */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-[#9CA3AF] uppercase">Calculator Camouflage Theme</label>
+                <label className="text-xs font-semibold text-[#9CA3AF] uppercase">{st.camouflage}</label>
                 <div className="flex gap-3">
                   {["auto", "ios", "android"].map((tOption) => (
                     <button
@@ -1419,7 +1442,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
               {/* 4. 감열 프린터 연동 설정 */}
               <div className="space-y-4 rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4">
                 <h3 className="text-sm font-semibold text-[#A855F7] flex items-center gap-1.5">
-                  <Wifi className="w-4 h-4" /> Thermal Printer Settings
+                  <Wifi className="w-4 h-4" /> {st.printerSettings}
                 </h3>
 
                 <div className="space-y-2">
@@ -1427,7 +1450,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                     onClick={handleConnectPrinter}
                     className="w-full py-2.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:opacity-90 active:scale-95 transition-all duration-150"
                   >
-                    Scan & Pair Bluetooth Printer
+                    {st.scanPair}
                   </button>
                   {printerStatus && (
                     <p className="text-[11px] text-[#9CA3AF] bg-[#13131F] p-2 rounded border border-[#2D2D4E] break-words">
@@ -1439,26 +1462,26 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 {printerDevice && (
                   <div className="space-y-3 pt-2 border-t border-[#2D2D4E]">
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#9CA3AF]">Receipt Template</label>
+                      <label className="text-xs text-[#9CA3AF]">{st.receiptTemplate}</label>
                       <textarea
                         rows={5}
                         value={config.receiptTemplate}
                         onChange={(e) => saveConfig({ ...config, receiptTemplate: e.target.value })}
                         className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-3 py-2 resize-none"
                       />
-                      <p className="text-[9px] text-gray-500">Variables: {"{num1}, {num2}, {num3}, {result}"}</p>
+                      <p className="text-[9px] text-gray-500">{st.variables}: {"{num1}, {num2}, {num3}, {result}"}</p>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#9CA3AF]">Print Font Style</label>
+                      <label className="text-xs text-[#9CA3AF]">{st.printFont}</label>
                       <select
                         value={config.receiptFont}
                         onChange={(e) => saveConfig({ ...config, receiptFont: e.target.value as any })}
                         className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-3 py-2 focus:outline-none"
                       >
-                        <option value="cursive">Cursive Cursive (필기체)</option>
-                        <option value="myeongjo">Myeongjo Serif (명조체)</option>
-                        <option value="gothic">Gothic Sans-serif (기본체)</option>
+                        <option value="cursive">{st.fontCursive}</option>
+                        <option value="myeongjo">{st.fontMyeongjo}</option>
+                        <option value="gothic">{st.fontGothic}</option>
                       </select>
                     </div>
 
@@ -1467,7 +1490,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                       disabled={isPrinting}
                       className="w-full py-2 rounded-lg text-xs font-semibold border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
                     >
-                      {isPrinting ? "Printing..." : "Test Print Receipt"}
+                      {isPrinting ? st.printing : st.testPrint}
                     </button>
                   </div>
                 )}
@@ -1516,7 +1539,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                   }}
                   className="w-full py-2.5 rounded-lg text-xs font-semibold bg-red-950/20 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all"
                 >
-                  Clear Background Logs History
+                  {st.clearLogs}
                 </button>
               </div>
             </div>
