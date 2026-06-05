@@ -72,8 +72,7 @@ export async function POST(request: NextRequest) {
     // (웹훅·confirm 중 주문을 먼저 저장한 쪽만 정산, 나머지는 멱등 early-return → 정확히 1회 차감)
     return NextResponse.json({ url, pointsSpent, pointsHoldRef: pointsHoldRef ?? null });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Server error.";
     console.error("[lemon-checkout]", err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: "Checkout failed. Please try again." }, { status: 500 });
   }
 }
