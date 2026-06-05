@@ -113,6 +113,21 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     }).catch(() => { /* 차감 실패는 주문에 영향 없음 */ });
   }
 
+  // 할인 코드 사용횟수 증가 — 서버측·멱등(위 dup 가드로 신규 주문 1건만 여기 도달).
+  // 전 게이트웨이(lemon-confirm·lemon-webhook·toss-confirm) 동일 처리 → 클라이언트 best-effort 호출 불필요.
+  if (input.appliedDiscountCode) {
+    const { data: dc } = await supabase
+      .from("discount_codes")
+      .select("id")
+      .eq("code", input.appliedDiscountCode.toUpperCase())
+      .maybeSingle();
+    if (dc?.id) {
+      await supabase
+        .rpc("increment_discount_used", { code_id: dc.id })
+        .catch(() => { /* 집계 실패는 주문에 영향 없음 */ });
+    }
+  }
+
   // 레퍼럴/제휴 코드 사용횟수 증가 — 코드로 적용된 주문이면 1회 증가.
   // 멱등성: 같은 결제는 위 dup 가드에서 early-return되므로 여기까지 오면 신규 주문 1건뿐 → 정확히 1회 증가.
   // (lemon-confirm·lemon-webhook·toss-confirm 어느 경로로 저장돼도 동일하게 처리)

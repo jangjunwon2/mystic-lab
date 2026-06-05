@@ -115,7 +115,6 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           shippingUsd?: number;
           referralCode?: string | null;
           discountCode?: string | null;
-          discountCodeId?: string | null;
         } | null = null;
         try {
           const raw = sessionStorage.getItem("toss_pending");
@@ -149,16 +148,6 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
           setStatus("error");
           setErrorMsg(data.error ?? t("errConfirmFailed"));
           return;
-        }
-
-        // 할인 코드 사용횟수 증가 — Toss 분기에서만 호출(Lemon은 오버레이 성공 핸들러에서 처리 → 중복 방지).
-        // 레퍼럴은 save-order에서 서버측 처리하므로 여기선 일반 할인 코드만.
-        if (pending?.discountCodeId) {
-          fetch("/api/discounts/use", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ codeId: pending.discountCodeId }),
-          }).catch(() => {});
         }
 
         sessionStorage.removeItem("toss_pending");

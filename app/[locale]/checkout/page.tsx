@@ -88,7 +88,6 @@ export default function CheckoutPage({ params }: Props) {
   const [lsError, setLsError] = useState("");
   const [lsSuccess, setLsSuccess] = useState(false);
   const lsScriptReady = useRef(false);
-  const appliedDiscountRef = useRef<AppliedDiscount | null>(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
@@ -195,14 +194,7 @@ export default function CheckoutPage({ params }: Props) {
       if (e.data?.event === "Checkout.Success") {
         setLsSuccess(true);
         removePaidItemsFromCart(items);
-        // 할인 코드만 클라이언트에서 사용횟수 증가. 레퍼럴 코드는 save-order에서 서버측으로 처리.
-        if (appliedDiscountRef.current?.id && appliedDiscountRef.current.kind !== "referral") {
-          fetch("/api/discounts/use", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ codeId: appliedDiscountRef.current.id }),
-          }).catch(() => {});
-        }
+        // 할인·레퍼럴 코드 사용횟수는 save-order(서버측)에서 멱등 처리한다.
       }
     };
     window.addEventListener("message", handler);
@@ -274,7 +266,6 @@ export default function CheckoutPage({ params }: Props) {
         setCouponError(data.error ?? "Invalid code");
       } else {
         setAppliedDiscount(data);
-        appliedDiscountRef.current = data;
         setCouponCode("");
       }
     } catch {
@@ -286,7 +277,6 @@ export default function CheckoutPage({ params }: Props) {
 
   function removeCoupon() {
     setAppliedDiscount(null);
-    appliedDiscountRef.current = null;
     setCouponCode("");
     setCouponError("");
   }
@@ -857,7 +847,6 @@ export default function CheckoutPage({ params }: Props) {
                       shippingUsd={shippingCostUsd}
                       referralCode={appliedDiscount?.kind === "referral" ? appliedDiscount.code : null}
                       discountCode={appliedDiscount && appliedDiscount.kind !== "referral" ? appliedDiscount.code : null}
-                      discountCodeId={appliedDiscount && appliedDiscount.kind !== "referral" ? appliedDiscount.id : null}
                       shippingAddress={shippingName ? {
                         name: shippingName,
                         phone: shippingPhone,
