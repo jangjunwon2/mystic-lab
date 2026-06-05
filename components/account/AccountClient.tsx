@@ -117,7 +117,6 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
   const [pointsLoading, setPointsLoading] = useState(false);
   const [coupons, setCoupons] = useState<Coupon[] | null>(null);
   const [claimable, setClaimable] = useState<Coupon[]>([]);
-  const [claiming, setClaiming] = useState<string | null>(null);
   const [couponsLoading, setCouponsLoading] = useState(false);
   const [showNewAddrForm, setShowNewAddrForm] = useState(false);
   const [newAddr, setNewAddr] = useState({ name: "", phone: "", line1: "", line2: "", city: "", postal: "", country: "" });
@@ -156,21 +155,6 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
     router.refresh();
   };
 
-  // 공개 쿠폰 발급(claim) — 성공 시 발급 가능 목록에서 빼고 내 쿠폰 목록을 새로고침.
-  async function claimCoupon(code: string) {
-    setClaiming(code);
-    try {
-      const res = await fetch("/api/account/coupons/claim", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }),
-      });
-      if (res.ok) {
-        const r = await fetch("/api/account/coupons").then((x) => x.json()).catch(() => null);
-        if (r) { setCoupons(Array.isArray(r.coupons) ? r.coupons : []); setClaimable(Array.isArray(r.claimable) ? r.claimable : []); }
-      }
-    } finally {
-      setClaiming(null);
-    }
-  }
 
   async function saveName() {
     if (!nameInput.trim()) return;
@@ -637,36 +621,18 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
               </div>
             ) : (
               <>
-                {/* 발급 가능한 공개 쿠폰 */}
+                {/* 발급 가능한 공개 쿠폰 → 전용 발급 페이지로 이동 */}
                 {claimable.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-2">{t("claimableCoupons")}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {claimable.map((c) => (
-                        <div key={c.id} className="bg-[#1A1A2E] rounded-xl border border-dashed border-[#7C3AED]/50 p-5 flex items-center justify-between gap-4">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-[#F0E6FF] mb-1 line-clamp-1">{c.name ?? (c.type === "fixed" ? `$${c.value} OFF` : `${c.value}% OFF`)}</p>
-                            <p className="text-lg font-bold text-[#A855F7] leading-none">{c.type === "fixed" ? `$${c.value}` : `${c.value}%`}<span className="text-xs ml-1">OFF</span></p>
-                            <p className="text-[11px] text-[#6B7280] mt-1.5">
-                              {c.min_order_usd > 0 ? `${t("couponMinOrder")} $${c.min_order_usd} · ` : ""}
-                              {c.expires_at ? `${t("couponExpires")} ${new Date(c.expires_at).toLocaleDateString(locale)}` : t("couponNoExpiry")}
-                            </p>
-                          </div>
-                          <button onClick={() => claimCoupon(c.code)} disabled={claiming === c.code}
-                            className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                            style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)" }}>
-                            {claiming === c.code ? "…" : t("claimBtn")}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <Link href={`/${locale}/coupons`}
+                    className="flex items-center justify-between bg-[#7C3AED]/10 border border-[#7C3AED]/30 rounded-xl px-4 py-3 hover:bg-[#7C3AED]/15 transition-colors">
+                    <span className="text-sm font-medium text-[#A855F7]">{t("claimableCoupons")} · {claimable.length}</span>
+                    <span className="text-sm text-[#A855F7]">{t("viewClaimPage")} →</span>
+                  </Link>
                 )}
 
                 {/* 내 쿠폰 */}
                 {(coupons ?? []).length > 0 && (
                   <div>
-                    {claimable.length > 0 && <h3 className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-2">{t("myCouponsLabel")}</h3>}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {(coupons ?? []).map((c) => (
                         <div key={c.id} className="bg-gradient-to-br from-[#7C3AED]/15 to-[#1A1A2E] rounded-xl border border-[#7C3AED]/40 p-5 flex items-center justify-between gap-4">
