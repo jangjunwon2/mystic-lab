@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // 과호출 방지 (어드민 전용이지만 키입력당 호출되므로 가드)
-  if (!checkRateLimit(`users-search:${getClientIP(request)}`, 60, 60_000)) {
+  if (!(await checkRateLimit(`users-search:${getClientIP(request)}`, 60, 60_000))) {
     return NextResponse.json({ users: [] });
   }
 

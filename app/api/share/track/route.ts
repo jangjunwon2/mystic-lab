@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     // 스팸/조작 방지 — IP당 분당 30회
     const ip = getClientIP(request);
-    if (!checkRateLimit(`share:${ip}`, 30, 60_000)) {
+    if (!(await checkRateLimit(`share:${ip}`, 30, 60_000))) {
       return NextResponse.json({ ok: false }, { status: 429 });
     }
 

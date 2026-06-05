@@ -4,7 +4,7 @@ import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   // 스팸 방지 — IP당 분당 10회
-  if (!checkRateLimit(`review:${getClientIP(request)}`, 10, 60_000)) {
+  if (!(await checkRateLimit(`review:${getClientIP(request)}`, 10, 60_000))) {
     return NextResponse.json({ error: "Too many requests. Please wait." }, { status: 429 });
   }
 

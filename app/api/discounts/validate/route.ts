@@ -4,7 +4,7 @@ import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   // 코드 브루트포스 방지 — IP당 분당 10회
-  if (!checkRateLimit(`discount-validate:${getClientIP(request)}`, 10, 60_000)) {
+  if (!(await checkRateLimit(`discount-validate:${getClientIP(request)}`, 10, 60_000))) {
     return NextResponse.json({ error: "Too many requests. Please wait." }, { status: 429 });
   }
 
