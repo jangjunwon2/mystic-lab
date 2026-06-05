@@ -12,7 +12,7 @@ export async function GET() {
   const supabase = (await createAdminClient()) as any;
   const { data, error } = await supabase
     .from("issued_coupons")
-    .select("id, code, email, user_id, type, value, source, scope, max_uses, used_count, is_active, min_order_usd, is_used, expires_at, created_at")
+    .select("id, code, email, user_id, type, value, source, scope, max_uses, used_count, is_active, min_order_usd, is_used, starts_at, expires_at, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
     value?: number;
     maxUses?: number | null;
     minOrderUsd?: number;
+    startsAt?: string | null;
+    expiresAt?: string | null;
     expiresMonths?: number | null;
   };
 
@@ -56,7 +58,8 @@ export async function POST(request: NextRequest) {
       type, value,
       maxUses: body.maxUses == null ? null : Number(body.maxUses),
       minOrderUsd: body.minOrderUsd ?? 0,
-      expiresMonths: body.expiresMonths === undefined ? null : body.expiresMonths,
+      startsAt: body.startsAt || null,
+      expiresAt: body.expiresAt || null,
     });
     if (!code) return NextResponse.json({ error: "발급에 실패했습니다. (코드 중복일 수 있습니다)" }, { status: 500 });
     return NextResponse.json({ ok: true, code }, { status: 201 });

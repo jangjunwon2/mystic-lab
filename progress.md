@@ -82,6 +82,7 @@
 
 - [ ] **Supabase 마이그레이션 `036_pending_checkouts.sql`** — ⚠️ **해외결제 항목 5개+ 처리에 필수**. 미적용 시 압축 폴백(4개까지만). LS custom 255자 제한 우회용 대기 장바구니 테이블
 - [ ] **Supabase 마이그레이션 `039_order_price_breakdown.sql`** — 주문 상세 가격 분해 컬럼(미적용 시 신규주문 분해 미기록). `038_drop_discount_codes.sql`은 선택(미사용 테이블 정리)
+- [ ] **Supabase 마이그레이션 `040_coupon_period.sql`** — 쿠폰 사용 시작일(starts_at). 프로모션(기간한정) 공개쿠폰용
 - [ ] **Supabase 마이그레이션 `037_unify_coupons.sql`** — 쿠폰 통합 Phase 0. `issued_coupons`에 공개쿠폰(scope/max_uses/used_count) 추가 + `discount_codes` 백필 + `redeem_public_coupon` RPC. ⚠️ 미적용 시 어드민 공개쿠폰 발급/검증 동작 안 함(레거시 `discount_codes`는 폴백으로 계속 동작). **후방호환**: `discount_codes`·`/admin/discounts`는 보존(추후 cleanup에서 폐기)
 - [ ] **법적고지 `/legal-notice` 자리표시자 기입** — 대표자명·사업장 주소·연락처·통신판매업 신고번호(+EU 판매 시 VAT). ⚠️ 모든 법률 문구는 템플릿이며 **변호사/법률 서비스 검토 후** 적용 권장
 - [ ] **상품 등록 + 인증코드 발급**: slug `magic-calculator`, `fake-instagram` (없으면 `/calc`·`/insta` 게이트·자동발급 동작 안 함)
@@ -136,6 +137,7 @@
 - **체크아웃 보유쿠폰 드롭다운** ✅: 로그인 시 `/api/account/coupons`로 보유 쿠폰을 불러와 **드롭다운 선택→즉시 적용**. 사용 불가(최소주문 미달) 쿠폰도 보이되 **비활성화+사유 표시**. i18n `selectCoupon`·`couponMinOrderShort` 7개국어
 - **할인코드(discount_codes) 폐기** ✅ (#1 cleanup): validate 레거시 폴백·save-order `increment_discount_used`·`/admin/discounts`(페이지·API·네비) 전부 제거. 기능은 공개쿠폰으로 일원화(037 백필 완료). **선택적 `038_drop_discount_codes.sql`**(미사용 테이블·RPC drop, 미실행해도 무방)
 - **주문 가격 분해** ✅ (#4): 주문에 `subtotal_usd/discount_usd/shipping_usd/points_spent_usd` 기록(`save-order` 산출, toss `shippingUsd` 전달) + 주문 상세(`orders/[id]`)에 소계·할인·마일리지·배송·결제금액 분해 표시(7개국어 인라인). ⚠️ **`039_order_price_breakdown.sql`** 필요(미적용 시 신규주문 분해 미기록·상세는 항목합계 폴백)
+- **쿠폰 통합 관리 허브 C1** ✅ (#2-C1): `/admin/coupons` **분류 탭**(전체보기/개별/전체/신입환영/프로모션/정기) + 공개쿠폰 **사용기간(starts_at·종료일)** 입력. validate가 `starts_at` enforce(기간 전 무효). ⚠️ **`040_coupon_period.sql`** 필요. **남은 #2**: C2(1인당 한도·상품/카테고리 한정=해당상품 소계할인, 결제 경로 enforce) · C3(트리거 정기쿠폰: 위시리스트 N일+ 먼저, 장바구니는 서버동기화 선행)
 - **Phase 2 — 이벤트 일괄발급**: `POST /api/admin/coupons/bulk`(대상 5종·이메일 배치·상한·중복가드) + 어드민 UI
 - **Phase 3 — 프로모션 CRUD + 대시보드**: `/api/admin/promotions` + 관리 UI + 소스별 발급·사용·전환율 집계, 어드민 네비 메뉴 추가
 

@@ -76,12 +76,14 @@ export async function findUsableCoupon(admin: any, opts: { code: string; userId?
   const codeU = opts.code.toUpperCase().trim();
   const { data } = await admin
     .from("issued_coupons")
-    .select("id, code, type, value, min_order_usd, expires_at, is_used, is_active, scope, max_uses, used_count, user_id, email")
+    .select("id, code, type, value, min_order_usd, starts_at, expires_at, is_used, is_active, scope, max_uses, used_count, user_id, email")
     .eq("code", codeU)
     .maybeSingle();
   if (!data) return null;
 
-  if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
+  const now = new Date();
+  if (data.starts_at && new Date(data.starts_at) > now) return null; // 아직 사용기간 전
+  if (data.expires_at && new Date(data.expires_at) < now) return null;
   if (opts.subtotalUsd < (data.min_order_usd ?? 0)) return null;
 
   if ((data.scope ?? "personal") === "public") {
@@ -130,6 +132,8 @@ export interface IssuePublicCouponParams {
   value: number;
   maxUses?: number | null;         // null = 무제한
   minOrderUsd?: number;
+  startsAt?: string | null;        // 사용 시작 ISO (null = 즉시)
+  expiresAt?: string | null;       // 사용 종료 ISO (null = 무기한) — expiresMonths보다 우선
   expiresMonths?: number | null;   // null = 무기한 (기본 무기한)
 }
 
@@ -138,8 +142,14 @@ export interface IssuePublicCouponParams {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function issuePublicCoupon(admin: any, params: IssuePublicCouponParams): Promise<string | null> {
   if (!params.value || params.value <= 0) return null;
-  const months = params.expiresMonths === undefined ? null : params.expiresMonths;
-  const expiresAt = months == null ? null : new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
+  // 종료일: expiresAt(명시) 우선, 없으면 expiresMonths로 산출(기본 무기한).
+  let expiresAt: string | null;
+  if (params.expiresAt !== undefined) {
+    expiresAt = params.expiresAt || null;
+  } else {
+    const months = params.expiresMonths === undefined ? null : params.expiresMonths;
+    expiresAt = months == null ? null : new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
+  }
   const row = {
     type: params.type,
     value: params.value,
@@ -148,6 +158,7 @@ export async function issuePublicCoupon(admin: any, params: IssuePublicCouponPar
     max_uses: params.maxUses ?? null,
     min_order_usd: params.minOrderUsd ?? 0,
     is_active: true,
+    starts_at: params.startsAt || null,
     expires_at: expiresAt,
   };
 

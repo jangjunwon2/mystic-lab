@@ -16,13 +16,27 @@ export interface IssuedCoupon {
   is_active: boolean;
   min_order_usd: number;
   is_used: boolean;
+  starts_at: string | null;
   expires_at: string | null;
   created_at: string;
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  manual: "수동", newsletter: "뉴스레터", referral: "레퍼럴", signup: "가입", promo: "프로모션",
-};
+// 분류: 신입(signup) / 정기(trigger) / 프로모션(공개+기간) / 전체(공개) / 개별(personal)
+type CouponCategory = "all" | "personal" | "public" | "signup" | "promo" | "trigger";
+function categoryOf(c: IssuedCoupon): Exclude<CouponCategory, "all"> {
+  if (c.source === "signup") return "signup";
+  if (c.source === "trigger") return "trigger";
+  if ((c.scope ?? "personal") === "public") return (c.starts_at || c.expires_at) ? "promo" : "public";
+  return "personal";
+}
+const CATEGORY_TABS: { key: CouponCategory; label: string }[] = [
+  { key: "all", label: "전체보기" },
+  { key: "personal", label: "개별" },
+  { key: "public", label: "전체 쿠폰" },
+  { key: "signup", label: "신입 환영" },
+  { key: "promo", label: "프로모션" },
+  { key: "trigger", label: "정기" },
+];
 
 interface Props {
   initialCoupons: IssuedCoupon[];
@@ -34,6 +48,7 @@ const labelCls = "block text-xs font-medium mb-1.5 uppercase tracking-wider";
 
 export default function CouponsAdminClient({ initialCoupons }: Props) {
   const [coupons, setCoupons] = useState(initialCoupons);
+  const [tab, setTab] = useState<CouponCategory>("all");
 
   // 개인 쿠폰 폼
   const [pCreating, setPCreating] = useState(false);
@@ -45,7 +60,7 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
   const [bCreating, setBCreating] = useState(false);
   const [bError, setBError] = useState("");
   const [bIssued, setBIssued] = useState("");
-  const [bForm, setBForm] = useState({ code: "", type: "percent", value: "10", maxUses: "", minOrderUsd: "" });
+  const [bForm, setBForm] = useState({ code: "", type: "percent", value: "10", maxUses: "", minOrderUsd: "", startsAt: "", expiresAt: "" });
 
   async function refresh() {
     fetch("/api/admin/coupons").then((r) => r.json()).then((d) => Array.isArray(d) && setCoupons(d)).catch(() => {});
@@ -89,6 +104,8 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
         value,
         maxUses: bForm.maxUses.trim() === "" ? null : parseInt(bForm.maxUses, 10),
         minOrderUsd: parseFloat(bForm.minOrderUsd) || 0,
+        startsAt: bForm.startsAt ? new Date(bForm.startsAt).toISOString() : null,
+        expiresAt: bForm.expiresAt ? new Date(bForm.expiresAt).toISOString() : null,
       }),
     });
     const json = await res.json();
@@ -181,6 +198,16 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
               <input type="number" min={0} step={0.01} value={bForm.minOrderUsd} onChange={(e) => setBForm({ ...bForm, minOrderUsd: e.target.value })} placeholder="0"
                 className={inputCls} style={inputStyle} />
             </div>
+            <div>
+              <label className={labelCls} style={{ color: "#9CA3AF" }}>사용 시작일 (선택·프로모션)</label>
+              <input type="date" value={bForm.startsAt} onChange={(e) => setBForm({ ...bForm, startsAt: e.target.value })}
+                className={inputCls} style={inputStyle} />
+            </div>
+            <div>
+              <label className={labelCls} style={{ color: "#9CA3AF" }}>사용 종료일 (선택·프로모션)</label>
+              <input type="date" value={bForm.expiresAt} onChange={(e) => setBForm({ ...bForm, expiresAt: e.target.value })}
+                className={inputCls} style={inputStyle} />
+            </div>
           </div>
           {bError && <p className="text-sm mb-3" style={{ color: "#EF4444" }}>{bError}</p>}
           {bIssued && <p className="text-sm mb-3" style={{ color: "#10B981" }}>발급 완료: <span className="font-mono font-bold">{bIssued}</span></p>}
@@ -191,45 +218,66 @@ export default function CouponsAdminClient({ initialCoupons }: Props) {
         </div>
       </div>
 
+      {/* 분류 탭 */}
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {CATEGORY_TABS.map((ct) => {
+          const count = ct.key === "all" ? coupons.length : coupons.filter((c) => categoryOf(c) === ct.key).length;
+          const on = tab === ct.key;
+          return (
+            <button key={ct.key} onClick={() => setTab(ct.key)}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              style={{ background: on ? "#7C3AED" : "#1A1A2E", color: on ? "#fff" : "#9CA3AF", border: `1px solid ${on ? "#7C3AED" : "#2D2D4E"}` }}>
+              {ct.label} <span style={{ opacity: 0.7 }}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                {["코드", "범위", "대상", "할인", "출처", "사용", "만료", "발급일"].map((h) => (
+                {["코드", "분류", "대상", "할인", "사용", "기간", "발급일"].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-medium" style={{ color: "#9CA3AF" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {coupons.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center" style={{ color: "#9CA3AF" }}>발급된 쿠폰이 없습니다.</td></tr>
-              ) : (
-                coupons.map((c) => {
+              {(() => {
+                const filtered = tab === "all" ? coupons : coupons.filter((c) => categoryOf(c) === tab);
+                if (filtered.length === 0) {
+                  return <tr><td colSpan={7} className="px-4 py-12 text-center" style={{ color: "#9CA3AF" }}>해당 분류의 쿠폰이 없습니다.</td></tr>;
+                }
+                return filtered.map((c) => {
                   const isPublic = (c.scope ?? "personal") === "public";
                   const active = usageActive(c);
+                  const cat = categoryOf(c);
+                  const catLabel = CATEGORY_TABS.find((t) => t.key === cat)?.label ?? cat;
+                  const period = c.starts_at || c.expires_at
+                    ? `${c.starts_at ? fmt(c.starts_at) : "즉시"} ~ ${c.expires_at ? fmt(c.expires_at) : "무기한"}`
+                    : "무기한";
                   return (
                     <tr key={c.id} className="border-b last:border-0" style={{ borderColor: "#2D2D4E" }}>
                       <td className="px-4 py-3"><span className="font-mono font-semibold" style={{ color: "#A855F7" }}>{c.code}</span></td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: isPublic ? "#7C3AED22" : "#6B728022", color: isPublic ? "#A855F7" : "#9CA3AF" }}>
-                          {isPublic ? "공개" : "개인"}
+                        <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap" style={{ background: isPublic ? "#7C3AED22" : "#6B728022", color: isPublic ? "#A855F7" : "#9CA3AF" }}>
+                          {catLabel}
                         </span>
                       </td>
-                      <td className="px-4 py-3" style={{ color: "#9CA3AF" }}>{c.email ?? (isPublic ? "—" : "—")}</td>
+                      <td className="px-4 py-3" style={{ color: "#9CA3AF" }}>{c.email ?? "—"}</td>
                       <td className="px-4 py-3" style={{ color: "#F59E0B" }}>{c.type === "fixed" ? `$${c.value}` : `${c.value}%`}</td>
-                      <td className="px-4 py-3" style={{ color: "#9CA3AF" }}>{SOURCE_LABEL[c.source ?? ""] ?? c.source ?? "—"}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: active ? "#10B98122" : "#6B728022", color: active ? "#10B981" : "#9CA3AF" }}>
+                        <span className="px-2 py-0.5 rounded-full text-xs whitespace-nowrap" style={{ background: active ? "#10B98122" : "#6B728022", color: active ? "#10B981" : "#9CA3AF" }}>
                           {usageLabel(c)}
                         </span>
                       </td>
-                      <td className="px-4 py-3" style={{ color: "#6B7280" }}>{c.expires_at ? fmt(c.expires_at) : "무기한"}</td>
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#6B7280" }}>{period}</td>
                       <td className="px-4 py-3" style={{ color: "#6B7280" }}>{fmt(c.created_at)}</td>
                     </tr>
                   );
-                })
-              )}
+                });
+              })()}
             </tbody>
           </table>
         </div>
