@@ -856,6 +856,8 @@ export default function CheckoutPage({ params }: Props) {
                       couponDiscount={couponDiscountUsd}
                       shippingUsd={shippingCostUsd}
                       referralCode={appliedDiscount?.kind === "referral" ? appliedDiscount.code : null}
+                      discountCode={appliedDiscount && appliedDiscount.kind !== "referral" ? appliedDiscount.code : null}
+                      discountCodeId={appliedDiscount && appliedDiscount.kind !== "referral" ? appliedDiscount.id : null}
                       shippingAddress={shippingName ? {
                         name: shippingName,
                         phone: shippingPhone,
