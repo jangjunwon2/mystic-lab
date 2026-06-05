@@ -97,6 +97,33 @@ export function avatarGradient(seed: string): string {
   return `linear-gradient(135deg, hsl(${h} 62% 52%), hsl(${(h + 40) % 360} 62% 42%))`;
 }
 
+// 계산기 연동 예언값 — 계산기가 저장한 관객 피킹/포스값.
+export interface CalcPrediction { num1: string; num2: string; result: string }
+const CALC_PREDICTION_KEY = "ml_calc_instagram_prediction";
+
+export function loadCalcPrediction(): CalcPrediction | null {
+  try {
+    const raw = localStorage.getItem(CALC_PREDICTION_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    return { num1: String(p?.num1 ?? ""), num2: String(p?.num2 ?? ""), result: String(p?.result ?? "") };
+  } catch {
+    return null;
+  }
+}
+
+// 캡션의 토큰 치환 — {force}=관객 입력 숫자(num1, 없으면 result), {num1}/{num2}/{result} 개별.
+// 예언 미설정 시 토큰을 제거한다.
+export function applyPrediction(text: string, pred: CalcPrediction | null): string {
+  if (!text.includes("{")) return text;
+  const force = pred ? (pred.num1 || pred.result || "") : "";
+  return text
+    .replace(/\{force\}/g, force)
+    .replace(/\{num1\}/g, pred?.num1 ?? "")
+    .replace(/\{num2\}/g, pred?.num2 ?? "")
+    .replace(/\{result\}/g, pred?.result ?? "");
+}
+
 // DM 메시지/스레드
 export interface InstaDMMessage {
   fromMe: boolean;
@@ -210,7 +237,15 @@ export function defaultInstaConfig(locale: string): InstaConfig {
       {
         id: "p8",
         image: "/images/magic/instagram-post.png",
-        caption: { en: "Some secrets are meant to be felt, not explained.", ko: "어떤 비밀은 설명이 아니라 느끼는 거예요." },
+        caption: {
+          en: "I wrote a number in my dream journal weeks ago… {force} 🔮 destiny was already sealed.",
+          ko: "몇 주 전 꿈 일기에 숫자 하나를 적어뒀어요… {force} 🔮 운명은 이미 정해져 있었죠.",
+          ja: "数週間前、夢日記にある数字を書いた… {force} 🔮 運命はすでに決まっていた。",
+          "zh-CN": "几周前我在梦境日记里写下一个数字… {force} 🔮 命运早已注定。",
+          es: "Hace semanas escribí un número en mi diario de sueños… {force} 🔮 el destino ya estaba sellado.",
+          fr: "J'ai noté un nombre dans mon journal de rêves il y a des semaines… {force} 🔮 le destin était déjà scellé.",
+          de: "Vor Wochen schrieb ich eine Zahl in mein Traumtagebuch… {force} 🔮 das Schicksal war besiegelt.",
+        },
         likes: 1789,
         date: { en: "2 months ago", ko: "2개월 전", ja: "2か月前" },
         comments: [{ user: "sarah_mystique", text: { en: "Goosebumps. 😱", ko: "소름이에요. 😱" } }],

@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, Send, Bookmark, Home, Search, Film, Settings, X, Plus, Trash2, Upload, ChevronLeft, BadgeCheck, Grid3x3, Music, MoreHorizontal, Phone, Video, Camera, Menu, ChevronDown, AtSign, UserPlus, Repeat, User } from "lucide-react";
 import {
-  type InstaConfig, type InstaPost, type InstaStory, type InstaReel, type InstaThread, type InstaDMMessage, type InstaHighlight, type InstaFeedPost, type LocalizedText,
-  loadInstaConfig, saveInstaConfig, fileToScaledDataUrl, formatCount, defaultInstaConfig, pickText, formatPostDate, avatarGradient,
+  type InstaConfig, type InstaPost, type InstaStory, type InstaReel, type InstaThread, type InstaDMMessage, type InstaHighlight, type InstaFeedPost, type LocalizedText, type CalcPrediction,
+  loadInstaConfig, saveInstaConfig, fileToScaledDataUrl, formatCount, defaultInstaConfig, pickText, formatPostDate, avatarGradient, loadCalcPrediction, applyPrediction,
 } from "./instagram-config";
 
 interface Props {
@@ -75,6 +75,7 @@ export default function FakeInstagramApp({ locale }: Props) {
   const [openThreadId, setOpenThreadId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [likes, setLikes] = useState<Record<string, boolean>>({});
+  const [prediction, setPrediction] = useState<CalcPrediction | null>(null);
   const holdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -82,6 +83,19 @@ export default function FakeInstagramApp({ locale }: Props) {
     const timer = setTimeout(() => setLoading(false), 1300);
     return () => clearTimeout(timer);
   }, [locale]);
+
+  // 계산기 연동 예언값 — 마운트 시 + 앱이 다시 보일 때(계산기에서 막 입력 후 전환) 갱신.
+  useEffect(() => {
+    const refresh = () => setPrediction(loadCalcPrediction());
+    refresh();
+    const onVis = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", refresh);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
 
   // 기기/브라우저 뒤로가기 → 앱 내부 화면을 한 단계씩 복귀(설치형 PWA에서 뒤로가기가 앱을 나가버리던 문제 해결).
   const navRef = useRef({ settingsOpen, storyStart, openPostId, openThreadId, view });
@@ -196,7 +210,7 @@ export default function FakeInstagramApp({ locale }: Props) {
         <PostDetail
           post={config.posts.find((p) => p.id === openPostId)!}
           config={config} ui={ui} liked={!!likes[openPostId]} likeCount={likeCount}
-          onBack={() => setOpenPostId(null)} onLike={toggleLike}
+          onBack={() => setOpenPostId(null)} onLike={toggleLike} prediction={prediction}
         />
       ) : view === "reels" ? (
         <ReelsView config={config} ui={ui} />
@@ -212,7 +226,7 @@ export default function FakeInstagramApp({ locale }: Props) {
       ) : view === "feed" ? (
         <FeedView
           config={config} ui={ui} likes={likes} likeCount={likeCount} onLike={toggleLike}
-          onOpenStory={(i) => setStoryStart(i)} onOpenDM={() => setView("dm")}
+          onOpenStory={(i) => setStoryStart(i)} onOpenDM={() => setView("dm")} prediction={prediction}
         />
       ) : (
         <ProfileView config={config} ui={ui} onOpenSettings={() => setSettingsOpen(true)} onOpenPost={(id) => setOpenPostId(id)} />
@@ -274,9 +288,9 @@ function buildFeed(config: InstaConfig): FeedEntry[] {
 }
 
 // ─── 피드 ───
-function FeedView({ config, ui, likes, likeCount, onLike, onOpenStory, onOpenDM }: {
+function FeedView({ config, ui, likes, likeCount, onLike, onOpenStory, onOpenDM, prediction }: {
   config: InstaConfig; ui: UiStrings; likes: Record<string, boolean>; likeCount: (p: InstaPost) => number; onLike: (p: InstaPost) => void;
-  onOpenStory: (i: number) => void; onOpenDM: () => void;
+  onOpenStory: (i: number) => void; onOpenDM: () => void; prediction?: CalcPrediction | null;
 }) {
   return (
     <>
@@ -296,7 +310,7 @@ function FeedView({ config, ui, likes, likeCount, onLike, onOpenStory, onOpenDM 
       <div className="flex-1 overflow-y-auto overscroll-contain pb-2">
         <StoriesRing config={config} ui={ui} onOpenStory={onOpenStory} />
         {buildFeed(config).map(({ post, author }) => (
-          <PostCard key={post.id} post={post} author={author} config={config} ui={ui} liked={!!likes[post.id]} likeCount={likeCount} onLike={onLike} />
+          <PostCard key={post.id} post={post} author={author} config={config} ui={ui} liked={!!likes[post.id]} likeCount={likeCount} onLike={onLike} prediction={prediction} />
         ))}
         {config.posts.length === 0 && config.feedPosts.length === 0 && (
           <div className="py-24 text-center text-gray-500 text-sm">{ui.noPosts}</div>
@@ -333,9 +347,9 @@ function StoriesRing({ config, ui, onOpenStory }: { config: InstaConfig; ui: UiS
 
 // ─── 게시물 카드 ───
 // author 미지정 = 본인 게시물(프로필 소유자). 지정 시 '다른 계정' 피드 게시물로 표시.
-function PostCard({ post, config, ui, liked, likeCount, onLike, author }: {
+function PostCard({ post, config, ui, liked, likeCount, onLike, author, prediction }: {
   post: InstaPost; config: InstaConfig; ui: typeof UI["en"]; liked: boolean; likeCount: (p: InstaPost) => number; onLike: (p: InstaPost) => void;
-  author?: { username: string; avatar: string; verified: boolean };
+  author?: { username: string; avatar: string; verified: boolean }; prediction?: CalcPrediction | null;
 }) {
   const authorName = author?.username ?? config.username;
   const authorAvatar = author?.avatar ?? config.avatar;
@@ -379,7 +393,7 @@ function PostCard({ post, config, ui, liked, likeCount, onLike, author }: {
       <div className="px-3 pb-1 text-sm text-white">{ui.likedBy(authorName, formatCount(likeCount(post)))}</div>
       <div className="px-3 pb-1 text-[13.5px] leading-relaxed text-gray-100">
         <strong className="text-white mr-1.5">{authorName}</strong>
-        <span className="whitespace-pre-line select-text">{pickText(post.caption, config.appLocale)}</span>
+        <span className="whitespace-pre-line select-text">{applyPrediction(pickText(post.caption, config.appLocale), prediction ?? null)}</span>
       </div>
       {post.comments.length > 0 && (
         <div className="px-3 pb-1 text-xs text-gray-400">{ui.viewAll(post.comments.length + 40)}</div>
@@ -395,8 +409,8 @@ function PostCard({ post, config, ui, liked, likeCount, onLike, author }: {
 }
 
 // ─── 게시물 상세 (단일) ───
-function PostDetail({ post, config, ui, liked, likeCount, onBack, onLike }: {
-  post: InstaPost; config: InstaConfig; ui: typeof UI["en"]; liked: boolean; likeCount: (p: InstaPost) => number; onBack: () => void; onLike: (p: InstaPost) => void;
+function PostDetail({ post, config, ui, liked, likeCount, onBack, onLike, prediction }: {
+  post: InstaPost; config: InstaConfig; ui: typeof UI["en"]; liked: boolean; likeCount: (p: InstaPost) => number; onBack: () => void; onLike: (p: InstaPost) => void; prediction?: CalcPrediction | null;
 }) {
   return (
     <>
@@ -405,7 +419,7 @@ function PostDetail({ post, config, ui, liked, likeCount, onBack, onLike }: {
         <span className="font-semibold text-base ml-1">{ui.posts}</span>
       </div>
       <div className="flex-1 overflow-y-auto overscroll-contain">
-        <PostCard post={post} config={config} ui={ui} liked={liked} likeCount={likeCount} onLike={onLike} />
+        <PostCard post={post} config={config} ui={ui} liked={liked} likeCount={likeCount} onLike={onLike} prediction={prediction} />
       </div>
     </>
   );

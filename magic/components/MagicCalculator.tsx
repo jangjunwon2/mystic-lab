@@ -460,6 +460,19 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }
   };
 
+  // 독립 인스타 앱 연동 — 관객 피킹값/포스값을 공유 키에 지속 저장한다.
+  // 인스타 앱(/insta)이 이 값을 읽어 게시물 캡션의 {force}/{num1}/{num2}/{result} 토큰을 치환.
+  useEffect(() => {
+    try {
+      localStorage.setItem("ml_calc_instagram_prediction", JSON.stringify({
+        num1: peekLogs[0] ?? "",
+        num2: peekLogs[1] ?? "",
+        result: isForceActive ? getForceValue() : display,
+      }));
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peekLogs, display, isForceActive]);
+
   // 키패드 입력 핸들러 (touchend 릴리즈 감지)
   const handleKeyPress = (val: string) => {
     setIsCalculated(false);
