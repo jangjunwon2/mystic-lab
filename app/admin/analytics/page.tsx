@@ -35,6 +35,42 @@ function getBuyerSegments(orders: OrderRow[]) {
   };
 }
 
+interface SegBucket { label: string; customers: number; revenue: number; share: number }
+
+// 고객 세그먼트 — 결제완료+ 주문을 고객(이메일)별로 합산 후 구매 빈도대·누적 구매액대로 분류.
+// 각 세그먼트의 고객 수·매출·매출 비중을 함께 본다(=어느 고객층이 매출을 견인하는지).
+function getCustomerSegments(orders: OrderRow[]) {
+  const map: Record<string, { total: number; count: number }> = {};
+  for (const o of orders) {
+    if (!["paid", "shipped", "completed"].includes(o.status)) continue;
+    if (!map[o.customer_email]) map[o.customer_email] = { total: 0, count: 0 };
+    map[o.customer_email].total += o.total_usd;
+    map[o.customer_email].count += 1;
+  }
+  const custs = Object.values(map);
+  const totalRev = custs.reduce((s, c) => s + c.total, 0) || 1;
+
+  const bucketize = (defs: { label: string; test: (c: { total: number; count: number }) => boolean }[]): SegBucket[] =>
+    defs.map((d) => {
+      const inSeg = custs.filter(d.test);
+      const revenue = inSeg.reduce((s, c) => s + c.total, 0);
+      return { label: d.label, customers: inSeg.length, revenue, share: Math.round((revenue / totalRev) * 100) };
+    });
+
+  const frequency = bucketize([
+    { label: "1회 구매", test: (c) => c.count === 1 },
+    { label: "2~3회", test: (c) => c.count >= 2 && c.count <= 3 },
+    { label: "4회 이상", test: (c) => c.count >= 4 },
+  ]);
+  const spend = bucketize([
+    { label: "$50 미만", test: (c) => c.total < 50 },
+    { label: "$50~149", test: (c) => c.total >= 50 && c.total < 150 },
+    { label: "$150~499", test: (c) => c.total >= 150 && c.total < 500 },
+    { label: "$500 이상", test: (c) => c.total >= 500 },
+  ]);
+  return { frequency, spend, totalCustomers: custs.length };
+}
+
 interface OrderItemRow {
   product_id: string | null;
   quantity: number;
@@ -151,6 +187,34 @@ function StatCard({ label, value, sub, highlight }: StatCardProps) {
   );
 }
 
+function SegmentList({ title, buckets, accent }: { title: string; buckets: SegBucket[]; accent: string }) {
+  const maxRev = Math.max(...buckets.map((b) => b.revenue), 1);
+  return (
+    <div className="rounded-xl border p-6" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+      <h2 className="text-sm font-semibold mb-4" style={{ color: "#F0E6FF" }}>{title}</h2>
+      <div className="space-y-3">
+        {buckets.map((b) => (
+          <div key={b.label}>
+            <div className="flex justify-between text-sm mb-1">
+              <span style={{ color: "#F0E6FF" }}>
+                {b.label}
+                <span className="ml-2 text-xs" style={{ color: "#9CA3AF" }}>{b.customers}명</span>
+              </span>
+              <span style={{ color: accent }}>
+                ${b.revenue.toFixed(0)}
+                <span className="ml-2 text-xs" style={{ color: "#9CA3AF" }}>({b.share}%)</span>
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full" style={{ background: "#2D2D4E" }}>
+              <div className="h-full rounded-full" style={{ width: `${(b.revenue / maxRev) * 100}%`, background: accent }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const STATUS_COLORS: Record<string, string> = {
   pending: "#F59E0B",
   paid: "#10B981",
@@ -203,6 +267,7 @@ export default async function AdminAnalyticsPage() {
   }));
   const topCustomers = getLtv(allTimeOrders);
   const buyerSegments = getBuyerSegments(allTimeOrders);
+  const customerSegments = getCustomerSegments(allTimeOrders);
 
   // Split orders: last 30 days vs prev 30 days
   const now = new Date();
@@ -434,6 +499,17 @@ export default async function AdminAnalyticsPage() {
           }
           highlight={buyerSegments.returning > 0}
         />
+      </div>
+
+      {/* 고객 세그먼트 분석 — 빈도대·구매액대별 매출 기여도 */}
+      <div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SegmentList title="구매 빈도별 세그먼트" buckets={customerSegments.frequency} accent="#A855F7" />
+          <SegmentList title="누적 구매액별 세그먼트 (LTV 등급)" buckets={customerSegments.spend} accent="#F59E0B" />
+        </div>
+        <p className="text-xs mt-3" style={{ color: "#4B5563" }}>
+          전체 기간 · 결제완료+ 주문을 고객(이메일)별로 합산. 고객 {customerSegments.totalCustomers}명 · 비중(%)은 세그먼트 매출 / 전체 매출.
+        </p>
       </div>
 
       {/* Revenue Chart */}
