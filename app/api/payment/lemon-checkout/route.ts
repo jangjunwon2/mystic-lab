@@ -61,6 +61,36 @@ export async function POST(request: NextRequest) {
     const amountKrw = Math.max(800, Math.round(totalUsd * krwRate));
     const amountCents = amountKrw * 100;
 
+    // 전체 장바구니·메타를 서버측 pending_checkouts에 저장하고 LS엔 짧은 ref만 전달한다.
+    // → LS custom 255자 제한 우회(항목 개수 무제한). 테이블 미배포 등으로 실패하면
+    //   ref 없이 진행(createLemonCheckout이 압축 포맷으로 폴백, 항목 4개까지).
+    let pendingRef: string | undefined;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const admin = (await createAdminClient()) as any;
+      const newRef = randomUUID();
+      const { error: pendErr } = await admin.from("pending_checkouts").insert({
+        ref: newRef,
+        payload: {
+          items,
+          customerEmail,
+          locale,
+          discountCode: discountCode ?? null,
+          discountCodeId: discountCodeId ?? null,
+          referralCode: referralCode ?? null,
+          couponCode: couponCode ?? null,
+          shippingMethod: shippingMethod ?? null,
+          shippingAddress: shippingAddress ?? null,
+          pointsSpent,
+          pointsHoldRef: pointsHoldRef ?? null,
+        },
+      });
+      if (!pendErr) pendingRef = newRef;
+      else console.error("[lemon-checkout] pending insert 실패(압축 폴백):", pendErr.message);
+    } catch (e) {
+      console.error("[lemon-checkout] pending insert 예외(압축 폴백):", e);
+    }
+
     const url = await createLemonCheckout(
       { items, customerEmail, locale },
       amountCents,
@@ -72,6 +102,7 @@ export async function POST(request: NextRequest) {
       pointsHoldRef,
       referralCode ?? undefined,
       couponCode ?? undefined,
+      pendingRef,
     );
 
     // pointsSpent·pointsHoldRef를 클라이언트에 반환 → 성공페이지 폴백(lemon-confirm)도 동일 포인트 정산 가능
@@ -79,8 +110,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url, pointsSpent, pointsHoldRef: pointsHoldRef ?? null });
   } catch (err) {
     console.error("[lemon-checkout]", err);
-    // [임시 진단] 라이브 결제 실패 원인 파악용 — 원인 확인 후 일반 메시지로 되돌릴 것
-    const detail = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: `Checkout failed: ${detail}` }, { status: 500 });
+    return NextResponse.json({ error: "Checkout failed. Please try again." }, { status: 500 });
   }
 }

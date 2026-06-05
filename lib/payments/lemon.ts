@@ -27,7 +27,8 @@ export async function createLemonCheckout(
   pointsUsed?: number,
   pointsHoldRef?: string,
   referralCode?: string,
-  couponCode?: string
+  couponCode?: string,
+  ref?: string
 ): Promise<string> {
   const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
   const storeId = process.env.LEMON_SQUEEZY_STORE_ID;
@@ -40,6 +41,26 @@ export async function createLemonCheckout(
   const orderName = payload.items
     .map((i) => `${i.name} x${i.quantity}`)
     .join(", ");
+
+  // LS custom 필드는 필드당 255자 제한. ref가 있으면 전체 장바구니는 서버측
+  // pending_checkouts에 저장돼 있으므로 짧은 ref 하나만 넘긴다(항목 개수 무제한).
+  // ref가 없으면(테이블 미배포 등 폴백) 압축 포맷으로 직접 싣는다(항목 4개까지).
+  const custom: Record<string, string> = ref
+    ? { ref }
+    : {
+        locale: payload.locale,
+        order_items: JSON.stringify(
+          payload.items.map((i) => ({ i: i.id, q: i.quantity, p: i.price_usd }))
+        ),
+        ...(discountCodeId ? { discount_code_id: discountCodeId } : {}),
+        ...(discountCode ? { discount_code: discountCode } : {}),
+        ...(referralCode ? { referral_code: referralCode } : {}),
+        ...(couponCode ? { coupon_code: couponCode } : {}),
+        ...(shippingMethod ? { shipping_method: shippingMethod } : {}),
+        ...(shippingAddress ? { shipping_address: JSON.stringify(shippingAddress) } : {}),
+        ...(pointsUsed && pointsUsed > 0 ? { points_used: String(pointsUsed) } : {}),
+        ...(pointsHoldRef ? { points_hold_ref: pointsHoldRef } : {}),
+      };
 
   const res = await fetch("https://api.lemonsqueezy.com/v1/checkouts", {
     method: "POST",
@@ -59,27 +80,7 @@ export async function createLemonCheckout(
           },
           checkout_data: {
             email: payload.customerEmail,
-            custom: {
-              locale: payload.locale,
-              // LS custom 필드는 255자 제한 → 최소 키(i=id, q=qty, p=price)로 압축.
-              // 전체 항목 정보는 성공페이지(lemon-confirm)가 sessionStorage로 처리하고,
-              // 웹훅은 이 압축본으로 재고 차감·주문 라인 저장에 필요한 최소치만 복원한다.
-              order_items: JSON.stringify(
-                payload.items.map((i) => ({
-                  i: i.id,
-                  q: i.quantity,
-                  p: i.price_usd,
-                }))
-              ),
-              ...(discountCodeId ? { discount_code_id: discountCodeId } : {}),
-              ...(discountCode ? { discount_code: discountCode } : {}),
-              ...(referralCode ? { referral_code: referralCode } : {}),
-              ...(couponCode ? { coupon_code: couponCode } : {}),
-              ...(shippingMethod ? { shipping_method: shippingMethod } : {}),
-              ...(shippingAddress ? { shipping_address: JSON.stringify(shippingAddress) } : {}),
-              ...(pointsUsed && pointsUsed > 0 ? { points_used: String(pointsUsed) } : {}),
-              ...(pointsHoldRef ? { points_hold_ref: pointsHoldRef } : {}),
-            },
+            custom,
           },
           product_options: {
             name: "Mystic Lab Order",

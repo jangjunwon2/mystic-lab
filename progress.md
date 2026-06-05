@@ -90,6 +90,7 @@
 - [x] **Supabase 마이그레이션** — `033_point_holds.sql` 포함 019~033 적용 완료
 - [x] **Supabase 마이그레이션 `034_site_settings.sql`** 적용 완료 (포인트 적립률 어드민 설정)
 - [x] **Supabase 마이그레이션 `035_coupons.sql`** 적용 완료 (쿠폰 시스템 + 레퍼럴 보상/할인타입 + 공지 쿠폰코드)
+- [ ] **Supabase 마이그레이션 `036_pending_checkouts.sql`** — ⚠️ **해외결제 항목 5개+ 처리에 필수**. 미적용 시 압축 폴백(4개까지만). LS custom 255자 제한 우회용 대기 장바구니 테이블
 - [ ] **법적고지 `/legal-notice` 자리표시자 기입** — 대표자명·사업장 주소·연락처·통신판매업 신고번호(+EU 판매 시 VAT). ⚠️ 모든 법률 문구는 템플릿이며 **변호사/법률 서비스 검토 후** 적용 권장
 - [ ] **상품 등록 + 인증코드 발급**: slug `magic-calculator`, `fake-instagram` (없으면 `/calc`·`/insta` 게이트·자동발급 동작 안 함)
 - [ ] **Vercel 환경변수 확인**: `CRON_SECRET`(포인트 만료 cron), `ADMIN_EMAIL`, `RESEND_FROM_EMAIL`(문의 메일 수신)

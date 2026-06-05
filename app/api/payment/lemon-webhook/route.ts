@@ -71,50 +71,69 @@ export async function POST(request: NextRequest) {
   const krwRate = await getUsdToKrw();
   const totalUsd = totalKrwCents / 100 / krwRate;
 
-  // Decode cart items from custom metadata
+  // 주문 데이터 복원. ref가 있으면 서버측 pending_checkouts에서(항목 무제한),
+  // 없으면 레거시 custom 필드에서 직접 복원(압축 포맷 + 구 포맷 호환).
+  const meta = event.meta as Record<string, unknown> | undefined;
+  const custom = (meta?.custom_data as Record<string, string>) ?? {};
+
   let items: CartItem[] = [];
   let appliedDiscountCode: string | undefined;
   let appliedReferralCode: string | undefined;
   let appliedCouponCode: string | undefined;
-  try {
-    const meta = event.meta as Record<string, unknown> | undefined;
-    const custom = (meta?.custom_data as Record<string, string>) ?? {};
-    if (custom.order_items) {
-      // 압축 포맷({i,q,p}) → CartItem 복원. (구 포맷 {id,qty,price}도 호환)
-      const raw = JSON.parse(custom.order_items) as Array<{ i?: string; id?: string; q?: number; qty?: number; p?: number; price?: number }>;
-      items = raw.map((r) => ({
-        id: r.i ?? r.id ?? "",
-        slug: "",
-        name: "",
-        price_usd: r.p ?? r.price ?? 0,
-        quantity: r.q ?? r.qty ?? 1,
-      }));
-    }
-    if (custom.discount_code) {
-      appliedDiscountCode = custom.discount_code;
-    }
-    if (custom.referral_code) {
-      appliedReferralCode = custom.referral_code;
-    }
-    if (custom.coupon_code) {
-      appliedCouponCode = custom.coupon_code;
-    }
-  } catch {
-    console.error("[lemon-webhook] Failed to parse custom_data");
-  }
-
-  const webhookMeta = event.meta as Record<string, unknown> | undefined;
-  const webhookCustom = (webhookMeta?.custom_data as Record<string, string>) ?? {};
-  const shippingMethod = webhookCustom.shipping_method ?? undefined;
-  const pointsSpent = webhookCustom.points_used ? parseInt(webhookCustom.points_used, 10) || 0 : 0;
-  const pointsHoldRef = webhookCustom.points_hold_ref ?? undefined;
-
+  let shippingMethod: string | undefined;
   let shippingAddress: Record<string, string> | undefined;
-  if (webhookCustom.shipping_address) {
+  let pointsSpent = 0;
+  let pointsHoldRef: string | undefined;
+
+  if (custom.ref) {
     try {
-      shippingAddress = JSON.parse(webhookCustom.shipping_address);
+      const { createAdminClient } = await import("@/lib/supabase/server");
+      const admin = (await createAdminClient()) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      const { data: pending } = await admin
+        .from("pending_checkouts")
+        .select("payload")
+        .eq("ref", custom.ref)
+        .maybeSingle();
+      const p = (pending?.payload ?? {}) as Record<string, unknown>;
+      if (Array.isArray(p.items)) items = p.items as CartItem[];
+      appliedDiscountCode = (p.discountCode as string) || undefined;
+      appliedReferralCode = (p.referralCode as string) || undefined;
+      appliedCouponCode = (p.couponCode as string) || undefined;
+      shippingMethod = (p.shippingMethod as string) || undefined;
+      shippingAddress = (p.shippingAddress as Record<string, string>) || undefined;
+      pointsSpent = typeof p.pointsSpent === "number" ? p.pointsSpent : 0;
+      pointsHoldRef = (p.pointsHoldRef as string) || undefined;
+    } catch (e) {
+      console.error("[lemon-webhook] pending_checkouts 조회 실패:", e);
+    }
+  } else {
+    try {
+      if (custom.order_items) {
+        // 압축 포맷({i,q,p}) → CartItem 복원. (구 포맷 {id,qty,price}도 호환)
+        const raw = JSON.parse(custom.order_items) as Array<{ i?: string; id?: string; q?: number; qty?: number; p?: number; price?: number }>;
+        items = raw.map((r) => ({
+          id: r.i ?? r.id ?? "",
+          slug: "",
+          name: "",
+          price_usd: r.p ?? r.price ?? 0,
+          quantity: r.q ?? r.qty ?? 1,
+        }));
+      }
     } catch {
-      console.error("[lemon-webhook] Failed to parse shipping_address");
+      console.error("[lemon-webhook] Failed to parse custom_data");
+    }
+    appliedDiscountCode = custom.discount_code || undefined;
+    appliedReferralCode = custom.referral_code || undefined;
+    appliedCouponCode = custom.coupon_code || undefined;
+    shippingMethod = custom.shipping_method || undefined;
+    pointsSpent = custom.points_used ? parseInt(custom.points_used, 10) || 0 : 0;
+    pointsHoldRef = custom.points_hold_ref || undefined;
+    if (custom.shipping_address) {
+      try {
+        shippingAddress = JSON.parse(custom.shipping_address);
+      } catch {
+        console.error("[lemon-webhook] Failed to parse shipping_address");
+      }
     }
   }
 
