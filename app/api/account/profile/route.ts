@@ -18,6 +18,6 @@ export async function PATCH(request: NextRequest) {
     .update({ display_name: name })
     .eq("id", user.id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Failed to update profile." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

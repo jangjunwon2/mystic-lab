@@ -14,7 +14,7 @@ export async function GET() {
     .order("is_default", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Failed to process address." }, { status: 500 });
   return NextResponse.json(data);
 }
 
@@ -56,6 +56,6 @@ export async function POST(request: NextRequest) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Failed to process address." }, { status: 500 });
   return NextResponse.json(data);
 }

@@ -168,9 +168,12 @@ export default function NewsletterClient({ products = [] }: { products?: Product
         {html && (
           <div>
             <p className="text-xs text-[#6B7280] mb-2">미리보기</p>
-            <div
-              className="bg-white rounded-lg p-4 text-sm overflow-auto max-h-64"
-              dangerouslySetInnerHTML={{ __html: html }}
+            {/* sandbox="" — 스크립트 실행·동일출처 차단(미리보기 XSS 방지) */}
+            <iframe
+              title="newsletter-preview"
+              sandbox=""
+              srcDoc={html}
+              className="w-full h-64 bg-white rounded-lg border border-[#2D2D4E]"
             />
           </div>
         )}

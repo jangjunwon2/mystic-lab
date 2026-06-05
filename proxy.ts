@@ -33,13 +33,9 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/en/sign-in?redirect=/admin", request.url));
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
+    // 어드민 판별은 이메일 기준으로 통일 (profiles.role 체크는 RLS 재귀 버그로 금지)
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail || user.email !== adminEmail) {
       return NextResponse.redirect(new URL("/en", request.url));
     }
 

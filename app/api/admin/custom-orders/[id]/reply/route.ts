@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/admin-auth";
 import { sendCustomOrderReply } from "@/lib/resend";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any)
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if ((profile as { role?: string } | null)?.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  // 어드민 판별 통일 — 이메일 기반 requireAdmin (profiles.role 금지)
+  const adminUser = await requireAdmin();
+  if (!adminUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   const { subject, message } = (await request.json()) as { subject: string; message: string };

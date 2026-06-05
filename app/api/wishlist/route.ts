@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     .insert({ user_id: user.id, product_id });
 
   if (error && error.code !== "23505") {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update wishlist." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }

@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  // 스팸 방지 — IP당 분당 10회
+  if (!checkRateLimit(`review:${getClientIP(request)}`, 10, 60_000)) {
+    return NextResponse.json({ error: "Too many requests. Please wait." }, { status: 429 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in to leave a review." }, { status: 401 });
@@ -14,6 +20,10 @@ export async function POST(request: NextRequest) {
 
   if (!product_id || !rating || rating < 1 || rating > 5) {
     return NextResponse.json({ error: "Invalid rating." }, { status: 400 });
+  }
+
+  if (comment && comment.length > 5000) {
+    return NextResponse.json({ error: "Comment too long (max 5000 characters)." }, { status: 400 });
   }
 
   const admin = await createAdminClient();
@@ -64,6 +74,6 @@ export async function POST(request: NextRequest) {
     .select("id")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Failed to submit review." }, { status: 500 });
   return NextResponse.json({ ok: true, id: review.id });
 }

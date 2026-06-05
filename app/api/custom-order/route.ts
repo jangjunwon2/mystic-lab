@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendCustomOrderNotification } from "@/lib/resend";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  // 스팸·메일 폭탄 방지 — IP당 시간당 5회 (제출마다 어드민 메일 발송)
+  if (!checkRateLimit(`custom-order:${getClientIP(request)}`, 5, 3_600_000)) {
+    return NextResponse.json({ error: "Too many requests. Please try later." }, { status: 429 });
+  }
+
   try {
     const body = await request.json();
     const { name, email, description, budget_range, desired_deadline } = body;

@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  // 스팸 방지 — IP당 시간당 5회
+  if (!checkRateLimit(`newsletter:${getClientIP(request)}`, 5, 3_600_000)) {
+    return NextResponse.json({ error: "Too many requests. Please try later." }, { status: 429 });
+  }
+
   const { email, locale, source } = (await request.json()) as {
     email: string;
     locale?: string;
@@ -28,6 +34,6 @@ export async function POST(request: NextRequest) {
       { onConflict: "email" }
     );
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Subscription failed. Please try again." }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
