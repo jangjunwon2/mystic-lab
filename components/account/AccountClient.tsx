@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Package, Play, Heart, LogOut, ChevronRight, Pencil, Check, X, Star, MessageSquare, ExternalLink, MapPin, Trash2, BookmarkCheck, Plus, ChevronDown, Coins } from "lucide-react";
+import { Package, Play, Heart, LogOut, ChevronRight, Pencil, Check, X, Star, MessageSquare, ExternalLink, MapPin, Trash2, BookmarkCheck, Plus, ChevronDown, Coins, Ticket } from "lucide-react";
 import { COUNTRIES } from "@/lib/constants/countries";
 import { createClient } from "@/lib/supabase/client";
 import MagicMemberAccess from "@/components/products/MagicMemberAccess";
@@ -87,6 +87,17 @@ interface PointTx {
   created_at: string;
 }
 
+interface Coupon {
+  id: string;
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  source: string | null;
+  min_order_usd: number;
+  expires_at: string | null;
+  created_at: string;
+}
+
 interface Props {
   locale: string;
   profile: { display_name: string | null; avatar_url: string | null; role: string } | null;
@@ -97,12 +108,14 @@ interface Props {
 export default function AccountClient({ locale, profile, orders, wishlist }: Props) {
   const t = useTranslations("account");
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"orders" | "tutorials" | "wishlist" | "addresses" | "points">("orders");
+  const [activeTab, setActiveTab] = useState<"orders" | "tutorials" | "wishlist" | "addresses" | "points" | "coupons">("orders");
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(wishlist);
   const [addresses, setAddresses] = useState<SavedAddress[] | null>(null);
   const [addrLoading, setAddrLoading] = useState(false);
   const [points, setPoints] = useState<{ balance: number; history: PointTx[] } | null>(null);
   const [pointsLoading, setPointsLoading] = useState(false);
+  const [coupons, setCoupons] = useState<Coupon[] | null>(null);
+  const [couponsLoading, setCouponsLoading] = useState(false);
   const [showNewAddrForm, setShowNewAddrForm] = useState(false);
   const [newAddr, setNewAddr] = useState({ name: "", phone: "", line1: "", line2: "", city: "", postal: "", country: "" });
   const [signingOut, setSigningOut] = useState(false);
@@ -251,7 +264,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
 
         {/* Tabs */}
         <div className="flex gap-1 bg-[#1A1A2E] rounded-xl p-1 border border-[#2D2D4E] mb-6 w-fit flex-wrap">
-          {(["orders", "tutorials", "wishlist", "addresses", "points"] as const).map((tab) => (
+          {(["orders", "tutorials", "wishlist", "addresses", "points", "coupons"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -272,6 +285,14 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                     .catch(() => setPoints({ balance: 0, history: [] }))
                     .finally(() => setPointsLoading(false));
                 }
+                if (tab === "coupons" && coupons === null) {
+                  setCouponsLoading(true);
+                  fetch("/api/account/coupons")
+                    .then((r) => r.json())
+                    .then((d) => setCoupons(Array.isArray(d.coupons) ? d.coupons : []))
+                    .catch(() => setCoupons([]))
+                    .finally(() => setCouponsLoading(false));
+                }
               }}
               className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeTab === tab
@@ -283,9 +304,12 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                 : tab === "tutorials" ? <Play className="w-3.5 h-3.5" />
                 : tab === "wishlist" ? <Heart className="w-3.5 h-3.5" />
                 : tab === "addresses" ? <MapPin className="w-3.5 h-3.5" />
-                : <Coins className="w-3.5 h-3.5" />}
+                : tab === "points" ? <Coins className="w-3.5 h-3.5" />
+                : <Ticket className="w-3.5 h-3.5" />}
               {tab === "points"
                 ? t("pointsTab")
+                : tab === "coupons"
+                ? t("couponsTab")
                 : t(tab)}
             </button>
           ))}
@@ -576,6 +600,43 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                   </div>
                 )}
               </>
+            )}
+          </motion.div>
+        )}
+
+        {/* Coupons Tab */}
+        {activeTab === "coupons" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            {couponsLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-6 h-6 border-2 border-[#7C3AED]/30 border-t-[#7C3AED] rounded-full animate-spin" />
+              </div>
+            ) : (coupons ?? []).length === 0 ? (
+              <div className="text-center py-16 text-[#9CA3AF]">
+                <Ticket className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="text-sm">{t("noCoupons")}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(coupons ?? []).map((c) => (
+                  <div key={c.id} className="bg-gradient-to-br from-[#7C3AED]/15 to-[#1A1A2E] rounded-xl border border-[#7C3AED]/40 p-5 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-2xl font-bold text-[#F0E6FF] leading-none mb-2">
+                        {c.type === "fixed" ? `$${c.value}` : `${c.value}%`}
+                        <span className="text-sm font-medium text-[#A855F7] ml-1.5">OFF</span>
+                      </p>
+                      <p className="font-mono text-sm font-semibold text-[#F59E0B] tracking-wider">{c.code}</p>
+                      <p className="text-[11px] text-[#6B7280] mt-1.5">
+                        {c.min_order_usd > 0 ? `${t("couponMinOrder")} $${c.min_order_usd} · ` : ""}
+                        {c.expires_at
+                          ? `${t("couponExpires")} ${new Date(c.expires_at).toLocaleDateString(locale)}`
+                          : t("couponNoExpiry")}
+                      </p>
+                    </div>
+                    <Ticket className="w-8 h-8 text-[#7C3AED]/50 shrink-0" />
+                  </div>
+                ))}
+              </div>
             )}
           </motion.div>
         )}

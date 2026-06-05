@@ -551,6 +551,53 @@ export async function sendReviewRequestEmail({
   await resend.emails.send({ from: FROM, to, subject: "How did you like your Mystic Lab order?", html });
 }
 
+// 쿠폰 발급 안내 — 가입 환영/이벤트 쿠폰 등. best-effort(미설정 시 no-op).
+export async function sendCouponEmail({
+  to,
+  code,
+  type,
+  value,
+}: {
+  to: string;
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+}): Promise<void> {
+  if (!isConfigured()) return;
+
+  const discountLabel = type === "fixed" ? `$${value} OFF` : `${value}% OFF`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0D0D1A;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0D0D1A;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#1A1A2E;border-radius:16px;border:1px solid #2D2D4E;overflow:hidden;">
+        <tr><td style="background:linear-gradient(135deg,#7C3AED,#A855F7);padding:24px 32px;">
+          <div style="font-size:18px;font-weight:700;color:#fff;letter-spacing:2px;">✦ MYSTIC LAB</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:4px;letter-spacing:1px;">A GIFT FOR YOU</div>
+        </td></tr>
+        <tr><td style="padding:32px;text-align:center;">
+          <p style="color:#F0E6FF;font-size:18px;margin:0 0 8px;">Here's your <strong style="color:#A855F7;">${discountLabel}</strong> coupon</p>
+          <p style="color:#9CA3AF;font-size:14px;margin:0 0 24px;">Apply it at checkout to save on your order.</p>
+          <div style="display:inline-block;background:#13131F;border:1px dashed #7C3AED;border-radius:12px;padding:16px 28px;margin-bottom:24px;">
+            <span style="font-family:monospace;font-size:24px;font-weight:700;color:#F59E0B;letter-spacing:2px;">${escapeHtml(code)}</span>
+          </div>
+          ${siteUrl ? `<div><a href="${siteUrl}" style="display:inline-block;background:linear-gradient(135deg,#7C3AED,#A855F7);color:#fff;border-radius:24px;padding:10px 28px;font-size:14px;font-weight:600;text-decoration:none;">Shop Now</a></div>` : ""}
+        </td></tr>
+        <tr><td style="padding:16px 32px;border-top:1px solid #2D2D4E;text-align:center;">
+          <p style="color:#6B7280;font-size:12px;margin:0;">Questions? Contact support@mysticlab.com</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  const res = await resend.emails.send({ from: FROM, to, subject: `Your ${discountLabel} Mystic Lab coupon`, html });
+  logSendResult("coupon", res);
+}
+
 function customOrderAdminHtml({
   customerName,
   customerEmail,
