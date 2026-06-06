@@ -48,6 +48,32 @@ export async function GET(_req: Request, ctx: RouteContext) {
   });
 }
 
+export async function DELETE(_req: Request, ctx: RouteContext) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await ctx.params;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createAdminClient() as any;
+
+  // 자기 자신 삭제 불가
+  const { data: { user: me } } = await supabase.auth.getUser();
+  if (me?.id === id) {
+    return NextResponse.json({ error: "자기 자신은 삭제할 수 없습니다." }, { status: 400 });
+  }
+
+  // 어드민 계정 삭제 불가
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", id).single();
+  if (profile?.role === "admin") {
+    return NextResponse.json({ error: "어드민 계정은 삭제할 수 없습니다." }, { status: 400 });
+  }
+
+  const { error } = await supabase.auth.admin.deleteUser(id);
+  if (error) return NextResponse.json({ error: "삭제에 실패했습니다." }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function PATCH(request: Request, ctx: RouteContext) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

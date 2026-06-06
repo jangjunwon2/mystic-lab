@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShieldOff, ShieldCheck, Ban, Plus, Trash2, Package, Play, Mail, UserCog, Clock } from "lucide-react";
 
@@ -26,8 +27,10 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }
 };
 
 export default function UserDetailClient({ profile: initialProfile, email, orders, grants: initialGrants, allProducts }: Props) {
+  const router = useRouter();
   const [profile, setProfile] = useState(initialProfile);
   const [grants, setGrants] = useState(initialGrants);
+  const [deletingUser, setDeletingUser] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [loadingRole, setLoadingRole] = useState(false);
   const [showGrantForm, setShowGrantForm] = useState(false);
@@ -127,6 +130,26 @@ export default function UserDetailClient({ profile: initialProfile, email, order
     setSavingNotes(false);
     setNotesStatus(res.ok ? "✅ 저장됨." : "❌ 실패.");
     setTimeout(() => setNotesStatus(""), 3000);
+  }
+
+  async function deleteUser() {
+    const confirmEmail = window.prompt(
+      `⚠️ 회원을 완전히 삭제합니다.\n주문·포인트·쿠폰 등 모든 데이터가 삭제되며 복구 불가합니다.\n\n확인하려면 이메일 주소를 입력하세요:\n${email ?? profile.id}`
+    );
+    if (confirmEmail === null) return;
+    if (confirmEmail.trim() !== (email ?? profile.id)) {
+      alert("이메일이 일치하지 않습니다. 삭제를 취소합니다.");
+      return;
+    }
+    setDeletingUser(true);
+    const res = await fetch(`/api/admin/users/${profile.id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/admin/users");
+    } else {
+      const data = await res.json();
+      alert(data.error ?? "삭제에 실패했습니다.");
+      setDeletingUser(false);
+    }
   }
 
   async function sendEmail() {
@@ -459,13 +482,26 @@ export default function UserDetailClient({ profile: initialProfile, email, order
         </div>
       )}
 
-      <Link
-        href="/admin/users"
-        className="inline-flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
-        style={{ color: "#9CA3AF" }}
-      >
-        ← 회원 목록으로
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/admin/users"
+          className="inline-flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
+          style={{ color: "#9CA3AF" }}
+        >
+          ← 회원 목록으로
+        </Link>
+        {profile.role !== "admin" && (
+          <button
+            onClick={deleteUser}
+            disabled={deletingUser}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+            style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)" }}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            {deletingUser ? "삭제 중…" : "회원 완전 삭제"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
