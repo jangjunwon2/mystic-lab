@@ -166,8 +166,11 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
         return;
       }
 
+      const warn = data.skippedIno?.length
+        ? ` ⚠️ 다른 장치 .ino 파일 ${data.skippedIno.length}개 제외됨: ${data.skippedIno.join(", ")}`
+        : "";
       setUploadStatus({
-        msg: `✅ ${data.files}개 파일 업로드 완료 (커밋 ${data.commit}) — GitHub Actions에서 빌드 중입니다. 완료되면 아래 목록에 자동으로 추가됩니다.`,
+        msg: `✅ ${data.files}개 파일 업로드 완료 (커밋 ${data.commit}) — GitHub Actions에서 빌드 중입니다. 완료되면 아래 목록에 자동으로 추가됩니다.${warn}`,
         type: "ok",
       });
       setZipFile(null);

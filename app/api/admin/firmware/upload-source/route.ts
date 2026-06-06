@@ -56,11 +56,19 @@ export async function POST(req: NextRequest) {
     : "";
 
   // 소스 파일만 추출 (.ino .h .cpp .c .hpp)
+  // .ino는 장치명과 일치하는 파일만 허용 (다른 장치의 메인 스케치 혼입 방지)
+  const sketchName = deviceType.split("/").pop()!;
   const sourceFiles: Record<string, string> = {};
+  const skippedIno: string[] = [];
   for (const [path, data] of Object.entries(unzipped)) {
     const rel = prefix ? path.replace(prefix, "") : path;
     if (!rel || rel.endsWith("/")) continue;
-    if (!/\.(ino|h|cpp|c|hpp)$/i.test(rel) && rel !== "version.txt") continue;
+    if (rel.toLowerCase().endsWith(".ino")) {
+      const baseName = rel.split("/").pop()!.replace(/\.ino$/i, "");
+      if (baseName !== sketchName) { skippedIno.push(rel); continue; }
+    } else if (!/\.(h|cpp|c|hpp)$/i.test(rel) && rel !== "version.txt") {
+      continue;
+    }
     sourceFiles[`${deviceType}/${rel}`] = Buffer.from(data).toString("base64");
   }
 
@@ -109,5 +117,6 @@ export async function POST(req: NextRequest) {
     ok: true,
     commit: newCommit.sha.slice(0, 8),
     files: Object.keys(sourceFiles).length,
+    skippedIno: skippedIno.length > 0 ? skippedIno : undefined,
   });
 }
