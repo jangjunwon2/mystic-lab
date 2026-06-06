@@ -51,48 +51,43 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [newReleaseAlert, setNewReleaseAlert] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollDeadlineRef = useRef<number>(0);
+  const knownIdsRef = useRef<Set<string>>(new Set(initialReleases.map((r) => r.id)));
 
-  const fetchReleases = useCallback(async () => {
-    const res = await fetch("/api/admin/firmware");
-    if (!res.ok) return null;
-    return res.json() as Promise<FirmwareRelease[]>;
+  // releases 변경 시 knownIds 동기화
+  useEffect(() => {
+    knownIdsRef.current = new Set(releases.map((r) => r.id));
+  }, [releases]);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    setPolling(false);
   }, []);
 
   const startPolling = useCallback(() => {
     if (pollRef.current) return;
     setPolling(true);
-    pollDeadlineRef.current = Date.now() + 20 * 60 * 1000; // 최대 20분
+    pollDeadlineRef.current = Date.now() + 20 * 60 * 1000;
 
     pollRef.current = setInterval(async () => {
-      if (Date.now() > pollDeadlineRef.current) {
-        clearInterval(pollRef.current!);
-        pollRef.current = null;
-        setPolling(false);
-        return;
-      }
-      const fresh = await fetchReleases();
-      if (!fresh) return;
-      setReleases((prev) => {
-        const prevIds = new Set(prev.map((r) => r.id));
-        const added = fresh.filter((r) => !prevIds.has(r.id));
-        if (added.length > 0) {
-          const names = added.map((r) => `${r.device_type} v${r.version}`).join(", ");
-          setNewReleaseAlert(`새 릴리스 감지: ${names}`);
-          setTimeout(() => setNewReleaseAlert(null), 6000);
-          clearInterval(pollRef.current!);
-          pollRef.current = null;
-          setPolling(false);
-          return fresh;
-        }
-        return fresh.map((r) => {
-          const old = prev.find((p) => p.id === r.id);
-          return old ? { ...old, is_active: r.is_active } : r;
-        });
-      });
-    }, 10_000);
-  }, [fetchReleases]);
+      if (Date.now() > pollDeadlineRef.current) { stopPolling(); return; }
 
-  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+      const res = await fetch(`/api/admin/firmware?t=${Date.now()}`);
+      if (!res.ok) return;
+      const fresh: FirmwareRelease[] = await res.json();
+
+      const added = fresh.filter((r) => !knownIdsRef.current.has(r.id));
+      setReleases(fresh);
+
+      if (added.length > 0) {
+        const names = added.map((r) => `${r.device_type} v${r.version}`).join(", ");
+        setNewReleaseAlert(`새 릴리스 감지: ${names}`);
+        setTimeout(() => setNewReleaseAlert(null), 6000);
+        stopPolling();
+      }
+    }, 10_000);
+  }, [stopPolling]);
+
+  useEffect(() => () => stopPolling(), [stopPolling]);
 
   // 장치 관리 상태
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
