@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   for (const [path, data] of Object.entries(unzipped)) {
     const rel = prefix ? path.replace(prefix, "") : path;
     if (!rel || rel.endsWith("/")) continue;
-    if (!/\.(ino|h|cpp|c|hpp)$/i.test(rel)) continue;
+    if (!/\.(ino|h|cpp|c|hpp)$/i.test(rel) && rel !== "version.txt") continue;
     sourceFiles[`${deviceType}/${rel}`] = Buffer.from(data).toString("base64");
   }
 
