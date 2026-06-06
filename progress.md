@@ -84,7 +84,9 @@
 > 마이그레이션 **019~035 적용 완료** (포인트 hold·site_settings·쿠폰/레퍼럴 등) — 재확인 불필요.
 
 - [x] **마이그레이션 `036`~`044` — 작업하며 순차 적용 완료** (036 pending_checkouts · 037 쿠폰통합(scope·공개쿠폰·discount_codes 백필·redeem_public_coupon) · 039 주문 가격분해 · 040 사용기간 · 041 1인당 한도+coupon_redemptions · 042 상품/카테고리 한정 · 043 쿠폰 이름 · 044 공개쿠폰 발급(claim)). `038_drop_discount_codes.sql`은 **선택**(미사용 테이블·RPC 정리, 미실행 무방). ※ 누락분 있으면 번호 순서대로 실행
+- [ ] **마이그레이션 `045_cart_items.sql` 실행** — 장바구니 잔존 트리거 쿠폰용 서버 장바구니 테이블. Supabase SQL Editor에서 실행 필요
 - [ ] **(선택) 위시리스트 정기 쿠폰 켜기** — `/admin/coupons`의 "위시리스트 정기 쿠폰" 카드에서 활성화(기본 OFF). cron은 `vercel.json`에 등록됨 — `CRON_SECRET` 필요
+- [ ] **(선택) 장바구니 잔존 쿠폰 켜기** — `/admin/coupons`의 "장바구니 잔존 쿠폰" 카드에서 활성화(기본 OFF). `045_cart_items.sql` 실행 선행 필요
 - [ ] **법적고지 `/legal-notice` 자리표시자 기입** — 대표자명·사업장 주소·연락처·통신판매업 신고번호(+EU 판매 시 VAT). ⚠️ 모든 법률 문구는 템플릿이며 **변호사/법률 서비스 검토 후** 적용 권장
 - [x] **상품 등록 + 인증코드 발급 완료**: slug `magic-calculator`, `fake-instagram` 등록·발급 완료 (`/calc`·`/insta` 게이트·자동발급 동작)
 - [x] **Vercel 환경변수 등록 완료**: `CRON_SECRET`·`ADMIN_EMAIL`·`RESEND_FROM_EMAIL` 등 설정 완료
@@ -148,8 +150,9 @@
 
 **✅ Phase 3 — 프로모션 대시보드** (구현 완료): `/admin/coupons` 상단에 요약 카드(총발급·총사용·전환율·활성쿠폰) + 소스별 발급·사용·전환율 테이블(`PromoDashboard` 컴포넌트). 전체 쿠폰 무한 집계(목록 200건 제한 별도).
 
+**✅ 장바구니 잔존 트리거 쿠폰** (구현 완료): `cart_items` 테이블(migration 045) + `POST /api/cart` full-replace 동기화(장바구니 페이지 방문 시 로그인 회원 자동). `runCartCoupons` — N일 미갱신 상품 → 해당 회원 상품한정 쿠폰(`source='cart_trigger'`). cron `/api/cron/cart-coupons`(매일 20:00 UTC). 어드민 **장바구니 잔존 쿠폰** 설정 카드(기본 OFF). ⚠️ **migration `045_cart_items.sql` Supabase 실행 필요**
+
 **🔜 남은 것**:
-- **장바구니 잔존 트리거 쿠폰**: 회원 장바구니 **서버 동기화 선행** 필요(현재 `ml_cart` localStorage 전용)
 
 ### 영향 주의
 - **체크아웃 결제 경로**(`discounts/validate`, `save-order`, lemon/toss confirm·webhook의 코드 사용처리)가 통합 모델로 바뀜 → 회귀 테스트 필수
