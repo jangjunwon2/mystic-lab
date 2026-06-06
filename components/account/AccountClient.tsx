@@ -1096,6 +1096,7 @@ function CustomOrderCard({ co }: { co: CustomOrderRow }) {
   const [msgLoading, setMsgLoading] = useState(false);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
 
   const badge = CUSTOM_STATUS_MAP[co.status] ?? { label: co.status, color: "#9CA3AF", bg: "rgba(156,163,175,0.1)", border: "rgba(156,163,175,0.3)" };
 
@@ -1117,15 +1118,23 @@ function CustomOrderCard({ co }: { co: CustomOrderRow }) {
   async function sendMessage() {
     if (!newMsg.trim()) return;
     setSending(true);
-    const res = await fetch(`/api/custom-orders/${co.id}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: newMsg.trim() }),
-    });
-    if (res.ok) {
-      const msg = await res.json();
-      setMessages((prev) => [...prev, msg]);
-      setNewMsg("");
+    setSendError("");
+    try {
+      const res = await fetch(`/api/custom-orders/${co.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: newMsg.trim() }),
+      });
+      if (res.ok) {
+        const msg = await res.json();
+        setMessages((prev) => [...prev, msg]);
+        setNewMsg("");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSendError(data.error ?? `오류 (${res.status}). 잠시 후 다시 시도해주세요.`);
+      }
+    } catch {
+      setSendError("네트워크 오류가 발생했습니다.");
     }
     setSending(false);
   }
@@ -1247,7 +1256,7 @@ function CustomOrderCard({ co }: { co: CustomOrderRow }) {
             <div className="flex gap-2 items-end mt-2">
               <textarea
                 value={newMsg}
-                onChange={(e) => setNewMsg(e.target.value)}
+                onChange={(e) => { setNewMsg(e.target.value); if (sendError) setSendError(""); }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
                 }}
@@ -1265,6 +1274,9 @@ function CustomOrderCard({ co }: { co: CustomOrderRow }) {
                 {sending ? "…" : "전송"}
               </button>
             </div>
+            {sendError && (
+              <p className="text-xs mt-1" style={{ color: "#EF4444" }}>{sendError}</p>
+            )}
           </div>
         </div>
       )}

@@ -59,7 +59,13 @@ export async function POST(
     .select("id, sender, message, created_at")
     .single();
 
-  if (error) return NextResponse.json({ error: "저장 실패." }, { status: 500 });
+  if (error) {
+    const detail = (error as { message?: string }).message ?? "";
+    if (detail.includes("does not exist") || detail.includes("relation")) {
+      return NextResponse.json({ error: "DB 테이블 미설정 (migration 051 실행 필요)" }, { status: 500 });
+    }
+    return NextResponse.json({ error: `저장 실패: ${detail}` }, { status: 500 });
+  }
 
   // 어드민에게 이메일 알림 (best-effort)
   const adminEmail = process.env.ADMIN_EMAIL;

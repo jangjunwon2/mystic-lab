@@ -59,6 +59,7 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
   const [threadLoading, setThreadLoading] = useState<string | null>(null);
   const [threadNewMsg, setThreadNewMsg] = useState<Record<string, string>>({});
   const [threadSending, setThreadSending] = useState<string | null>(null);
+  const [threadError, setThreadError] = useState<Record<string, string>>({});
 
   const loadThread = useCallback(async (id: string) => {
     if (threadLoaded[id]) return;
@@ -83,15 +84,23 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
     const msg = threadNewMsg[id]?.trim();
     if (!msg) return;
     setThreadSending(id);
-    const res = await fetch(`/api/admin/custom-orders/${id}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg }),
-    });
-    if (res.ok) {
-      const newMsg: ThreadMessage = await res.json();
-      setThreadMessages((prev) => ({ ...prev, [id]: [...(prev[id] ?? []), newMsg] }));
-      setThreadNewMsg((prev) => ({ ...prev, [id]: "" }));
+    setThreadError((prev) => ({ ...prev, [id]: "" }));
+    try {
+      const res = await fetch(`/api/admin/custom-orders/${id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msg }),
+      });
+      if (res.ok) {
+        const newMsg: ThreadMessage = await res.json();
+        setThreadMessages((prev) => ({ ...prev, [id]: [...(prev[id] ?? []), newMsg] }));
+        setThreadNewMsg((prev) => ({ ...prev, [id]: "" }));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setThreadError((prev) => ({ ...prev, [id]: data.error ?? `오류 (${res.status})` }));
+      }
+    } catch {
+      setThreadError((prev) => ({ ...prev, [id]: "네트워크 오류가 발생했습니다." }));
     }
     setThreadSending(null);
   }
@@ -452,7 +461,7 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
                               rows={3}
                               placeholder="고객에게 보낼 메시지... (이메일 알림도 발송됩니다)"
                               value={threadNewMsg[req.id] ?? ""}
-                              onChange={(e) => setThreadNewMsg((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                              onChange={(e) => { setThreadNewMsg((prev) => ({ ...prev, [req.id]: e.target.value })); setThreadError((prev) => ({ ...prev, [req.id]: "" })); }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendThreadMessage(req.id); }
                               }}
@@ -467,6 +476,9 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
                               {threadSending === req.id ? "전송 중…" : "전송"}
                             </button>
                           </div>
+                          {threadError[req.id] && (
+                            <p className="text-xs" style={{ color: "#EF4444" }}>{threadError[req.id]}</p>
+                          )}
                           <p className="text-[10px]" style={{ color: "#4B5563" }}>전송 시 고객({req.email})에게 이메일 알림이 발송됩니다.</p>
                         </div>
 
