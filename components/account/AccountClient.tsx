@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -101,6 +101,7 @@ interface Coupon {
 
 interface CustomOrderRow {
   id: string;
+  name?: string;
   description: string;
   budget_range: string;
   desired_deadline: string | null;
@@ -110,6 +111,13 @@ interface CustomOrderRow {
   status: string;
   created_at: string;
   admin_message: string | null;
+}
+
+interface ThreadMessage {
+  id: string;
+  sender: "admin" | "customer";
+  message: string;
+  created_at: string;
 }
 
 interface Props {
@@ -1083,7 +1091,44 @@ const CUSTOM_STATUS_MAP: Record<string, { label: string; color: string; bg: stri
 
 function CustomOrderCard({ co }: { co: CustomOrderRow }) {
   const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<ThreadMessage[]>([]);
+  const [msgsLoaded, setMsgsLoaded] = useState(false);
+  const [msgLoading, setMsgLoading] = useState(false);
+  const [newMsg, setNewMsg] = useState("");
+  const [sending, setSending] = useState(false);
+
   const badge = CUSTOM_STATUS_MAP[co.status] ?? { label: co.status, color: "#9CA3AF", bg: "rgba(156,163,175,0.1)", border: "rgba(156,163,175,0.3)" };
+
+  const loadMessages = useCallback(async () => {
+    setMsgLoading(true);
+    try {
+      const res = await fetch(`/api/custom-orders/${co.id}/messages`);
+      if (res.ok) setMessages(await res.json());
+    } finally {
+      setMsgLoading(false);
+      setMsgsLoaded(true);
+    }
+  }, [co.id]);
+
+  useEffect(() => {
+    if (open && !msgsLoaded) loadMessages();
+  }, [open, msgsLoaded, loadMessages]);
+
+  async function sendMessage() {
+    if (!newMsg.trim()) return;
+    setSending(true);
+    const res = await fetch(`/api/custom-orders/${co.id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: newMsg.trim() }),
+    });
+    if (res.ok) {
+      const msg = await res.json();
+      setMessages((prev) => [...prev, msg]);
+      setNewMsg("");
+    }
+    setSending(false);
+  }
 
   return (
     <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
@@ -1100,6 +1145,11 @@ function CustomOrderCard({ co }: { co: CustomOrderRow }) {
             <span className="px-2 py-0.5 rounded-full text-xs border" style={{ background: badge.bg, color: badge.color, borderColor: badge.border }}>
               {badge.label}
             </span>
+            {co.payment_status === "paid" && (
+              <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: "rgba(16,185,129,0.12)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}>
+                결제완료
+              </span>
+            )}
           </div>
           <p className="text-sm line-clamp-1" style={{ color: "#D1D5DB" }}>{co.description}</p>
         </div>
@@ -1126,8 +1176,8 @@ function CustomOrderCard({ co }: { co: CustomOrderRow }) {
             <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "#D1D5DB" }}>{co.description}</p>
           </div>
 
-          {/* 예산 / 기한 */}
-          <div className="flex gap-6">
+          {/* 예산 / 기한 / 결제금액 */}
+          <div className="flex gap-6 flex-wrap">
             {co.budget_range && (
               <div>
                 <p className="text-xs font-medium mb-0.5" style={{ color: "#6B7280" }}>예산</p>
@@ -1151,20 +1201,71 @@ function CustomOrderCard({ co }: { co: CustomOrderRow }) {
             )}
           </div>
 
-          {/* 관리자 답변 */}
-          {co.admin_message ? (
-            <div className="rounded-xl p-4" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)" }}>
-              <div className="flex items-center gap-2 mb-2">
-                <MessageSquare className="w-3.5 h-3.5" style={{ color: "#A855F7" }} />
-                <p className="text-xs font-medium" style={{ color: "#A855F7" }}>관리자 답변</p>
+          {/* 메시지 스레드 */}
+          <div className="pt-2" style={{ borderTop: "1px solid #2D2D4E" }}>
+            <div className="flex items-center gap-2 mb-3 pt-3">
+              <MessageSquare className="w-3.5 h-3.5" style={{ color: "#A855F7" }} />
+              <p className="text-xs font-medium uppercase tracking-wider" style={{ color: "#9CA3AF" }}>대화 내용</p>
+            </div>
+
+            {msgLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(124,58,237,0.3)", borderTopColor: "#7C3AED" }} />
               </div>
-              <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "#D1D5DB" }}>{co.admin_message}</p>
+            ) : messages.length === 0 ? (
+              <div className="py-3 text-center rounded-xl" style={{ background: "rgba(156,163,175,0.04)", border: "1px solid rgba(156,163,175,0.1)" }}>
+                <p className="text-xs" style={{ color: "#6B7280" }}>아직 메시지가 없습니다. 궁금한 점을 남겨주세요.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 mb-3">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.sender === "customer" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap"
+                      style={
+                        msg.sender === "admin"
+                          ? { background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)", color: "#D1D5DB", borderRadius: "4px 16px 16px 16px" }
+                          : { background: "rgba(168,85,247,0.2)", border: "1px solid rgba(168,85,247,0.35)", color: "#F0E6FF", borderRadius: "16px 4px 16px 16px" }
+                      }
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[10px] font-semibold" style={{ color: msg.sender === "admin" ? "#A855F7" : "#C084FC" }}>
+                          {msg.sender === "admin" ? "관리자" : "나"}
+                        </span>
+                        <span className="text-[10px]" style={{ color: "#6B7280" }}>
+                          {new Date(msg.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      {msg.message}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 답장 입력 */}
+            <div className="flex gap-2 items-end mt-2">
+              <textarea
+                value={newMsg}
+                onChange={(e) => setNewMsg(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                }}
+                rows={2}
+                placeholder="메시지를 입력하세요… (Enter로 전송, Shift+Enter 줄바꿈)"
+                className="flex-1 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none"
+                style={{ background: "#13131F", border: "1px solid #2D2D4E", color: "#F0E6FF" }}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={sending || !newMsg.trim()}
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-40 shrink-0"
+                style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" }}
+              >
+                {sending ? "…" : "전송"}
+              </button>
             </div>
-          ) : (
-            <div className="rounded-xl p-3 text-center" style={{ background: "rgba(156,163,175,0.05)", border: "1px solid rgba(156,163,175,0.1)" }}>
-              <p className="text-xs" style={{ color: "#6B7280" }}>아직 답변이 없습니다. 이메일로 연락드릴 예정입니다.</p>
-            </div>
-          )}
+          </div>
         </div>
       )}
     </div>

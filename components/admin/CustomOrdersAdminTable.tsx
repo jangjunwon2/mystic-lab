@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const STATUSES = ["received", "reviewing", "quoted", "in_progress", "completed", "rejected"] as const;
 type CustomStatus = (typeof STATUSES)[number];
@@ -31,6 +31,13 @@ interface CustomOrderRequest {
   payment_status: string | null;
 }
 
+interface ThreadMessage {
+  id: string;
+  sender: "admin" | "customer";
+  message: string;
+  created_at: string;
+}
+
 interface Props {
   requests: CustomOrderRequest[];
 }
@@ -40,15 +47,54 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [replySubject, setReplySubject] = useState<Record<string, string>>({});
-  const [replyMessage, setReplyMessage] = useState<Record<string, string>>({});
-  const [replySending, setReplySending] = useState<string | null>(null);
-  const [replyStatus, setReplyStatus] = useState<Record<string, string>>({});
   const [quoteUsd, setQuoteUsd] = useState<Record<string, string>>({});
   const [quoteKrw, setQuoteKrw] = useState<Record<string, string>>({});
   const [quoteSending, setQuoteSending] = useState<string | null>(null);
   const [quoteStatus, setQuoteStatus] = useState<Record<string, string>>({});
   const [payLinks, setPayLinks] = useState<Record<string, string>>({});
+
+  // Thread state
+  const [threadMessages, setThreadMessages] = useState<Record<string, ThreadMessage[]>>({});
+  const [threadLoaded, setThreadLoaded] = useState<Record<string, boolean>>({});
+  const [threadLoading, setThreadLoading] = useState<string | null>(null);
+  const [threadNewMsg, setThreadNewMsg] = useState<Record<string, string>>({});
+  const [threadSending, setThreadSending] = useState<string | null>(null);
+
+  const loadThread = useCallback(async (id: string) => {
+    if (threadLoaded[id]) return;
+    setThreadLoading(id);
+    try {
+      const res = await fetch(`/api/admin/custom-orders/${id}/messages`);
+      if (res.ok) {
+        const data: ThreadMessage[] = await res.json();
+        setThreadMessages((prev) => ({ ...prev, [id]: data }));
+      }
+    } finally {
+      setThreadLoading(null);
+      setThreadLoaded((prev) => ({ ...prev, [id]: true }));
+    }
+  }, [threadLoaded]);
+
+  useEffect(() => {
+    if (expandedId) loadThread(expandedId);
+  }, [expandedId, loadThread]);
+
+  async function sendThreadMessage(id: string) {
+    const msg = threadNewMsg[id]?.trim();
+    if (!msg) return;
+    setThreadSending(id);
+    const res = await fetch(`/api/admin/custom-orders/${id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg }),
+    });
+    if (res.ok) {
+      const newMsg: ThreadMessage = await res.json();
+      setThreadMessages((prev) => ({ ...prev, [id]: [...(prev[id] ?? []), newMsg] }));
+      setThreadNewMsg((prev) => ({ ...prev, [id]: "" }));
+    }
+    setThreadSending(null);
+  }
 
   async function updateRequest(id: string, status?: string, admin_notes?: string) {
     setLoadingId(id);
@@ -71,32 +117,6 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
       );
     }
     setLoadingId(null);
-  }
-
-  async function sendReply(id: string) {
-    const subject = replySubject[id]?.trim();
-    const message = replyMessage[id]?.trim();
-    if (!subject || !message) {
-      setReplyStatus((prev) => ({ ...prev, [id]: "❌ 제목과 내용을 입력해주세요." }));
-      return;
-    }
-    setReplySending(id);
-    setReplyStatus((prev) => ({ ...prev, [id]: "" }));
-
-    const res = await fetch(`/api/admin/custom-orders/${id}/reply`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, message }),
-    });
-
-    setReplySending(null);
-    if (res.ok) {
-      setReplyStatus((prev) => ({ ...prev, [id]: "✅ 이메일 발송 완료." }));
-      setReplyMessage((prev) => ({ ...prev, [id]: "" }));
-    } else {
-      const data = await res.json();
-      setReplyStatus((prev) => ({ ...prev, [id]: `❌ ${data.error ?? "발송 실패."}` }));
-    }
   }
 
   async function sendQuote(id: string) {
@@ -382,46 +402,72 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
                           )}
                         </div>
 
-                        {/* Email Reply */}
+                        {/* Message Thread */}
                         <div
                           className="mt-4 pt-4 space-y-3"
                           style={{ borderTop: "1px solid #2D2D4E" }}
                         >
                           <p className="text-xs font-medium uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
-                            {req.email} 에게 회신
+                            대화 스레드
                           </p>
-                          <input
-                            type="text"
-                            placeholder="제목"
-                            value={replySubject[req.id] ?? ""}
-                            onChange={(e) => setReplySubject((prev) => ({ ...prev, [req.id]: e.target.value }))}
-                            style={{ ...inputStyle, width: "100%" }}
-                          />
-                          <textarea
-                            rows={4}
-                            placeholder="고객에게 보낼 메시지..."
-                            value={replyMessage[req.id] ?? ""}
-                            onChange={(e) => setReplyMessage((prev) => ({ ...prev, [req.id]: e.target.value }))}
-                            style={{ ...inputStyle, width: "100%", resize: "vertical" }}
-                          />
-                          <div className="flex items-center gap-3">
+
+                          {threadLoading === req.id ? (
+                            <div className="flex justify-center py-4">
+                              <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(124,58,237,0.3)", borderTopColor: "#7C3AED" }} />
+                            </div>
+                          ) : (threadMessages[req.id] ?? []).length === 0 ? (
+                            <p className="text-xs text-center py-3 rounded-xl" style={{ color: "#6B7280", background: "rgba(156,163,175,0.04)", border: "1px solid rgba(156,163,175,0.1)" }}>
+                              아직 메시지가 없습니다.
+                            </p>
+                          ) : (
+                            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                              {(threadMessages[req.id] ?? []).map((msg) => (
+                                <div key={msg.id} className={`flex ${msg.sender === "admin" ? "justify-end" : "justify-start"}`}>
+                                  <div
+                                    className="max-w-[80%] px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap"
+                                    style={
+                                      msg.sender === "admin"
+                                        ? { background: "rgba(124,58,237,0.18)", border: "1px solid rgba(124,58,237,0.35)", color: "#F0E6FF", borderRadius: "16px 4px 16px 16px" }
+                                        : { background: "rgba(30,30,60,0.6)", border: "1px solid #2D2D4E", color: "#D1D5DB", borderRadius: "4px 16px 16px 16px" }
+                                    }
+                                  >
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                      <span className="text-[10px] font-semibold" style={{ color: msg.sender === "admin" ? "#A855F7" : "#9CA3AF" }}>
+                                        {msg.sender === "admin" ? "관리자" : req.name}
+                                      </span>
+                                      <span className="text-[10px]" style={{ color: "#4B5563" }}>
+                                        {new Date(msg.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                      </span>
+                                    </div>
+                                    {msg.message}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* 메시지 입력 */}
+                          <div className="flex gap-2 items-end">
+                            <textarea
+                              rows={3}
+                              placeholder="고객에게 보낼 메시지... (이메일 알림도 발송됩니다)"
+                              value={threadNewMsg[req.id] ?? ""}
+                              onChange={(e) => setThreadNewMsg((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendThreadMessage(req.id); }
+                              }}
+                              style={{ ...inputStyle, flex: 1, resize: "vertical" }}
+                            />
                             <button
-                              onClick={() => sendReply(req.id)}
-                              disabled={replySending === req.id}
-                              className="px-4 py-1.5 rounded text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+                              onClick={() => sendThreadMessage(req.id)}
+                              disabled={threadSending === req.id || !threadNewMsg[req.id]?.trim()}
+                              className="px-4 py-2 rounded text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50 shrink-0"
                               style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" }}
                             >
-                              {replySending === req.id ? "발송 중…" : "이메일 발송"}
+                              {threadSending === req.id ? "전송 중…" : "전송"}
                             </button>
-                            {replyStatus[req.id] && (
-                              <span
-                                className="text-xs"
-                                style={{ color: replyStatus[req.id].startsWith("✅") ? "#10B981" : "#EF4444" }}
-                              >
-                                {replyStatus[req.id]}
-                              </span>
-                            )}
                           </div>
+                          <p className="text-[10px]" style={{ color: "#4B5563" }}>전송 시 고객({req.email})에게 이메일 알림이 발송됩니다.</p>
                         </div>
 
                         {/* 의뢰 삭제 */}
