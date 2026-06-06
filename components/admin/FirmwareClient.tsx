@@ -16,10 +16,13 @@ interface FirmwareRelease {
   created_at: string;
 }
 
-interface SourceDevice {
-  name: string;
-  version: string;
-  uploadedAt: string | null;
+interface StagedDevice {
+  id: string;
+  deviceType: string;
+  deviceLabel: string;
+  file: File;
+  status: "pending" | "uploading" | "done" | "error";
+  message?: string;
 }
 
 interface Props {
@@ -54,9 +57,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
-  const [sources, setSources] = useState<SourceDevice[]>([]);
-  const [sourcesLoading, setSourcesLoading] = useState(false);
-  const [buildingDevice, setBuildingDevice] = useState<string | null>(null);
+  const [stagedDevices, setStagedDevices] = useState<StagedDevice[]>([]);
   const [polling, setPolling] = useState(false);
   const [newReleaseAlert, setNewReleaseAlert] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -107,9 +108,6 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   }, [stopPolling]);
 
   useEffect(() => () => stopPolling(), [stopPolling]);
-
-  // 마운트 시 소스 현황 자동 로드
-  useEffect(() => { loadSources(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 장치 관리 상태
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
@@ -166,78 +164,63 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
     setNewName(""); setNewLabel(""); setAddingDevice(false);
   }
 
-  async function handleUpload() {
+  function handleUpload() {
     if (!zipFile) {
       setUploadStatus({ msg: "zip 파일을 선택해주세요.", type: "err" });
       return;
     }
-    setUploading(true);
-    setUploadStatus({ msg: "GitHub에 소스코드 업로드 중…", type: "info" });
+    const id = `staged-${Date.now()}`;
+    const label =
+      deviceType === "auto"
+        ? "자동 감지 (다중 장치)"
+        : (devices.find((d) => d.name === deviceType)?.label ?? deviceType);
+    setStagedDevices((prev) => [
+      ...prev,
+      { id, deviceType, deviceLabel: label, file: zipFile, status: "pending" },
+    ]);
+    setZipFile(null);
+    setUploadStatus({ msg: "", type: "idle" });
+    const fi = document.getElementById("fw-zip") as HTMLInputElement;
+    if (fi) fi.value = "";
+  }
+
+  async function buildStagedDevice(id: string) {
+    const staged = stagedDevices.find((s) => s.id === id);
+    if (!staged) return;
+
+    setStagedDevices((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, status: "uploading" } : s))
+    );
 
     try {
       const fd = new FormData();
-      fd.append("zip", zipFile);
-      fd.append("device_type", deviceType);
+      fd.append("zip", staged.file);
+      fd.append("device_type", staged.deviceType);
 
       const res = await fetch("/api/admin/firmware/upload-source", { method: "POST", body: fd });
       const data = await res.json();
 
       if (!res.ok) {
-        setUploadStatus({ msg: data.error ?? "업로드 실패", type: "err" });
-        setUploading(false);
+        setStagedDevices((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, status: "error", message: data.error ?? "업로드 실패" } : s))
+        );
         return;
       }
 
-      const deviceList: string[] = data.devices ?? [deviceType];
-      const deviceSummary =
-        deviceList.length === 1
-          ? deviceList[0]
-          : `${deviceList.length}개 장치 (${deviceList.join(", ")})`;
-      const warn = data.skippedIno?.length
-        ? ` ⚠️ 다른 장치 .ino ${data.skippedIno.length}개 제외됨`
-        : "";
-      setUploadStatus({
-        msg: `✅ ${deviceSummary} · ${data.files}개 파일 업로드 완료 (커밋 ${data.commit}) — GitHub Actions 빌드 중. 완료되면 자동 추가됩니다.${warn}`,
-        type: "ok",
-      });
-      setZipFile(null);
+      const deviceList: string[] = data.devices ?? [staged.deviceType];
+      setStagedDevices((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, status: "done", message: `커밋 ${data.commit}` } : s))
+      );
       startPolling(deviceList.length);
-      void loadSources();
-      const fi = document.getElementById("fw-zip") as HTMLInputElement;
-      if (fi) fi.value = "";
     } catch {
-      setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
+      setStagedDevices((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, status: "error", message: "네트워크 오류" } : s))
+      );
     }
-    setUploading(false);
   }
 
-  async function loadSources() {
-    setSourcesLoading(true);
-    const res = await fetch("/api/admin/firmware/sources");
-    if (res.ok) setSources(await res.json());
-    setSourcesLoading(false);
-  }
-
-  async function buildDevice(deviceName: string) {
-    if (!confirm(`"${deviceName}" 장치를 빌드합니다. GitHub Actions가 실행되며 5~10분 소요됩니다.`)) return;
-    setBuildingDevice(deviceName);
-    try {
-      const res = await fetch("/api/admin/firmware/rebuild", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ device: deviceName }),
-      });
-      if (res.ok) {
-        setUploadStatus({ msg: `✅ ${deviceName} 빌드 요청 완료 — GitHub Actions에서 빌드 중입니다.`, type: "ok" });
-        startPolling(1);
-      } else {
-        const d = await res.json();
-        setUploadStatus({ msg: `빌드 요청 실패: ${d.error}`, type: "err" });
-      }
-    } catch {
-      setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
-    }
-    setBuildingDevice(null);
+  function removeStagedDevice(id: string) {
+    setStagedDevices((prev) => prev.filter((s) => s.id !== id));
   }
 
   async function handleRebuildAll() {
@@ -399,12 +382,12 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
         <div className="flex items-center gap-4 flex-wrap">
           <button
             onClick={handleUpload}
-            disabled={uploading || !zipFile}
+            disabled={!zipFile}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" }}
           >
             <Upload className="w-4 h-4" />
-            {uploading ? "업로드 중…" : "배포하기"}
+            목록에 추가
           </button>
           <button
             onClick={handleRebuildAll}
@@ -433,70 +416,65 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
           압축 방법: 스케치 폴더 선택 → 우클릭 → 압축(zip)으로 보내기 · 빌드는 GitHub Actions에서 약 5~10분 소요
         </p>
 
-        {/* 업로드된 장치 목록 (업로드 카드 내부) */}
+        {/* 배포 대기 중인 장치 목록 */}
         <div style={{ borderTop: "1px solid #2D2D4E", paddingTop: "16px" }}>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center mb-3">
             <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
-              업로드된 장치
-              {sources.length > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-mono" style={{ background: "rgba(124,58,237,0.2)", color: "#A855F7" }}>
-                  {sources.length}
-                </span>
-              )}
+              배포 대기
             </span>
-            <button
-              onClick={loadSources}
-              disabled={sourcesLoading}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-              style={{ background: "rgba(124,58,237,0.1)", color: "#6B7280" }}
-            >
-              <RefreshCw className={`w-3 h-3 ${sourcesLoading ? "animate-spin" : ""}`} />
-              {sourcesLoading ? "" : "새로고침"}
-            </button>
+            {stagedDevices.length > 0 && (
+              <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-mono" style={{ background: "rgba(124,58,237,0.2)", color: "#A855F7" }}>
+                {stagedDevices.length}
+              </span>
+            )}
           </div>
 
-          {sourcesLoading && sources.length === 0 && (
-            <p className="text-xs text-center py-3" style={{ color: "#4B5563" }}>조회 중…</p>
-          )}
-
-          {!sourcesLoading && sources.length === 0 && (
+          {stagedDevices.length === 0 && (
             <p className="text-xs text-center py-3" style={{ color: "#4B5563" }}>
-              아직 업로드된 장치 없음 · zip 업로드 후 여기에 표시됩니다
+              zip 선택 후 "목록에 추가" → 각 장치의 빌드 버튼으로 GitHub에 배포
             </p>
           )}
 
-          {sources.length > 0 && (
+          {stagedDevices.length > 0 && (
             <div className="space-y-1.5">
-              {sources.map((src) => (
+              {stagedDevices.map((staged) => (
                 <div
-                  key={src.name}
+                  key={staged.id}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5"
                   style={{ background: "#0D0D1A", border: "1px solid #2D2D4E" }}
                 >
-                  <span className="text-xs font-mono flex-1" style={{ color: "#A855F7" }}>{src.name}</span>
-                  <span
-                    className="px-2 py-0.5 rounded-full text-xs font-medium font-mono"
-                    style={{ background: "rgba(124,58,237,0.15)", color: "#F0E6FF" }}
-                  >
-                    v{src.version}
+                  <span className="text-xs font-mono flex-1" style={{ color: "#A855F7" }}>{staged.deviceLabel}</span>
+                  <span className="text-[10px] truncate max-w-[140px]" style={{ color: "#4B5563" }}>
+                    {staged.file.name} · {formatBytes(staged.file.size)}
                   </span>
-                  {src.uploadedAt && (
-                    <span className="text-[10px] shrink-0" style={{ color: "#4B5563" }}>
-                      {new Date(src.uploadedAt).toLocaleString("ko-KR", {
-                        month: "numeric", day: "numeric",
-                        hour: "2-digit", minute: "2-digit",
-                      })}
+                  {staged.message && (
+                    <span className="text-[10px] shrink-0" style={{ color: staged.status === "error" ? "#EF4444" : "#10B981" }}>
+                      {staged.message}
                     </span>
                   )}
-                  <button
-                    onClick={() => buildDevice(src.name)}
-                    disabled={buildingDevice === src.name}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50 shrink-0"
-                    style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}
-                  >
-                    <RefreshCw className={`w-3 h-3 ${buildingDevice === src.name ? "animate-spin" : ""}`} />
-                    {buildingDevice === src.name ? "요청 중…" : "빌드"}
-                  </button>
+                  {staged.status === "pending" && (
+                    <button
+                      onClick={() => buildStagedDevice(staged.id)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 shrink-0"
+                      style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}
+                    >
+                      빌드
+                    </button>
+                  )}
+                  {staged.status === "uploading" && (
+                    <span className="flex items-center gap-1 text-xs shrink-0" style={{ color: "#9CA3AF" }}>
+                      <RefreshCw className="w-3 h-3 animate-spin" />빌드 중…
+                    </span>
+                  )}
+                  {(staged.status === "done" || staged.status === "error") && (
+                    <button
+                      onClick={() => removeStagedDevice(staged.id)}
+                      className="p-0.5 shrink-0"
+                      style={{ color: "#4B5563" }}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
