@@ -9,9 +9,10 @@ export async function translateAnnouncement(koMessage: string): Promise<Record<L
   if (!apiKey || !koMessage.trim()) return {} as Record<Locale, string>;
 
   const client = new Anthropic({ apiKey });
+  const safeMessage = koMessage.replace(/\n/g, "\\n");
   const prompt = `Translate the following Korean announcement banner text into these 6 languages: English, Japanese, Simplified Chinese, Spanish, French, German.
 
-Korean: ${koMessage}
+Korean: ${safeMessage}
 
 Return ONLY a valid JSON object with this exact structure, no markdown:
 {
@@ -23,6 +24,7 @@ Return ONLY a valid JSON object with this exact structure, no markdown:
   "de": "..."
 }
 
+IMPORTANT: The \\n in the text represents a line break. Preserve them in the exact same positions in every translation.
 Keep the tone concise and punchy — it's a site banner. Preserve any coupon codes or special formatting.`;
 
   try {
@@ -49,12 +51,13 @@ export async function translatePromoPage(ko: PromoFields): Promise<PromoTranslat
   if (!apiKey || !ko.title.trim()) return {} as PromoTranslations;
 
   const client = new Anthropic({ apiKey });
+  const safeDesc = (s?: string | null) => (s ?? "").replace(/\n/g, "\\n");
   const prompt = `Translate the following Korean promotional landing page content into 6 languages: English, Japanese, Simplified Chinese, Spanish, French, German.
 
 Korean content:
-- Title: ${ko.title}
-- Subtitle: ${ko.subtitle || "(empty)"}
-- Description: ${ko.description || "(empty)"}
+- Title: ${safeDesc(ko.title)}
+- Subtitle: ${safeDesc(ko.subtitle) || "(empty)"}
+- Description: ${safeDesc(ko.description) || "(empty)"}
 
 Return ONLY a valid JSON object with this exact structure, no markdown:
 {
@@ -66,6 +69,7 @@ Return ONLY a valid JSON object with this exact structure, no markdown:
   "de": { "title": "...", "subtitle": "...", "description": "..." }
 }
 
+IMPORTANT: The \\n in the text represents a line break. Preserve them in the exact same positions in every translation.
 For empty fields, return an empty string "". Maintain professional, exciting marketing tone. Keep titles concise.`;
 
   try {
