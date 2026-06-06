@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 
-export async function POST() {
+export async function POST(req: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!process.env.GITHUB_PAT) {
     return NextResponse.json({ error: "GITHUB_PAT 환경변수 미설정" }, { status: 500 });
   }
+
+  const body = await req.json().catch(() => ({}));
+  const device: string | undefined = body.device?.trim() || undefined;
 
   const res = await fetch(
     "https://api.github.com/repos/jangjunwon2/nexus-firmware/actions/workflows/firmware-deploy.yml/dispatches",
@@ -18,7 +21,10 @@ export async function POST() {
         Accept: "application/vnd.github.v3+json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ ref: "main" }),
+      body: JSON.stringify({
+        ref: "main",
+        inputs: device ? { device } : {},
+      }),
     }
   );
 
@@ -26,5 +32,5 @@ export async function POST() {
     const text = await res.text();
     return NextResponse.json({ error: text }, { status: res.status });
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, device: device ?? "all" });
 }

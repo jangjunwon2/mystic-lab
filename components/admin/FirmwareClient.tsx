@@ -16,6 +16,12 @@ interface FirmwareRelease {
   created_at: string;
 }
 
+interface SourceDevice {
+  name: string;
+  version: string;
+  uploadedAt: string | null;
+}
+
 interface Props {
   initialReleases: FirmwareRelease[];
   initialDevices: FirmwareDevice[];
@@ -48,6 +54,9 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
+  const [sources, setSources] = useState<SourceDevice[]>([]);
+  const [sourcesLoading, setSourcesLoading] = useState(false);
+  const [buildingDevice, setBuildingDevice] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [newReleaseAlert, setNewReleaseAlert] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -196,6 +205,35 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
     }
     setUploading(false);
+  }
+
+  async function loadSources() {
+    setSourcesLoading(true);
+    const res = await fetch("/api/admin/firmware/sources");
+    if (res.ok) setSources(await res.json());
+    setSourcesLoading(false);
+  }
+
+  async function buildDevice(deviceName: string) {
+    if (!confirm(`"${deviceName}" 장치를 빌드합니다. GitHub Actions가 실행되며 5~10분 소요됩니다.`)) return;
+    setBuildingDevice(deviceName);
+    try {
+      const res = await fetch("/api/admin/firmware/rebuild", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ device: deviceName }),
+      });
+      if (res.ok) {
+        setUploadStatus({ msg: `✅ ${deviceName} 빌드 요청 완료 — GitHub Actions에서 빌드 중입니다.`, type: "ok" });
+        startPolling(1);
+      } else {
+        const d = await res.json();
+        setUploadStatus({ msg: `빌드 요청 실패: ${d.error}`, type: "err" });
+      }
+    } catch {
+      setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
+    }
+    setBuildingDevice(null);
   }
 
   async function handleRebuildAll() {
@@ -390,6 +428,72 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
         <p className="text-[10px]" style={{ color: "#4B5563" }}>
           압축 방법: 스케치 폴더 선택 → 우클릭 → 압축(zip)으로 보내기 · 빌드는 GitHub Actions에서 약 5~10분 소요
         </p>
+      </div>
+
+      {/* 소스 현황 */}
+      <div className="rounded-xl p-6 space-y-4" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#A855F7" }}>
+              소스 현황 (GitHub 레포)
+            </h2>
+            <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
+              nexus-firmware 레포에 올라간 장치별 소스 버전 · 장치별 빌드 가능
+            </p>
+          </div>
+          <button
+            onClick={loadSources}
+            disabled={sourcesLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+            style={{ background: "rgba(124,58,237,0.2)", color: "#A855F7" }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${sourcesLoading ? "animate-spin" : ""}`} />
+            {sourcesLoading ? "조회 중…" : "현황 조회"}
+          </button>
+        </div>
+
+        {sources.length > 0 && (
+          <div className="space-y-1.5">
+            {sources.map((src) => (
+              <div
+                key={src.name}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5"
+                style={{ background: "#0D0D1A", border: "1px solid #2D2D4E" }}
+              >
+                <span className="text-xs font-mono flex-1" style={{ color: "#A855F7" }}>{src.name}</span>
+                <span
+                  className="px-2 py-0.5 rounded-full text-xs font-medium font-mono"
+                  style={{ background: "rgba(124,58,237,0.15)", color: "#F0E6FF" }}
+                >
+                  v{src.version}
+                </span>
+                {src.uploadedAt && (
+                  <span className="text-[10px] shrink-0" style={{ color: "#4B5563" }}>
+                    {new Date(src.uploadedAt).toLocaleString("ko-KR", {
+                      month: "numeric", day: "numeric",
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </span>
+                )}
+                <button
+                  onClick={() => buildDevice(src.name)}
+                  disabled={buildingDevice === src.name}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50 shrink-0"
+                  style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}
+                >
+                  <RefreshCw className={`w-3 h-3 ${buildingDevice === src.name ? "animate-spin" : ""}`} />
+                  {buildingDevice === src.name ? "요청 중…" : "빌드"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {sources.length === 0 && !sourcesLoading && (
+          <p className="text-xs text-center py-4" style={{ color: "#4B5563" }}>
+            "현황 조회" 버튼을 눌러 GitHub 레포의 소스 현황을 확인하세요.
+          </p>
+        )}
       </div>
 
       {/* 장치 관리 */}
