@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Trash2, ToggleLeft, ToggleRight, Download, Copy, Check } from "lucide-react";
+import { Upload, Trash2, ToggleLeft, ToggleRight, Download, Copy, Check, FolderArchive } from "lucide-react";
 
 interface FirmwareRelease {
   id: string;
@@ -18,6 +18,14 @@ interface FirmwareRelease {
 interface Props {
   initialReleases: FirmwareRelease[];
 }
+
+const DEVICES = [
+  "nexus_flux_case",
+  "nexus_pot",
+  "nexus_receiver",
+  "nexus_smoke",
+  "nexus_transmitter",
+];
 
 const inputStyle = {
   background: "#0D0D1A",
@@ -37,94 +45,43 @@ function formatBytes(b: number) {
 
 export default function FirmwareClient({ initialReleases }: Props) {
   const [releases, setReleases] = useState(initialReleases);
-  const [deviceType, setDeviceType] = useState("");
-  const [version, setVersion] = useState("");
-  const [notes, setNotes] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [deviceType, setDeviceType] = useState(DEVICES[0]);
+  const [zipFile, setZipFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState("");
+  const [uploadStatus, setUploadStatus] = useState<{ msg: string; type: "idle" | "ok" | "err" | "info" }>({ msg: "", type: "idle" });
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const DEVICE_SUGGESTIONS = ["esp32-s3", "esp32", "esp32-c3"];
-
   async function handleUpload() {
-    if (!file || !deviceType.trim() || !version.trim()) {
-      setUploadStatus("❌ 장치 타입, 버전, 파일을 모두 입력해주세요.");
+    if (!zipFile || !deviceType) {
+      setUploadStatus({ msg: "장치와 zip 파일을 선택해주세요.", type: "err" });
       return;
     }
-
     setUploading(true);
-    setUploadStatus("서명된 업로드 URL 요청 중…");
+    setUploadStatus({ msg: "GitHub에 소스코드 업로드 중…", type: "info" });
 
     try {
-      // Step 1: 서명된 업로드 URL 발급
-      const urlRes = await fetch("/api/admin/firmware/upload-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          device_type: deviceType.trim(),
-          version: version.trim(),
-          filename: file.name,
-        }),
-      });
+      const fd = new FormData();
+      fd.append("zip", zipFile);
+      fd.append("device_type", deviceType);
 
-      if (!urlRes.ok) {
-        const d = await urlRes.json();
-        setUploadStatus(`❌ ${d.error ?? "URL 발급 실패"}`);
+      const res = await fetch("/api/admin/firmware/upload-source", { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setUploadStatus({ msg: data.error ?? "업로드 실패", type: "err" });
         setUploading(false);
         return;
       }
 
-      const { signedUrl, storagePath, publicUrl } = await urlRes.json();
-
-      // Step 2: Supabase Storage에 직접 업로드
-      setUploadStatus("파일 업로드 중…");
-      const uploadRes = await fetch(signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": "application/octet-stream" },
-        body: file,
+      setUploadStatus({
+        msg: `✅ ${data.files}개 파일 업로드 완료 (커밋 ${data.commit}) — GitHub Actions에서 빌드 중입니다. 완료 후 아래 목록에 자동 추가됩니다.`,
+        type: "ok",
       });
-
-      if (!uploadRes.ok) {
-        setUploadStatus("❌ 파일 업로드 실패. 스토리지 설정을 확인해주세요.");
-        setUploading(false);
-        return;
-      }
-
-      // Step 3: 메타데이터 저장
-      setUploadStatus("메타데이터 저장 중…");
-      const metaRes = await fetch("/api/admin/firmware", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          device_type: deviceType.trim(),
-          version: version.trim(),
-          notes: notes.trim() || null,
-          storage_path: storagePath,
-          download_url: publicUrl,
-          file_size: file.size,
-        }),
-      });
-
-      if (!metaRes.ok) {
-        const d = await metaRes.json();
-        setUploadStatus(`❌ ${d.error ?? "저장 실패"}`);
-        setUploading(false);
-        return;
-      }
-
-      const newRelease: FirmwareRelease = await metaRes.json();
-      setReleases((prev) => [newRelease, ...prev]);
-      setUploadStatus("✅ 업로드 완료!");
-      setDeviceType("");
-      setVersion("");
-      setNotes("");
-      setFile(null);
-      // file input 초기화
-      const fileInput = document.getElementById("fw-file") as HTMLInputElement;
-      if (fileInput) fileInput.value = "";
+      setZipFile(null);
+      const fi = document.getElementById("fw-zip") as HTMLInputElement;
+      if (fi) fi.value = "";
     } catch {
-      setUploadStatus("❌ 네트워크 오류가 발생했습니다.");
+      setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
     }
     setUploading(false);
   }
@@ -168,112 +125,97 @@ export default function FirmwareClient({ initialReleases }: Props) {
         </p>
       </div>
 
-      {/* 업로드 폼 */}
+      {/* 소스코드 업로드 */}
       <div
         className="rounded-xl p-6 space-y-4"
         style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}
       >
-        <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#A855F7" }}>
-          새 펌웨어 업로드
-        </h2>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#A855F7" }}>
+            소스코드 업로드
+          </h2>
+          <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
+            Arduino 스케치 폴더를 .zip으로 압축해서 올리면 자동으로 빌드 후 기기에 배포됩니다.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* 장치 타입 */}
+          {/* 장치 선택 */}
           <div>
-            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>장치 타입</label>
-            <input
-              list="device-suggestions"
+            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>장치 선택</label>
+            <select
               value={deviceType}
               onChange={(e) => setDeviceType(e.target.value)}
-              placeholder="예: esp32-s3"
               style={inputStyle}
-            />
-            <datalist id="device-suggestions">
-              {DEVICE_SUGGESTIONS.map((s) => <option key={s} value={s} />)}
-            </datalist>
-            <p className="text-[10px] mt-1" style={{ color: "#6B7280" }}>
-              기기 코드의 <code>device=</code> 값과 동일하게
-            </p>
+            >
+              {DEVICES.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
           </div>
 
-          {/* 버전 */}
+          {/* zip 파일 */}
           <div>
-            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>버전</label>
-            <input
-              value={version}
-              onChange={(e) => setVersion(e.target.value)}
-              placeholder="예: 1.2.0"
-              style={inputStyle}
-            />
-          </div>
-
-          {/* 릴리스 노트 */}
-          <div className="sm:col-span-2">
-            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>릴리스 노트 (선택)</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              placeholder="변경 사항을 간단히 입력하세요…"
-              style={{ ...inputStyle, resize: "vertical" }}
-            />
-          </div>
-
-          {/* 파일 선택 */}
-          <div className="sm:col-span-2">
-            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>펌웨어 파일 (.bin)</label>
+            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>소스코드 (.zip)</label>
             <div
-              className="rounded-xl border-2 border-dashed p-6 text-center cursor-pointer transition-colors"
-              style={{ borderColor: file ? "#7C3AED" : "#2D2D4E", background: file ? "rgba(124,58,237,0.05)" : "transparent" }}
-              onClick={() => document.getElementById("fw-file")?.click()}
+              className="rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition-colors"
+              style={{ borderColor: zipFile ? "#7C3AED" : "#2D2D4E", background: zipFile ? "rgba(124,58,237,0.05)" : "transparent" }}
+              onClick={() => document.getElementById("fw-zip")?.click()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
                 const f = e.dataTransfer.files[0];
-                if (f) setFile(f);
+                if (f?.name.endsWith(".zip")) setZipFile(f);
               }}
             >
-              <Upload className="w-6 h-6 mx-auto mb-2" style={{ color: file ? "#A855F7" : "#4B5563" }} />
-              {file ? (
+              <FolderArchive className="w-5 h-5 mx-auto mb-1" style={{ color: zipFile ? "#A855F7" : "#4B5563" }} />
+              {zipFile ? (
                 <div>
-                  <p className="text-sm font-medium" style={{ color: "#F0E6FF" }}>{file.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>{formatBytes(file.size)}</p>
+                  <p className="text-xs font-medium" style={{ color: "#F0E6FF" }}>{zipFile.name}</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: "#9CA3AF" }}>{formatBytes(zipFile.size)}</p>
                 </div>
               ) : (
-                <p className="text-sm" style={{ color: "#6B7280" }}>
-                  클릭하거나 .bin 파일을 드래그하세요
+                <p className="text-xs" style={{ color: "#6B7280" }}>
+                  클릭하거나 .zip 드래그
                 </p>
               )}
               <input
-                id="fw-file"
+                id="fw-zip"
                 type="file"
-                accept=".bin"
+                accept=".zip"
                 className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => setZipFile(e.target.files?.[0] ?? null)}
               />
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <button
             onClick={handleUpload}
-            disabled={uploading}
+            disabled={uploading || !zipFile}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" }}
           >
             <Upload className="w-4 h-4" />
-            {uploading ? "업로드 중…" : "업로드"}
+            {uploading ? "업로드 중…" : "배포하기"}
           </button>
-          {uploadStatus && (
+          {uploadStatus.msg && (
             <span
-              className="text-sm"
-              style={{ color: uploadStatus.startsWith("✅") ? "#10B981" : uploadStatus.startsWith("❌") ? "#EF4444" : "#9CA3AF" }}
+              className="text-xs leading-relaxed"
+              style={{
+                color: uploadStatus.type === "ok" ? "#10B981"
+                  : uploadStatus.type === "err" ? "#EF4444"
+                  : "#9CA3AF",
+                maxWidth: "480px",
+              }}
             >
-              {uploadStatus}
+              {uploadStatus.msg}
             </span>
           )}
         </div>
+
+        <p className="text-[10px]" style={{ color: "#4B5563" }}>
+          압축 방법: 스케치 폴더 선택 → 우클릭 → 압축(zip)으로 보내기 · 빌드는 GitHub Actions에서 약 5~10분 소요
+        </p>
       </div>
 
       {/* 릴리스 목록 */}
