@@ -108,6 +108,9 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
+  // 마운트 시 소스 현황 자동 로드
+  useEffect(() => { loadSources(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 장치 관리 상태
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -199,6 +202,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       });
       setZipFile(null);
       startPolling(deviceList.length);
+      void loadSources();
       const fi = document.getElementById("fw-zip") as HTMLInputElement;
       if (fi) fi.value = "";
     } catch {
@@ -428,72 +432,76 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
         <p className="text-[10px]" style={{ color: "#4B5563" }}>
           압축 방법: 스케치 폴더 선택 → 우클릭 → 압축(zip)으로 보내기 · 빌드는 GitHub Actions에서 약 5~10분 소요
         </p>
-      </div>
 
-      {/* 소스 현황 */}
-      <div className="rounded-xl p-6 space-y-4" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#A855F7" }}>
-              소스 현황 (GitHub 레포)
-            </h2>
-            <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
-              nexus-firmware 레포에 올라간 장치별 소스 버전 · 장치별 빌드 가능
-            </p>
-          </div>
-          <button
-            onClick={loadSources}
-            disabled={sourcesLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-            style={{ background: "rgba(124,58,237,0.2)", color: "#A855F7" }}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${sourcesLoading ? "animate-spin" : ""}`} />
-            {sourcesLoading ? "조회 중…" : "현황 조회"}
-          </button>
-        </div>
-
-        {sources.length > 0 && (
-          <div className="space-y-1.5">
-            {sources.map((src) => (
-              <div
-                key={src.name}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5"
-                style={{ background: "#0D0D1A", border: "1px solid #2D2D4E" }}
-              >
-                <span className="text-xs font-mono flex-1" style={{ color: "#A855F7" }}>{src.name}</span>
-                <span
-                  className="px-2 py-0.5 rounded-full text-xs font-medium font-mono"
-                  style={{ background: "rgba(124,58,237,0.15)", color: "#F0E6FF" }}
-                >
-                  v{src.version}
+        {/* 업로드된 장치 목록 (업로드 카드 내부) */}
+        <div style={{ borderTop: "1px solid #2D2D4E", paddingTop: "16px" }}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
+              업로드된 장치
+              {sources.length > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-mono" style={{ background: "rgba(124,58,237,0.2)", color: "#A855F7" }}>
+                  {sources.length}
                 </span>
-                {src.uploadedAt && (
-                  <span className="text-[10px] shrink-0" style={{ color: "#4B5563" }}>
-                    {new Date(src.uploadedAt).toLocaleString("ko-KR", {
-                      month: "numeric", day: "numeric",
-                      hour: "2-digit", minute: "2-digit",
-                    })}
-                  </span>
-                )}
-                <button
-                  onClick={() => buildDevice(src.name)}
-                  disabled={buildingDevice === src.name}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50 shrink-0"
-                  style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}
-                >
-                  <RefreshCw className={`w-3 h-3 ${buildingDevice === src.name ? "animate-spin" : ""}`} />
-                  {buildingDevice === src.name ? "요청 중…" : "빌드"}
-                </button>
-              </div>
-            ))}
+              )}
+            </span>
+            <button
+              onClick={loadSources}
+              disabled={sourcesLoading}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: "rgba(124,58,237,0.1)", color: "#6B7280" }}
+            >
+              <RefreshCw className={`w-3 h-3 ${sourcesLoading ? "animate-spin" : ""}`} />
+              {sourcesLoading ? "" : "새로고침"}
+            </button>
           </div>
-        )}
 
-        {sources.length === 0 && !sourcesLoading && (
-          <p className="text-xs text-center py-4" style={{ color: "#4B5563" }}>
-            "현황 조회" 버튼을 눌러 GitHub 레포의 소스 현황을 확인하세요.
-          </p>
-        )}
+          {sourcesLoading && sources.length === 0 && (
+            <p className="text-xs text-center py-3" style={{ color: "#4B5563" }}>조회 중…</p>
+          )}
+
+          {!sourcesLoading && sources.length === 0 && (
+            <p className="text-xs text-center py-3" style={{ color: "#4B5563" }}>
+              아직 업로드된 장치 없음 · zip 업로드 후 여기에 표시됩니다
+            </p>
+          )}
+
+          {sources.length > 0 && (
+            <div className="space-y-1.5">
+              {sources.map((src) => (
+                <div
+                  key={src.name}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5"
+                  style={{ background: "#0D0D1A", border: "1px solid #2D2D4E" }}
+                >
+                  <span className="text-xs font-mono flex-1" style={{ color: "#A855F7" }}>{src.name}</span>
+                  <span
+                    className="px-2 py-0.5 rounded-full text-xs font-medium font-mono"
+                    style={{ background: "rgba(124,58,237,0.15)", color: "#F0E6FF" }}
+                  >
+                    v{src.version}
+                  </span>
+                  {src.uploadedAt && (
+                    <span className="text-[10px] shrink-0" style={{ color: "#4B5563" }}>
+                      {new Date(src.uploadedAt).toLocaleString("ko-KR", {
+                        month: "numeric", day: "numeric",
+                        hour: "2-digit", minute: "2-digit",
+                      })}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => buildDevice(src.name)}
+                    disabled={buildingDevice === src.name}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50 shrink-0"
+                    style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}
+                  >
+                    <RefreshCw className={`w-3 h-3 ${buildingDevice === src.name ? "animate-spin" : ""}`} />
+                    {buildingDevice === src.name ? "요청 중…" : "빌드"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 장치 관리 */}
