@@ -226,6 +226,78 @@ export async function sendCustomOrderReply({
   });
 }
 
+export async function sendCustomOrderQuoteEmail({
+  to,
+  customerName,
+  quotedPriceUsd,
+  quotedPriceKrw,
+  paymentLink,
+}: {
+  to: string;
+  customerName: string;
+  quotedPriceUsd: number;
+  quotedPriceKrw: number | null;
+  paymentLink: string;
+}): Promise<void> {
+  if (!isConfigured()) return;
+
+  const priceDisplay = quotedPriceKrw
+    ? `$${quotedPriceUsd.toFixed(2)} USD / ₩${quotedPriceKrw.toLocaleString()} KRW`
+    : `$${quotedPriceUsd.toFixed(2)} USD`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0D0D1A;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0D0D1A;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#1A1A2E;border-radius:16px;border:1px solid #2D2D4E;overflow:hidden;">
+        <tr>
+          <td style="background:linear-gradient(135deg,#7C3AED,#A855F7);padding:24px 32px;">
+            <div style="font-size:16px;font-weight:700;color:#fff;letter-spacing:2px;">✦ MYSTIC LAB</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:4px;">Custom Order Quote</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="color:#F0E6FF;font-size:15px;margin:0 0 16px;">Hi ${escapeHtml(customerName)},</p>
+            <p style="color:#D1D5DB;font-size:14px;line-height:1.7;margin:0 0 24px;">
+              Your custom order quote is ready. Please use the link below to complete your payment.
+            </p>
+            <div style="background:#0D0D1A;border:1px solid #2D2D4E;border-radius:12px;padding:20px;margin-bottom:24px;text-align:center;">
+              <p style="color:#9CA3AF;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;">Quoted Amount</p>
+              <p style="color:#A855F7;font-size:24px;font-weight:700;margin:0;">${escapeHtml(priceDisplay)}</p>
+            </div>
+            <div style="text-align:center;margin-bottom:24px;">
+              <a href="${escapeHtml(paymentLink)}" style="display:inline-block;background:linear-gradient(135deg,#7C3AED,#A855F7);color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:700;letter-spacing:0.5px;">
+                Complete Payment →
+              </a>
+            </div>
+            <p style="color:#6B7280;font-size:12px;margin:0;text-align:center;">
+              This payment link is unique to your order. Do not share it.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px;border-top:1px solid #2D2D4E;text-align:center;">
+            <p style="color:#6B7280;font-size:12px;margin:0;">Mystic Lab — Professional Magic Shop</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    replyTo: ADMIN_EMAIL || undefined,
+    subject: "Mystic Lab — Your Custom Order Quote is Ready",
+    html,
+  });
+}
+
 export async function sendNewsletter({
   subject,
   html,

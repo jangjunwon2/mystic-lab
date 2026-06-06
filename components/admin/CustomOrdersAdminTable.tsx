@@ -25,6 +25,10 @@ interface CustomOrderRequest {
   admin_notes: string | null;
   created_at: string;
   image_urls: string[];
+  quoted_price_usd: number | null;
+  quoted_price_krw: number | null;
+  payment_token: string | null;
+  payment_status: string | null;
 }
 
 interface Props {
@@ -40,6 +44,11 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
   const [replyMessage, setReplyMessage] = useState<Record<string, string>>({});
   const [replySending, setReplySending] = useState<string | null>(null);
   const [replyStatus, setReplyStatus] = useState<Record<string, string>>({});
+  const [quoteUsd, setQuoteUsd] = useState<Record<string, string>>({});
+  const [quoteKrw, setQuoteKrw] = useState<Record<string, string>>({});
+  const [quoteSending, setQuoteSending] = useState<string | null>(null);
+  const [quoteStatus, setQuoteStatus] = useState<Record<string, string>>({});
+  const [payLinks, setPayLinks] = useState<Record<string, string>>({});
 
   async function updateRequest(id: string, status?: string, admin_notes?: string) {
     setLoadingId(id);
@@ -87,6 +96,41 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
     } else {
       const data = await res.json();
       setReplyStatus((prev) => ({ ...prev, [id]: `❌ ${data.error ?? "발송 실패."}` }));
+    }
+  }
+
+  async function sendQuote(id: string) {
+    const usd = parseFloat(quoteUsd[id] ?? "");
+    if (!usd || usd <= 0) {
+      setQuoteStatus((prev) => ({ ...prev, [id]: "❌ USD 금액을 입력해주세요." }));
+      return;
+    }
+    setQuoteSending(id);
+    setQuoteStatus((prev) => ({ ...prev, [id]: "" }));
+    const body: Record<string, unknown> = { quoted_price_usd: usd };
+    const krw = parseInt(quoteKrw[id] ?? "", 10);
+    if (krw > 0) body.quoted_price_krw = krw;
+
+    const res = await fetch(`/api/admin/custom-orders/${id}/quote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    setQuoteSending(null);
+    if (res.ok) {
+      const data = await res.json();
+      setPayLinks((prev) => ({ ...prev, [id]: data.paymentLink }));
+      setQuoteStatus((prev) => ({ ...prev, [id]: "✅ 견적 발송 완료." }));
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, status: "quoted", quoted_price_usd: usd, quoted_price_krw: krw > 0 ? krw : null }
+            : r
+        )
+      );
+    } else {
+      const data = await res.json();
+      setQuoteStatus((prev) => ({ ...prev, [id]: `❌ ${data.error ?? "실패."}` }));
     }
   }
 
@@ -241,6 +285,101 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
                               메모 저장
                             </button>
                           </div>
+                        </div>
+
+                        {/* Quote & Payment Link */}
+                        <div
+                          className="mt-4 pt-4 space-y-3"
+                          style={{ borderTop: "1px solid #2D2D4E" }}
+                        >
+                          <p className="text-xs font-medium uppercase tracking-wider" style={{ color: "#A855F7" }}>
+                            결제 견적 발송
+                          </p>
+                          {/* existing quoted price */}
+                          {req.quoted_price_usd && (
+                            <div className="flex items-center gap-3 text-xs" style={{ color: "#9CA3AF" }}>
+                              <span>
+                                현재 견적: <span style={{ color: "#F59E0B" }}>${req.quoted_price_usd}</span>
+                                {req.quoted_price_krw && (
+                                  <span> / ₩{req.quoted_price_krw.toLocaleString()}</span>
+                                )}
+                              </span>
+                              <span
+                                className="px-1.5 py-0.5 rounded-full"
+                                style={{
+                                  background: req.payment_status === "paid" ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
+                                  color: req.payment_status === "paid" ? "#10B981" : "#F59E0B",
+                                }}
+                              >
+                                {req.payment_status === "paid" ? "결제완료" : "미결제"}
+                              </span>
+                            </div>
+                          )}
+                          {/* payment link display */}
+                          {(payLinks[req.id] || (req.payment_token && req.payment_status !== "paid")) && (
+                            <div className="flex items-center gap-2">
+                              <input
+                                readOnly
+                                value={payLinks[req.id] ?? `${typeof window !== "undefined" ? window.location.origin : ""}/en/custom-order/pay/${req.payment_token}`}
+                                className="flex-1 text-xs rounded-lg px-3 py-2"
+                                style={{ ...inputStyle, color: "#A855F7" }}
+                              />
+                              <button
+                                onClick={() => {
+                                  const url = payLinks[req.id] ?? `/en/custom-order/pay/${req.payment_token}`;
+                                  navigator.clipboard.writeText(
+                                    url.startsWith("http") ? url : `${window.location.origin}${url}`
+                                  );
+                                }}
+                                className="px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
+                                style={{ background: "rgba(168,85,247,0.15)", color: "#A855F7", border: "1px solid rgba(168,85,247,0.3)", whiteSpace: "nowrap" }}
+                              >
+                                복사
+                              </button>
+                            </div>
+                          )}
+                          <div className="flex items-end gap-3">
+                            <div>
+                              <p className="text-xs mb-1" style={{ color: "#9CA3AF" }}>USD 금액</p>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="예: 150.00"
+                                value={quoteUsd[req.id] ?? (req.quoted_price_usd ? String(req.quoted_price_usd) : "")}
+                                onChange={(e) => setQuoteUsd((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                                style={{ ...inputStyle, width: "120px" }}
+                              />
+                            </div>
+                            <div>
+                              <p className="text-xs mb-1" style={{ color: "#9CA3AF" }}>KRW (선택)</p>
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                placeholder="예: 200000"
+                                value={quoteKrw[req.id] ?? (req.quoted_price_krw ? String(req.quoted_price_krw) : "")}
+                                onChange={(e) => setQuoteKrw((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                                style={{ ...inputStyle, width: "140px" }}
+                              />
+                            </div>
+                            <button
+                              onClick={() => sendQuote(req.id)}
+                              disabled={quoteSending === req.id}
+                              className="px-4 py-1.5 rounded text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+                              style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" }}
+                            >
+                              {quoteSending === req.id ? "발송 중…" : "견적 발송"}
+                            </button>
+                          </div>
+                          {quoteStatus[req.id] && (
+                            <span
+                              className="text-xs"
+                              style={{ color: quoteStatus[req.id].startsWith("✅") ? "#10B981" : "#EF4444" }}
+                            >
+                              {quoteStatus[req.id]}
+                            </span>
+                          )}
                         </div>
 
                         {/* Email Reply */}

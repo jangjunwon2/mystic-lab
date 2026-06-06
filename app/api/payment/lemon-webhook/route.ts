@@ -64,6 +64,26 @@ export async function POST(request: NextRequest) {
   const data = event.data as Record<string, unknown> | undefined;
   const attributes = data?.attributes as Record<string, unknown> | undefined;
 
+  // 커스텀 주문 결제 — custom_order_token이 있으면 일반 주문 플로우 건너뜀
+  const metaEarly = event.meta as Record<string, unknown> | undefined;
+  const customEarly = (metaEarly?.custom_data as Record<string, string>) ?? {};
+  if (customEarly.custom_order_token) {
+    const coToken = customEarly.custom_order_token;
+    try {
+      const { createAdminClient } = await import("@/lib/supabase/server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const admin = (await createAdminClient()) as any;
+      await admin
+        .from("custom_order_requests")
+        .update({ payment_status: "paid", status: "in_progress" })
+        .eq("payment_token", coToken)
+        .eq("payment_status", "unpaid");
+    } catch (e) {
+      console.error("[lemon-webhook] custom order update failed:", e);
+    }
+    return NextResponse.json({ received: true });
+  }
+
   const email = (attributes?.user_email as string) ?? "";
   const orderId = (data?.id as string) ?? "";
   // Store is KRW: total is in KRW "cents" (×100). Convert to USD.

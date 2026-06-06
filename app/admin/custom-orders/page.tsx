@@ -9,7 +9,7 @@ export default async function AdminCustomOrdersPage() {
 
   const { data: requests } = await supabase
     .from("custom_order_requests")
-    .select("id, name, email, description, budget_range, desired_deadline, status, admin_notes, created_at, image_urls")
+    .select("id, name, email, description, budget_range, desired_deadline, status, admin_notes, created_at, image_urls, quoted_price_usd, quoted_price_krw, payment_token, payment_status")
     .order("created_at", { ascending: false });
 
   return (
