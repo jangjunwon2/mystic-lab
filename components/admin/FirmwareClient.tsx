@@ -459,53 +459,162 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
         )}
       </div>
 
-      {/* ESP32 코드 스니펫 */}
-      <div
-        className="rounded-xl p-5"
-        style={{ background: "#0D0D1A", border: "1px solid #2D2D4E" }}
-      >
-        <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "#9CA3AF" }}>
-          ESP32 펌웨어 코드 예시
+      {/* 가이드 */}
+      <div className="space-y-4">
+
+        {/* 섹션 헤더 */}
+        <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
+          사용 가이드
         </h2>
-        <pre
-          className="text-xs leading-relaxed overflow-x-auto"
-          style={{ color: "#A855F7", fontFamily: "monospace" }}
-        >{`// esp32 OTA 업데이트 예시 (Arduino / ESP-IDF)
+
+        {/* 1. 업로드 방법 */}
+        <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
+          <div className="px-5 py-3 flex items-center gap-2" style={{ background: "rgba(124,58,237,0.12)", borderBottom: "1px solid #2D2D4E" }}>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#7C3AED", color: "#fff" }}>1</span>
+            <span className="text-sm font-medium" style={{ color: "#F0E6FF" }}>소스코드 업로드 방법</span>
+          </div>
+          <div className="px-5 py-4 space-y-3 text-xs" style={{ color: "#9CA3AF" }}>
+            <div className="flex gap-3">
+              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>①</span>
+              <span>Arduino IDE에서 수정 완료 후, <strong style={{ color: "#F0E6FF" }}>스케치 폴더 전체</strong>를 zip으로 압축합니다.<br />
+              <span style={{ color: "#6B7280" }}>예) nexus_flux_case 폴더 우클릭 → 압축(ZIP)으로 보내기</span></span>
+            </div>
+            <div className="flex gap-3">
+              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>②</span>
+              <span>위 <strong style={{ color: "#F0E6FF" }}>소스코드 업로드</strong> 섹션에서 장치를 선택하고 zip 파일을 드래그하거나 클릭해서 선택합니다.</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>③</span>
+              <span><strong style={{ color: "#F0E6FF" }}>배포하기</strong>를 누르면 GitHub에 소스가 업로드되고 자동으로 빌드가 시작됩니다.</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>④</span>
+              <span>빌드 완료까지 <strong style={{ color: "#F0E6FF" }}>약 5~10분</strong> 소요됩니다. 완료되면 아래 릴리스 목록에 자동으로 추가됩니다.<br />
+              <span style={{ color: "#6B7280" }}>진행 상황은 github.com/jangjunwon2/nexus-firmware → Actions 탭에서 확인 가능합니다.</span></span>
+            </div>
+            <div className="flex gap-3">
+              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>⑤</span>
+              <span>기기가 Wi-Fi에 연결된 상태에서 다음 폴링 주기에 <strong style={{ color: "#F0E6FF" }}>자동으로 업데이트</strong>됩니다.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. 장치 코드 설정 */}
+        <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
+          <div className="px-5 py-3 flex items-center gap-2" style={{ background: "rgba(124,58,237,0.12)", borderBottom: "1px solid #2D2D4E" }}>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#7C3AED", color: "#fff" }}>2</span>
+            <span className="text-sm font-medium" style={{ color: "#F0E6FF" }}>장치 코드에 추가할 내용</span>
+          </div>
+          <div className="px-5 py-4 space-y-4">
+            <p className="text-xs" style={{ color: "#9CA3AF" }}>
+              아직 OTA 코드가 없는 장치라면 아래 코드를 추가하세요. 이미 <code style={{ color: "#A855F7" }}>ota_manager.h</code> 같은 파일이 있다면 URL과 DEVICE_TYPE만 맞게 수정하면 됩니다.
+            </p>
+
+            {/* 주의사항 박스 */}
+            <div className="rounded-lg px-4 py-3 text-xs space-y-1" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
+              <p className="font-semibold" style={{ color: "#FCA5A5" }}>반드시 확인할 사항</p>
+              <p style={{ color: "#9CA3AF" }}>• <code style={{ color: "#F0E6FF" }}>DEVICE_TYPE</code> 은 어드민 장치 관리의 <strong style={{ color: "#F0E6FF" }}>폴더명</strong>과 정확히 일치해야 합니다.</p>
+              <p style={{ color: "#9CA3AF" }}>• <code style={{ color: "#F0E6FF" }}>CURRENT_VER</code> 이 서버의 최신 버전과 <strong style={{ color: "#F0E6FF" }}>다를 때만</strong> 업데이트가 실행됩니다. 업로드 시 버전은 커밋 SHA 앞 8자리로 자동 생성됩니다.</p>
+              <p style={{ color: "#9CA3AF" }}>• OTA 중 전원이 끊기면 기기가 망가질 수 있습니다. <strong style={{ color: "#F0E6FF" }}>배터리/전원이 안정적인 상태</strong>에서 실행하세요.</p>
+            </div>
+
+            {/* ota_check.h 코드 */}
+            <div>
+              <p className="text-xs mb-2 font-medium" style={{ color: "#9CA3AF" }}>
+                <code style={{ color: "#A855F7" }}>ota_check.h</code> — 새 파일로 추가
+              </p>
+              <pre className="rounded-lg p-4 text-xs leading-relaxed overflow-x-auto" style={{ background: "#0D0D1A", color: "#A855F7", fontFamily: "monospace" }}>{`#pragma once
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Update.h>
 
-#define DEVICE_TYPE  "esp32-s3"          // 장치 타입 (어드민과 동일하게)
-#define CURRENT_VER  "1.0.0"             // 현재 기기 버전
-#define CHECK_URL    "https://mystic-lab.vercel.app/api/firmware/latest?device=" DEVICE_TYPE
+// ★ 이 장치의 타입명 — 어드민 "장치 관리"의 폴더명과 동일하게
+#define OTA_DEVICE_TYPE  "nexus_flux_case"
 
-void checkAndUpdate() {
+// ★ 현재 펌웨어 버전 — 어드민 릴리스 목록의 버전과 비교됨
+//    빌드 후 자동 생성되는 버전(커밋 SHA 8자리)을 보고 여기에 붙여넣으면 됨
+#define OTA_CURRENT_VER  "00000000"
+
+#define OTA_CHECK_URL \
+  "https://mystic-lab.vercel.app/api/firmware/latest?device=" OTA_DEVICE_TYPE
+
+void otaCheckAndUpdate() {
   HTTPClient http;
-  http.begin(CHECK_URL);
+  http.begin(OTA_CHECK_URL);
   int code = http.GET();
   if (code != 200) { http.end(); return; }
 
-  DynamicJsonDocument doc(512);
-  deserializeJson(doc, http.getString());
+  String body = http.getString();
   http.end();
 
-  String latest = doc["version"].as<String>();
-  if (latest == CURRENT_VER) return;  // 이미 최신
+  DynamicJsonDocument doc(512);
+  if (deserializeJson(doc, body)) return;  // 파싱 실패
 
-  // 업데이트 다운로드 및 플래시
+  String latest = doc["version"].as<String>();
+  if (latest == OTA_CURRENT_VER) return;   // 이미 최신
+
   String url = doc["url"].as<String>();
+  if (url.isEmpty()) return;
+
+  // .bin 다운로드 및 플래시
   http.begin(url);
   int binCode = http.GET();
   if (binCode == 200) {
     int size = http.getSize();
-    WiFiClient* stream = http.getStreamPtr();
-    if (Update.begin(size)) {
-      Update.writeStream(*stream);
-      if (Update.end(true)) ESP.restart();  // 재시작으로 적용
+    if (size > 0 && Update.begin(size)) {
+      WiFiClient* stream = http.getStreamPtr();
+      size_t written = Update.writeStream(*stream);
+      if (Update.end(true) && written == (size_t)size) {
+        http.end();
+        ESP.restart();  // 업데이트 적용 — 재시작
+      }
     }
   }
   http.end();
 }`}</pre>
+            </div>
+
+            {/* 메인 파일 코드 */}
+            <div>
+              <p className="text-xs mb-2 font-medium" style={{ color: "#9CA3AF" }}>
+                <code style={{ color: "#A855F7" }}>메인.ino</code> — 호출 위치 추가
+              </p>
+              <pre className="rounded-lg p-4 text-xs leading-relaxed overflow-x-auto" style={{ background: "#0D0D1A", color: "#A855F7", fontFamily: "monospace" }}>{`#include "ota_check.h"
+
+void setup() {
+  // ... 기존 초기화 코드 ...
+
+  // Wi-Fi 연결 완료 후 OTA 확인 (부팅 시 1회)
+  otaCheckAndUpdate();
+}
+
+// 또는 주기적으로 확인하려면 loop()에서:
+// unsigned long lastOtaCheck = 0;
+// void loop() {
+//   if (millis() - lastOtaCheck > 3600000UL) {  // 1시간마다
+//     lastOtaCheck = millis();
+//     otaCheckAndUpdate();
+//   }
+// }`}</pre>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. 버전 관리 */}
+        <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
+          <div className="px-5 py-3 flex items-center gap-2" style={{ background: "rgba(124,58,237,0.12)", borderBottom: "1px solid #2D2D4E" }}>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#7C3AED", color: "#fff" }}>3</span>
+            <span className="text-sm font-medium" style={{ color: "#F0E6FF" }}>버전 관리 방법</span>
+          </div>
+          <div className="px-5 py-4 text-xs space-y-2" style={{ color: "#9CA3AF" }}>
+            <p>업로드 시 버전은 <strong style={{ color: "#F0E6FF" }}>커밋 SHA 앞 8자리</strong>로 자동 생성됩니다 (예: <code style={{ color: "#A855F7" }}>a1b2c3d4</code>).</p>
+            <p>릴리스 목록에서 배포된 버전을 확인한 뒤, 장치의 <code style={{ color: "#A855F7" }}>OTA_CURRENT_VER</code>를 해당 버전으로 업데이트하고 다시 배포하면 됩니다.</p>
+            <p style={{ color: "#6B7280" }}>
+              또는 <code style={{ color: "#A855F7" }}>config.h</code>의 <code>FIRMWARE_VERSION</code> 상수와 연동하면 하나의 값만 관리하면 됩니다.
+            </p>
+          </div>
+        </div>
+
       </div>
     </div>
   );
