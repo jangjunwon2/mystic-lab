@@ -53,6 +53,8 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollDeadlineRef = useRef<number>(0);
   const knownIdsRef = useRef<Set<string>>(new Set(initialReleases.map((r) => r.id)));
+  const expectedCountRef = useRef<number>(0);
+  const foundNewIdsRef = useRef<Set<string>>(new Set());
 
   // releases 변경 시 knownIds 동기화
   useEffect(() => {
@@ -64,9 +66,11 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
     setPolling(false);
   }, []);
 
-  const startPolling = useCallback(() => {
+  const startPolling = useCallback((expectedCount = 0) => {
     if (pollRef.current) return;
     setPolling(true);
+    expectedCountRef.current = expectedCount;
+    foundNewIdsRef.current = new Set();
     pollDeadlineRef.current = Date.now() + 20 * 60 * 1000;
 
     pollRef.current = setInterval(async () => {
@@ -80,10 +84,15 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       setReleases(fresh);
 
       if (added.length > 0) {
+        for (const r of added) foundNewIdsRef.current.add(r.id);
         const names = added.map((r) => `${r.device_type} v${r.version}`).join(", ");
         setNewReleaseAlert(`새 릴리스 감지: ${names}`);
-        setTimeout(() => setNewReleaseAlert(null), 6000);
-        stopPolling();
+        setTimeout(() => setNewReleaseAlert(null), 8000);
+
+        // 예상 장치 수를 모두 감지했거나 기대값 없으면 폴링 종료
+        if (expectedCountRef.current <= 0 || foundNewIdsRef.current.size >= expectedCountRef.current) {
+          stopPolling();
+        }
       }
     }, 10_000);
   }, [stopPolling]);
@@ -180,7 +189,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
         type: "ok",
       });
       setZipFile(null);
-      startPolling();
+      startPolling(deviceList.length);
       const fi = document.getElementById("fw-zip") as HTMLInputElement;
       if (fi) fi.value = "";
     } catch {
@@ -196,7 +205,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       const res = await fetch("/api/admin/firmware/rebuild", { method: "POST" });
       if (res.ok) {
         setUploadStatus({ msg: "✅ 전체 재빌드 요청 완료 — GitHub Actions에서 빌드 중입니다. 완료되면 자동으로 업데이트됩니다.", type: "ok" });
-        startPolling();
+        startPolling(devices.length);
       } else {
         const d = await res.json();
         setUploadStatus({ msg: `재빌드 요청 실패: ${d.error}`, type: "err" });
