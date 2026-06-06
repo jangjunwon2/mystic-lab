@@ -1,9 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import { getSignupCouponConfig, getWishlistCouponConfig } from "@/lib/promotions";
+import { getSignupCouponConfig, getWishlistCouponConfig, getCartCouponConfig } from "@/lib/promotions";
 import CouponsAdminClient, { type IssuedCoupon, type ProductOption } from "@/components/admin/CouponsAdminClient";
 import SignupCouponCard from "@/components/admin/SignupCouponCard";
 import WishlistCouponCard from "@/components/admin/WishlistCouponCard";
 import PromoDashboard, { type DashboardStats } from "@/components/admin/PromoDashboard";
+import CartCouponCard from "@/components/admin/CartCouponCard";
 
 export const metadata = { title: "Coupons — Admin" };
 
@@ -11,6 +12,7 @@ const SOURCE_LABELS: Record<string, string> = {
   manual: "수동 발급",
   signup: "가입 환영",
   trigger: "위시리스트 정기",
+  cart_trigger: "장바구니 잔존",
   bulk: "이벤트 일괄",
   newsletter: "뉴스레터",
   referral: "레퍼럴",
@@ -63,6 +65,7 @@ export default async function AdminCouponsPage() {
   const admin = await createAdminClient();
   const signupCoupon = await getSignupCouponConfig(admin);
   const wishlistCoupon = await getWishlistCouponConfig(admin);
+  const cartCoupon = await getCartCouponConfig(admin);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adminAny = admin as any;
 
@@ -104,9 +107,10 @@ export default async function AdminCouponsPage() {
         </p>
       </div>
       <PromoDashboard stats={stats} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
         <SignupCouponCard initial={signupCoupon} />
         <WishlistCouponCard initial={wishlistCoupon} />
+        <CartCouponCard initial={cartCoupon} />
       </div>
       <CouponsAdminClient initialCoupons={(data ?? []) as IssuedCoupon[]} products={products} categories={categories} />
     </div>

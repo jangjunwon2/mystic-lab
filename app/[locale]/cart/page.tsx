@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Trash2, Zap, ArrowLeft, Package } from "lucide-react";
 import { setCheckoutItems } from "@/lib/cart-storage";
+import { createClient } from "@/lib/supabase/client";
 
 interface CartItem {
   id: string;
@@ -30,19 +31,36 @@ export default function CartPage({ params }: Props) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [mounted, setMounted] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const syncedRef = useRef(false);
 
   const keyOf = (i: CartItem) => `${i.id}::${i.option_id ?? ""}`;
 
   useEffect(() => {
     params.then(({ locale: l }) => setLocale(l));
+    let stored: CartItem[] = [];
     try {
-      const stored: CartItem[] = JSON.parse(localStorage.getItem("ml_cart") ?? "[]");
+      stored = JSON.parse(localStorage.getItem("ml_cart") ?? "[]");
       setItems(stored);
       setSelected(new Set(stored.map((i) => `${i.id}::${i.option_id ?? ""}`))); // 기본 전체 선택
     } catch {
       setItems([]);
     }
     setMounted(true);
+
+    // 로그인 회원이면 서버에 장바구니 동기화 (background, fire-and-forget)
+    if (!syncedRef.current && stored.length > 0) {
+      syncedRef.current = true;
+      const sb = createClient();
+      sb.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          fetch("/api/cart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(stored),
+          }).catch(() => {});
+        }
+      });
+    }
   }, [params]);
 
   const saveCart = (updated: CartItem[]) => {

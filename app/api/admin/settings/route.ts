@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getPointEarnRate, setSetting } from "@/lib/settings";
-import { getSignupCouponConfig, getWishlistCouponConfig } from "@/lib/promotions";
+import { getSignupCouponConfig, getWishlistCouponConfig, getCartCouponConfig } from "@/lib/promotions";
 
 // GET — 현재 설정값(포인트 적립률 + 가입 환영 쿠폰 + 위시리스트 트리거 쿠폰)
 export async function GET() {
@@ -13,7 +13,8 @@ export async function GET() {
   const pointEarnRate = await getPointEarnRate(supabase);
   const signupCoupon = await getSignupCouponConfig(supabase);
   const wishlistCoupon = await getWishlistCouponConfig(supabase);
-  return NextResponse.json({ pointEarnRate, signupCoupon, wishlistCoupon });
+  const cartCoupon = await getCartCouponConfig(supabase);
+  return NextResponse.json({ pointEarnRate, signupCoupon, wishlistCoupon, cartCoupon });
 }
 
 // POST — 설정 저장. body { pointEarnRate? } 또는 { signupCoupon: { enabled, percent, months } }
@@ -62,6 +63,29 @@ export async function POST(request: NextRequest) {
       (await setSetting(supabase, "wishlist_coupon_percent", String(p))) &&
       (await setSetting(supabase, "wishlist_coupon_months", String(m))) &&
       (await setSetting(supabase, "wishlist_coupon_name", String(name ?? "").slice(0, 60) || "위시리스트 특별 할인"));
+    if (!ok) return NextResponse.json({ error: "저장에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // 장바구니 잔존 트리거 쿠폰 설정
+  if (body?.cartCoupon) {
+    const { enabled, days, percent, months, name } = body.cartCoupon;
+    const d = Number(days), p = Number(percent), m = Number(months);
+    if (!Number.isInteger(d) || d <= 0 || d > 365) {
+      return NextResponse.json({ error: "잔존 일수는 1~365 사이여야 합니다." }, { status: 400 });
+    }
+    if (!Number.isFinite(p) || p <= 0 || p > 100) {
+      return NextResponse.json({ error: "할인율은 0~100% 사이여야 합니다." }, { status: 400 });
+    }
+    if (!Number.isInteger(m) || m <= 0 || m > 60) {
+      return NextResponse.json({ error: "유효기간은 1~60개월 사이여야 합니다." }, { status: 400 });
+    }
+    const ok =
+      (await setSetting(supabase, "cart_coupon_enabled", enabled ? "true" : "false")) &&
+      (await setSetting(supabase, "cart_coupon_days", String(d))) &&
+      (await setSetting(supabase, "cart_coupon_percent", String(p))) &&
+      (await setSetting(supabase, "cart_coupon_months", String(m))) &&
+      (await setSetting(supabase, "cart_coupon_name", String(name ?? "").slice(0, 60) || "장바구니 특별 할인"));
     if (!ok) return NextResponse.json({ error: "저장에 실패했습니다." }, { status: 500 });
     return NextResponse.json({ ok: true });
   }

@@ -14,7 +14,7 @@ export interface DashboardStats {
   activeCount: number;
 }
 
-const SOURCE_ORDER = ["signup", "bulk", "trigger", "newsletter", "referral", "promo", "manual"];
+const SOURCE_ORDER = ["signup", "bulk", "trigger", "cart_trigger", "newsletter", "referral", "promo", "manual"];
 
 function ConversionBar({ rate }: { rate: number }) {
   const color = rate >= 50 ? "#10B981" : rate >= 20 ? "#F59E0B" : "#6B7280";
