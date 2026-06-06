@@ -40,7 +40,7 @@ function formatBytes(b: number) {
 export default function FirmwareClient({ initialReleases, initialDevices }: Props) {
   const [releases, setReleases] = useState(initialReleases);
   const [devices, setDevices] = useState<FirmwareDevice[]>(initialDevices);
-  const [deviceType, setDeviceType] = useState(initialDevices[0]?.name ?? "");
+  const [deviceType, setDeviceType] = useState("auto");
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ msg: string; type: "idle" | "ok" | "err" | "info" }>({ msg: "", type: "idle" });
@@ -145,8 +145,8 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   }
 
   async function handleUpload() {
-    if (!zipFile || !deviceType) {
-      setUploadStatus({ msg: "장치와 zip 파일을 선택해주세요.", type: "err" });
+    if (!zipFile) {
+      setUploadStatus({ msg: "zip 파일을 선택해주세요.", type: "err" });
       return;
     }
     setUploading(true);
@@ -166,11 +166,16 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
         return;
       }
 
+      const deviceList: string[] = data.devices ?? [deviceType];
+      const deviceSummary =
+        deviceList.length === 1
+          ? deviceList[0]
+          : `${deviceList.length}개 장치 (${deviceList.join(", ")})`;
       const warn = data.skippedIno?.length
-        ? ` ⚠️ 다른 장치 .ino 파일 ${data.skippedIno.length}개 제외됨: ${data.skippedIno.join(", ")}`
+        ? ` ⚠️ 다른 장치 .ino ${data.skippedIno.length}개 제외됨`
         : "";
       setUploadStatus({
-        msg: `✅ ${data.files}개 파일 업로드 완료 (커밋 ${data.commit}) — GitHub Actions에서 빌드 중입니다. 완료되면 아래 목록에 자동으로 추가됩니다.${warn}`,
+        msg: `✅ ${deviceSummary} · ${data.files}개 파일 업로드 완료 (커밋 ${data.commit}) — GitHub Actions 빌드 중. 완료되면 자동 추가됩니다.${warn}`,
         type: "ok",
       });
       setZipFile(null);
@@ -274,8 +279,16 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>장치 선택</label>
+            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>
+              장치 선택
+              {deviceType === "auto" && (
+                <span className="ml-2 text-[10px]" style={{ color: "#A855F7" }}>
+                  zip 내 폴더 구조로 자동 감지
+                </span>
+              )}
+            </label>
             <select value={deviceType} onChange={(e) => setDeviceType(e.target.value)} style={inputStyle}>
+              <option value="auto">🔍 자동 감지 (다중 장치 zip)</option>
               {devices.map((d) => <option key={d.name} value={d.name}>{d.label}</option>)}
             </select>
           </div>
