@@ -26,6 +26,37 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data ?? []);
 }
 
+// DELETE: 선택 항목 일괄 삭제
+export async function DELETE(req: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { ids } = await req.json() as { ids: string[] };
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return NextResponse.json({ error: "ids 필수" }, { status: 400 });
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: rows } = await (supabase as any)
+    .from("firmware_releases")
+    .select("storage_path")
+    .in("id", ids);
+
+  if (rows?.length) {
+    const paths = rows.map((r: { storage_path: string }) => r.storage_path).filter(Boolean);
+    if (paths.length) await (supabase as any).storage.from("firmware").remove(paths);
+  }
+
+  const { error } = await (supabase as any)
+    .from("firmware_releases")
+    .delete()
+    .in("id", ids);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true, deleted: ids.length });
+}
+
 // POST: 업로드 완료 후 메타데이터 저장
 export async function POST(req: NextRequest) {
   if (!isCIAuth(req)) {

@@ -45,6 +45,8 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ msg: string; type: "idle" | "ok" | "err" | "info" }>({ msg: "", type: "idle" });
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // 장치 관리 상태
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
@@ -152,7 +154,43 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   async function deleteRelease(id: string, version: string) {
     if (!confirm(`버전 ${version}을 삭제할까요? 파일도 함께 삭제됩니다.`)) return;
     const res = await fetch(`/api/admin/firmware/${id}`, { method: "DELETE" });
-    if (res.ok) setReleases((prev) => prev.filter((r) => r.id !== id));
+    if (res.ok) {
+      setReleases((prev) => prev.filter((r) => r.id !== id));
+      setSelectedIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`선택한 ${ids.length}개 릴리스를 삭제할까요? 파일도 함께 삭제됩니다.`)) return;
+    setBulkDeleting(true);
+    const res = await fetch("/api/admin/firmware", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+    if (res.ok) {
+      setReleases((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+      setSelectedIds(new Set());
+    }
+    setBulkDeleting(false);
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === releases.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(releases.map((r) => r.id)));
+    }
   }
 
   function copyUrl(url: string, id: string) {
@@ -190,19 +228,13 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* 장치 선택 */}
           <div>
             <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>장치 선택</label>
-            <select
-              value={deviceType}
-              onChange={(e) => setDeviceType(e.target.value)}
-              style={inputStyle}
-            >
+            <select value={deviceType} onChange={(e) => setDeviceType(e.target.value)} style={inputStyle}>
               {devices.map((d) => <option key={d.name} value={d.name}>{d.label}</option>)}
             </select>
           </div>
 
-          {/* zip 파일 */}
           <div>
             <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>소스코드 (.zip)</label>
             <div
@@ -223,9 +255,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
                   <p className="text-[10px] mt-0.5" style={{ color: "#9CA3AF" }}>{formatBytes(zipFile.size)}</p>
                 </div>
               ) : (
-                <p className="text-xs" style={{ color: "#6B7280" }}>
-                  클릭하거나 .zip 드래그
-                </p>
+                <p className="text-xs" style={{ color: "#6B7280" }}>클릭하거나 .zip 드래그</p>
               )}
               <input
                 id="fw-zip"
@@ -252,9 +282,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
             <span
               className="text-xs leading-relaxed"
               style={{
-                color: uploadStatus.type === "ok" ? "#10B981"
-                  : uploadStatus.type === "err" ? "#EF4444"
-                  : "#9CA3AF",
+                color: uploadStatus.type === "ok" ? "#10B981" : uploadStatus.type === "err" ? "#EF4444" : "#9CA3AF",
                 maxWidth: "480px",
               }}
             >
@@ -269,15 +297,10 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       </div>
 
       {/* 장치 관리 */}
-      <div
-        className="rounded-xl p-6 space-y-3"
-        style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}
-      >
+      <div className="rounded-xl p-6 space-y-3" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#A855F7" }}>
-              장치 관리
-            </h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#A855F7" }}>장치 관리</h2>
             <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
               업로드 드롭다운에 표시될 장치 목록. 이름은 GitHub 폴더명과 동일해야 합니다.
             </p>
@@ -303,14 +326,14 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
                   <input
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
-                    placeholder="폴더명 (예: nexus_new)"
+                    placeholder="폴더명"
                     className="flex-1 bg-transparent text-xs outline-none"
                     style={{ color: "#F0E6FF", borderBottom: "1px solid #7C3AED" }}
                   />
                   <input
                     value={editLabel}
                     onChange={e => setEditLabel(e.target.value)}
-                    placeholder="표시 이름 (예: Nexus New)"
+                    placeholder="표시 이름"
                     className="flex-1 bg-transparent text-xs outline-none"
                     style={{ color: "#F0E6FF", borderBottom: "1px solid #7C3AED" }}
                   />
@@ -321,8 +344,8 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
                 <>
                   <span className="text-xs font-mono flex-1" style={{ color: "#A855F7" }}>{device.name}</span>
                   <span className="text-xs flex-1" style={{ color: "#9CA3AF" }}>{device.label}</span>
-                  <button onClick={() => startEdit(idx)} className="p-1 transition-colors" style={{ color: "#6B7280" }} onMouseEnter={e => (e.currentTarget.style.color = "#A855F7")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => deleteDevice(idx)} className="p-1 transition-colors" style={{ color: "#6B7280" }} onMouseEnter={e => (e.currentTarget.style.color = "#EF4444")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => startEdit(idx)} className="p-1" style={{ color: "#6B7280" }} onMouseEnter={e => (e.currentTarget.style.color = "#A855F7")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => deleteDevice(idx)} className="p-1" style={{ color: "#6B7280" }} onMouseEnter={e => (e.currentTarget.style.color = "#EF4444")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}><Trash2 className="w-3.5 h-3.5" /></button>
                 </>
               )}
             </div>
@@ -357,12 +380,22 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       </div>
 
       {/* 릴리스 목록 */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}
-      >
-        <div className="px-6 py-4" style={{ borderBottom: "1px solid #2D2D4E" }}>
-          <h2 className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>릴리스 이력 ({releases.length})</h2>
+      <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid #2D2D4E" }}>
+          <h2 className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>
+            릴리스 이력 ({releases.length})
+          </h2>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={bulkDelete}
+              disabled={bulkDeleting}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)" }}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {bulkDeleting ? "삭제 중…" : `선택 삭제 (${selectedIds.size})`}
+            </button>
+          )}
         </div>
 
         {releases.length === 0 ? (
@@ -374,6 +407,15 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
+                  <th className="px-4 py-3 w-8">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size === releases.length && releases.length > 0}
+                      onChange={toggleSelectAll}
+                      className="cursor-pointer"
+                      style={{ accentColor: "#7C3AED" }}
+                    />
+                  </th>
                   {["장치 타입", "버전", "파일 크기", "날짜", "상태", "다운로드 URL", ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-medium" style={{ color: "#9CA3AF" }}>
                       {h}
@@ -386,13 +428,23 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
                   <tr
                     key={rel.id}
                     className="transition-colors"
-                    style={{ borderBottom: "1px solid #2D2D4E", opacity: rel.is_active ? 1 : 0.5 }}
+                    style={{
+                      borderBottom: "1px solid #2D2D4E",
+                      opacity: rel.is_active ? 1 : 0.5,
+                      background: selectedIds.has(rel.id) ? "rgba(124,58,237,0.06)" : "transparent",
+                    }}
                   >
+                    <td className="px-4 py-3 w-8">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(rel.id)}
+                        onChange={() => toggleSelect(rel.id)}
+                        className="cursor-pointer"
+                        style={{ accentColor: "#7C3AED" }}
+                      />
+                    </td>
                     <td className="px-4 py-3">
-                      <span
-                        className="px-2 py-0.5 rounded-full text-xs font-medium"
-                        style={{ background: "rgba(168,85,247,0.15)", color: "#A855F7" }}
-                      >
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(168,85,247,0.15)", color: "#A855F7" }}>
                         {rel.device_type}
                       </span>
                     </td>
@@ -411,25 +463,18 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
                         className="flex items-center gap-1 text-xs transition-colors"
                         style={{ color: rel.is_active ? "#10B981" : "#6B7280" }}
                       >
-                        {rel.is_active
-                          ? <ToggleRight className="w-4 h-4" />
-                          : <ToggleLeft className="w-4 h-4" />}
+                        {rel.is_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
                         {rel.is_active ? "활성" : "비활성"}
                       </button>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <a
-                          href={rel.download_url}
-                          download
-                          className="flex items-center gap-1 text-xs transition-colors"
-                          style={{ color: "#7C3AED" }}
-                        >
+                        <a href={rel.download_url} download className="flex items-center gap-1 text-xs" style={{ color: "#7C3AED" }}>
                           <Download className="w-3.5 h-3.5" />
                         </a>
                         <button
                           onClick={() => copyUrl(rel.download_url, rel.id)}
-                          className="text-xs transition-colors"
+                          className="text-xs"
                           style={{ color: copiedId === rel.id ? "#10B981" : "#6B7280" }}
                           title="URL 복사"
                         >
@@ -461,45 +506,21 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
 
       {/* 가이드 */}
       <div className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#9CA3AF" }}>사용 가이드</h2>
 
-        {/* 섹션 헤더 */}
-        <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#9CA3AF" }}>
-          사용 가이드
-        </h2>
-
-        {/* 1. 업로드 방법 */}
         <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
           <div className="px-5 py-3 flex items-center gap-2" style={{ background: "rgba(124,58,237,0.12)", borderBottom: "1px solid #2D2D4E" }}>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#7C3AED", color: "#fff" }}>1</span>
             <span className="text-sm font-medium" style={{ color: "#F0E6FF" }}>소스코드 업로드 방법</span>
           </div>
           <div className="px-5 py-4 space-y-3 text-xs" style={{ color: "#9CA3AF" }}>
-            <div className="flex gap-3">
-              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>①</span>
-              <span>Arduino IDE에서 수정 완료 후, <strong style={{ color: "#F0E6FF" }}>스케치 폴더 전체</strong>를 zip으로 압축합니다.<br />
-              <span style={{ color: "#6B7280" }}>예) nexus_flux_case 폴더 우클릭 → 압축(ZIP)으로 보내기</span></span>
-            </div>
-            <div className="flex gap-3">
-              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>②</span>
-              <span>위 <strong style={{ color: "#F0E6FF" }}>소스코드 업로드</strong> 섹션에서 장치를 선택하고 zip 파일을 드래그하거나 클릭해서 선택합니다.</span>
-            </div>
-            <div className="flex gap-3">
-              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>③</span>
-              <span><strong style={{ color: "#F0E6FF" }}>배포하기</strong>를 누르면 GitHub에 소스가 업로드되고 자동으로 빌드가 시작됩니다.</span>
-            </div>
-            <div className="flex gap-3">
-              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>④</span>
-              <span>빌드 완료까지 <strong style={{ color: "#F0E6FF" }}>약 5~10분</strong> 소요됩니다. 완료되면 아래 릴리스 목록에 자동으로 추가됩니다.<br />
-              <span style={{ color: "#6B7280" }}>진행 상황은 github.com/jangjunwon2/nexus-firmware → Actions 탭에서 확인 가능합니다.</span></span>
-            </div>
-            <div className="flex gap-3">
-              <span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>⑤</span>
-              <span>기기가 Wi-Fi에 연결된 상태에서 다음 폴링 주기에 <strong style={{ color: "#F0E6FF" }}>자동으로 업데이트</strong>됩니다.</span>
-            </div>
+            <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>①</span><span>장치 폴더 안 <strong style={{ color: "#F0E6FF" }}>version.txt</strong>를 새 버전으로 수정합니다. (예: <code style={{ color: "#A855F7" }}>1.0</code> → <code style={{ color: "#A855F7" }}>1.1</code>)</span></div>
+            <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>②</span><span>해당 <strong style={{ color: "#F0E6FF" }}>장치 폴더 전체</strong>를 zip으로 압축합니다.<br /><span style={{ color: "#6B7280" }}>예) nexus_flux_case 폴더 우클릭 → 압축(ZIP)으로 보내기</span></span></div>
+            <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>③</span><span>위 소스코드 업로드 섹션에서 장치를 선택하고 zip을 업로드합니다.</span></div>
+            <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>④</span><span>빌드 완료까지 <strong style={{ color: "#F0E6FF" }}>약 5~10분</strong> 소요. 완료 후 이전 버전은 자동 삭제됩니다.<br /><span style={{ color: "#6B7280" }}>진행 상황: github.com/jangjunwon2/nexus-firmware → Actions 탭</span></span></div>
           </div>
         </div>
 
-        {/* 2. 장치 코드 설정 */}
         <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
           <div className="px-5 py-3 flex items-center gap-2" style={{ background: "rgba(124,58,237,0.12)", borderBottom: "1px solid #2D2D4E" }}>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#7C3AED", color: "#fff" }}>2</span>
@@ -507,35 +528,21 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
           </div>
           <div className="px-5 py-4 space-y-4">
             <p className="text-xs" style={{ color: "#9CA3AF" }}>
-              아직 OTA 코드가 없는 장치라면 아래 코드를 추가하세요. 이미 <code style={{ color: "#A855F7" }}>ota_manager.h</code> 같은 파일이 있다면 URL과 DEVICE_TYPE만 맞게 수정하면 됩니다.
+              아직 OTA 코드가 없는 장치라면 아래 코드를 추가하세요.
             </p>
-
-            {/* 주의사항 박스 */}
             <div className="rounded-lg px-4 py-3 text-xs space-y-1" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
               <p className="font-semibold" style={{ color: "#FCA5A5" }}>반드시 확인할 사항</p>
-              <p style={{ color: "#9CA3AF" }}>• <code style={{ color: "#F0E6FF" }}>DEVICE_TYPE</code> 은 어드민 장치 관리의 <strong style={{ color: "#F0E6FF" }}>폴더명</strong>과 정확히 일치해야 합니다.</p>
-              <p style={{ color: "#9CA3AF" }}>• <code style={{ color: "#F0E6FF" }}>CURRENT_VER</code> 이 서버의 최신 버전과 <strong style={{ color: "#F0E6FF" }}>다를 때만</strong> 업데이트가 실행됩니다. 업로드 시 버전은 커밋 SHA 앞 8자리로 자동 생성됩니다.</p>
-              <p style={{ color: "#9CA3AF" }}>• OTA 중 전원이 끊기면 기기가 망가질 수 있습니다. <strong style={{ color: "#F0E6FF" }}>배터리/전원이 안정적인 상태</strong>에서 실행하세요.</p>
+              <p style={{ color: "#9CA3AF" }}>• <code style={{ color: "#F0E6FF" }}>OTA_DEVICE_TYPE</code>은 장치 관리의 폴더명과 정확히 일치해야 합니다.</p>
+              <p style={{ color: "#9CA3AF" }}>• <code style={{ color: "#F0E6FF" }}>OTA_CURRENT_VER</code>이 서버 버전과 다를 때만 업데이트가 실행됩니다.</p>
             </div>
-
-            {/* ota_check.h 코드 */}
-            <div>
-              <p className="text-xs mb-2 font-medium" style={{ color: "#9CA3AF" }}>
-                <code style={{ color: "#A855F7" }}>ota_check.h</code> — 새 파일로 추가
-              </p>
-              <pre className="rounded-lg p-4 text-xs leading-relaxed overflow-x-auto" style={{ background: "#0D0D1A", color: "#A855F7", fontFamily: "monospace" }}>{`#pragma once
+            <pre className="rounded-lg p-4 text-xs leading-relaxed overflow-x-auto" style={{ background: "#0D0D1A", color: "#A855F7", fontFamily: "monospace" }}>{`#pragma once
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Update.h>
 
-// ★ 이 장치의 타입명 — 어드민 "장치 관리"의 폴더명과 동일하게
 #define OTA_DEVICE_TYPE  "nexus_flux_case"
-
-// ★ 현재 펌웨어 버전 — 어드민 릴리스 목록의 버전과 비교됨
-//    빌드 후 자동 생성되는 버전(커밋 SHA 8자리)을 보고 여기에 붙여넣으면 됨
-#define OTA_CURRENT_VER  "00000000"
-
-#define OTA_CHECK_URL \
+#define OTA_CURRENT_VER  "1.0"
+#define OTA_CHECK_URL \\
   "https://mystic-lab.vercel.app/api/firmware/latest?device=" OTA_DEVICE_TYPE
 
 void otaCheckAndUpdate() {
@@ -543,20 +550,14 @@ void otaCheckAndUpdate() {
   http.begin(OTA_CHECK_URL);
   int code = http.GET();
   if (code != 200) { http.end(); return; }
-
   String body = http.getString();
   http.end();
-
   DynamicJsonDocument doc(512);
-  if (deserializeJson(doc, body)) return;  // 파싱 실패
-
+  if (deserializeJson(doc, body)) return;
   String latest = doc["version"].as<String>();
-  if (latest == OTA_CURRENT_VER) return;   // 이미 최신
-
+  if (latest == OTA_CURRENT_VER) return;
   String url = doc["url"].as<String>();
   if (url.isEmpty()) return;
-
-  // .bin 다운로드 및 플래시
   http.begin(url);
   int binCode = http.GET();
   if (binCode == 200) {
@@ -566,55 +567,14 @@ void otaCheckAndUpdate() {
       size_t written = Update.writeStream(*stream);
       if (Update.end(true) && written == (size_t)size) {
         http.end();
-        ESP.restart();  // 업데이트 적용 — 재시작
+        ESP.restart();
       }
     }
   }
   http.end();
 }`}</pre>
-            </div>
-
-            {/* 메인 파일 코드 */}
-            <div>
-              <p className="text-xs mb-2 font-medium" style={{ color: "#9CA3AF" }}>
-                <code style={{ color: "#A855F7" }}>메인.ino</code> — 호출 위치 추가
-              </p>
-              <pre className="rounded-lg p-4 text-xs leading-relaxed overflow-x-auto" style={{ background: "#0D0D1A", color: "#A855F7", fontFamily: "monospace" }}>{`#include "ota_check.h"
-
-void setup() {
-  // ... 기존 초기화 코드 ...
-
-  // Wi-Fi 연결 완료 후 OTA 확인 (부팅 시 1회)
-  otaCheckAndUpdate();
-}
-
-// 또는 주기적으로 확인하려면 loop()에서:
-// unsigned long lastOtaCheck = 0;
-// void loop() {
-//   if (millis() - lastOtaCheck > 3600000UL) {  // 1시간마다
-//     lastOtaCheck = millis();
-//     otaCheckAndUpdate();
-//   }
-// }`}</pre>
-            </div>
           </div>
         </div>
-
-        {/* 3. 버전 관리 */}
-        <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
-          <div className="px-5 py-3 flex items-center gap-2" style={{ background: "rgba(124,58,237,0.12)", borderBottom: "1px solid #2D2D4E" }}>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#7C3AED", color: "#fff" }}>3</span>
-            <span className="text-sm font-medium" style={{ color: "#F0E6FF" }}>버전 관리 방법</span>
-          </div>
-          <div className="px-5 py-4 text-xs space-y-2" style={{ color: "#9CA3AF" }}>
-            <p>업로드 시 버전은 <strong style={{ color: "#F0E6FF" }}>커밋 SHA 앞 8자리</strong>로 자동 생성됩니다 (예: <code style={{ color: "#A855F7" }}>a1b2c3d4</code>).</p>
-            <p>릴리스 목록에서 배포된 버전을 확인한 뒤, 장치의 <code style={{ color: "#A855F7" }}>OTA_CURRENT_VER</code>를 해당 버전으로 업데이트하고 다시 배포하면 됩니다.</p>
-            <p style={{ color: "#6B7280" }}>
-              또는 <code style={{ color: "#A855F7" }}>config.h</code>의 <code>FIRMWARE_VERSION</code> 상수와 연동하면 하나의 값만 관리하면 됩니다.
-            </p>
-          </div>
-        </div>
-
       </div>
     </div>
   );
