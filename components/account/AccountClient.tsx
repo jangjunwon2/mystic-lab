@@ -102,11 +102,14 @@ interface Coupon {
 interface CustomOrderRow {
   id: string;
   description: string;
+  budget_range: string;
+  desired_deadline: string | null;
   quoted_price_usd: number | null;
   quoted_price_krw: number | null;
   payment_status: string;
   status: string;
   created_at: string;
+  admin_message: string | null;
 }
 
 interface Props {
@@ -362,47 +365,7 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
                       </div>
                     )}
                     {typedCustomOrders.map((co) => (
-                      <div
-                        key={co.id}
-                        className="rounded-xl border p-4"
-                        style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1.5">
-                              <span
-                                className="px-2 py-0.5 rounded-full text-xs font-medium"
-                                style={{ background: "rgba(168,85,247,0.15)", color: "#A855F7" }}
-                              >
-                                커스텀 주문
-                              </span>
-                              <span
-                                className="px-2 py-0.5 rounded-full text-xs border"
-                                style={{
-                                  background: co.status === "completed" ? "rgba(16,185,129,0.1)" : "rgba(59,130,246,0.1)",
-                                  color: co.status === "completed" ? "#10B981" : "#60A5FA",
-                                  borderColor: co.status === "completed" ? "rgba(16,185,129,0.3)" : "rgba(59,130,246,0.3)",
-                                }}
-                              >
-                                {co.status === "completed" ? "완료" : "진행 중"}
-                              </span>
-                            </div>
-                            <p className="text-sm line-clamp-2" style={{ color: "#D1D5DB" }}>
-                              {co.description}
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            {co.quoted_price_usd && (
-                              <p className="text-sm font-semibold" style={{ color: "#F59E0B" }}>
-                                ${co.quoted_price_usd.toFixed(2)}
-                              </p>
-                            )}
-                            <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
-                              {new Date(co.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                      <CustomOrderCard key={co.id} co={co} />
                     ))}
                   </>
                 )}
@@ -1109,5 +1072,101 @@ function TutorialRow({
         <Play className="w-4 h-4 text-[#A855F7] group-hover:text-white ml-0.5 transition-colors" />
       </div>
     </Link>
+  );
+}
+
+const CUSTOM_STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  in_progress: { label: "진행 중", color: "#60A5FA", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.3)" },
+  completed:   { label: "완료",    color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)" },
+  quoted:      { label: "견적 발송", color: "#A855F7", bg: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.3)" },
+};
+
+function CustomOrderCard({ co }: { co: CustomOrderRow }) {
+  const [open, setOpen] = useState(false);
+  const badge = CUSTOM_STATUS_MAP[co.status] ?? { label: co.status, color: "#9CA3AF", bg: "rgba(156,163,175,0.1)", border: "rgba(156,163,175,0.3)" };
+
+  return (
+    <div className="rounded-xl border overflow-hidden" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+      {/* Header row — always visible */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-start justify-between gap-3 p-4 text-left hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(168,85,247,0.15)", color: "#A855F7" }}>
+              커스텀 주문
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-xs border" style={{ background: badge.bg, color: badge.color, borderColor: badge.border }}>
+              {badge.label}
+            </span>
+          </div>
+          <p className="text-sm line-clamp-1" style={{ color: "#D1D5DB" }}>{co.description}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="text-right">
+            {co.quoted_price_usd && (
+              <p className="text-sm font-semibold" style={{ color: "#F59E0B" }}>${co.quoted_price_usd.toFixed(2)}</p>
+            )}
+            <p className="text-xs" style={{ color: "#6B7280" }}>{new Date(co.created_at).toLocaleDateString()}</p>
+          </div>
+          <ChevronDown
+            className="w-4 h-4 transition-transform shrink-0"
+            style={{ color: "#6B7280", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+          />
+        </div>
+      </button>
+
+      {/* Expanded detail */}
+      {open && (
+        <div className="px-4 pb-4 space-y-4" style={{ borderTop: "1px solid #2D2D4E" }}>
+          {/* 의뢰 내용 */}
+          <div className="pt-4">
+            <p className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: "#6B7280" }}>의뢰 내용</p>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "#D1D5DB" }}>{co.description}</p>
+          </div>
+
+          {/* 예산 / 기한 */}
+          <div className="flex gap-6">
+            {co.budget_range && (
+              <div>
+                <p className="text-xs font-medium mb-0.5" style={{ color: "#6B7280" }}>예산</p>
+                <p className="text-sm" style={{ color: "#F0E6FF" }}>{co.budget_range}</p>
+              </div>
+            )}
+            {co.desired_deadline && (
+              <div>
+                <p className="text-xs font-medium mb-0.5" style={{ color: "#6B7280" }}>희망 기한</p>
+                <p className="text-sm" style={{ color: "#F0E6FF" }}>{co.desired_deadline}</p>
+              </div>
+            )}
+            {co.quoted_price_usd && (
+              <div>
+                <p className="text-xs font-medium mb-0.5" style={{ color: "#6B7280" }}>결제 금액</p>
+                <p className="text-sm font-semibold" style={{ color: "#F59E0B" }}>
+                  ${co.quoted_price_usd.toFixed(2)}
+                  {co.quoted_price_krw && ` / ₩${co.quoted_price_krw.toLocaleString()}`}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* 관리자 답변 */}
+          {co.admin_message ? (
+            <div className="rounded-xl p-4" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)" }}>
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="w-3.5 h-3.5" style={{ color: "#A855F7" }} />
+                <p className="text-xs font-medium" style={{ color: "#A855F7" }}>관리자 답변</p>
+              </div>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "#D1D5DB" }}>{co.admin_message}</p>
+            </div>
+          ) : (
+            <div className="rounded-xl p-3 text-center" style={{ background: "rgba(156,163,175,0.05)", border: "1px solid rgba(156,163,175,0.1)" }}>
+              <p className="text-xs" style={{ color: "#6B7280" }}>아직 답변이 없습니다. 이메일로 연락드릴 예정입니다.</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

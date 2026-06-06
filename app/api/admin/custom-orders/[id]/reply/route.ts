@@ -35,5 +35,11 @@ export async function POST(
     message,
   });
 
+  // 고객 마이페이지에도 표시될 수 있도록 마지막 답변 내용을 DB에 저장
+  await (admin as any)
+    .from("custom_order_requests")
+    .update({ admin_message: message })
+    .eq("id", id);
+
   return NextResponse.json({ ok: true });
 }
