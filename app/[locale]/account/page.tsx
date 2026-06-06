@@ -51,7 +51,7 @@ export default async function AccountPage({ params }: Props) {
         .order("created_at", { ascending: false }),
       (supabase as any)
         .from("custom_order_requests")
-        .select("id, name, description, budget_range, desired_deadline, quoted_price_usd, quoted_price_krw, payment_status, status, created_at, admin_message")
+        .select("id, name, description, budget_range, desired_deadline, quoted_price_usd, quoted_price_krw, payment_status, payment_token, status, created_at, admin_message")
         .eq("email", user.email)
         .order("created_at", { ascending: false }),
     ]);

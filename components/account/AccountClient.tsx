@@ -108,6 +108,7 @@ interface CustomOrderRow {
   quoted_price_usd: number | null;
   quoted_price_krw: number | null;
   payment_status: string;
+  payment_token: string | null;
   status: string;
   created_at: string;
   admin_message: string | null;
@@ -373,7 +374,7 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
                       </div>
                     )}
                     {typedCustomOrders.map((co) => (
-                      <CustomOrderCard key={co.id} co={co} />
+                      <CustomOrderCard key={co.id} co={co} locale={locale} />
                     ))}
                   </>
                 )}
@@ -1089,7 +1090,7 @@ const CUSTOM_STATUS_MAP: Record<string, { label: string; color: string; bg: stri
   quoted:      { label: "견적 발송", color: "#A855F7", bg: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.3)" },
 };
 
-function CustomOrderCard({ co }: { co: CustomOrderRow }) {
+function CustomOrderCard({ co, locale }: { co: CustomOrderRow; locale: string }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [msgsLoaded, setMsgsLoaded] = useState(false);
@@ -1249,6 +1250,29 @@ function CustomOrderCard({ co }: { co: CustomOrderRow }) {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* 결제 버튼 — 견적이 발송되고 아직 결제 전일 때 */}
+            {co.payment_status === "unpaid" && co.payment_token && co.quoted_price_usd && (
+              <div
+                className="rounded-xl p-4 my-3"
+                style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.12),rgba(168,85,247,0.08))", border: "1px solid rgba(124,58,237,0.35)" }}
+              >
+                <p className="text-xs font-medium mb-1" style={{ color: "#A855F7" }}>견적이 도착했습니다</p>
+                <p className="text-sm font-bold mb-3" style={{ color: "#F0E6FF" }}>
+                  ${co.quoted_price_usd.toFixed(2)}
+                  {co.quoted_price_krw && (
+                    <span className="text-xs font-normal ml-2" style={{ color: "#9CA3AF" }}>/ ₩{co.quoted_price_krw.toLocaleString()}</span>
+                  )}
+                </p>
+                <a
+                  href={`/${locale}/custom-order/pay/${co.payment_token}`}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff", textDecoration: "none" }}
+                >
+                  💳 결제하기
+                </a>
               </div>
             )}
 
