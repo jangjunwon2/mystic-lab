@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { translateAnnouncement } from "@/lib/auto-translate";
 
 export async function GET() {
   const admin = await requireAdmin();
@@ -28,9 +29,13 @@ export async function POST(request: NextRequest) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
+
+  // 자동번역 (실패해도 저장은 진행)
+  const translations = await translateAnnouncement(message);
+
   const { data, error } = await supabase
     .from("announcements")
-    .insert({ message, link_url: link_url || null, link_label: link_label || null, is_active: !!is_active, starts_at: starts_at || null, ends_at: ends_at || null, coupon_code: (coupon_code || null) })
+    .insert({ message, link_url: link_url || null, link_label: link_label || null, is_active: !!is_active, starts_at: starts_at || null, ends_at: ends_at || null, coupon_code: (coupon_code || null), translations: Object.keys(translations).length ? translations : null })
     .select()
     .single();
 

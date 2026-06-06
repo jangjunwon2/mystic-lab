@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { translatePromoPage } from "@/lib/auto-translate";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getDb() { return (await createAdminClient()) as any; }
@@ -31,18 +32,26 @@ export async function POST(request: NextRequest) {
   const cleanSlug = String(slug).toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
   if (!cleanSlug) return NextResponse.json({ error: "유효하지 않은 슬러그입니다." }, { status: 400 });
 
+  const titleTrim = String(title).trim();
+  const subtitleTrim = subtitle ? String(subtitle).trim() : null;
+  const descTrim = description ? String(description).trim() : null;
+
+  // 자동번역 (실패해도 저장은 진행)
+  const translations = await translatePromoPage({ title: titleTrim, subtitle: subtitleTrim, description: descTrim });
+
   const db = await getDb();
   const { data, error } = await db
     .from("promo_pages")
     .insert({
       slug: cleanSlug,
-      title: String(title).trim(),
-      subtitle: subtitle ? String(subtitle).trim() : null,
-      description: description ? String(description).trim() : null,
+      title: titleTrim,
+      subtitle: subtitleTrim,
+      description: descTrim,
       image_url: image_url ? String(image_url).trim() : null,
       badge_text: badge_text ? String(badge_text).trim() : null,
       coupon_id: coupon_id || null,
       ends_at: ends_at || null,
+      translations: Object.keys(translations).length ? translations : null,
     })
     .select("id, slug")
     .single();
@@ -78,6 +87,15 @@ export async function PATCH(request: NextRequest) {
   if (coupon_id !== undefined) update.coupon_id = coupon_id || null;
   if (ends_at !== undefined) update.ends_at = ends_at || null;
   if (is_active !== undefined) update.is_active = Boolean(is_active);
+
+  // 내용 변경 시 자동번역 재실행 (title/subtitle/description 중 하나라도 바뀌면)
+  if (title !== undefined || subtitle !== undefined || description !== undefined) {
+    const titleVal = (update.title ?? title ?? "") as string;
+    if (titleVal) {
+      const tr = await translatePromoPage({ title: titleVal, subtitle: update.subtitle as string | null, description: update.description as string | null });
+      if (Object.keys(tr).length) update.translations = tr;
+    }
+  }
 
   const db = await getDb();
   const { error } = await db.from("promo_pages").update(update).eq("id", id);

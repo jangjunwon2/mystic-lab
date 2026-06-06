@@ -36,5 +36,10 @@ export default async function PromoPage({ params }: Props) {
     coupon = c ?? null;
   }
 
-  return <PromoLandingClient page={page} coupon={coupon} locale={locale} />;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const translations = (page.translations as any) ?? null;
+  const t = translations?.[locale] ?? null;
+  const localizedPage = t ? { ...page, title: t.title || page.title, subtitle: t.subtitle || page.subtitle, description: t.description || page.description } : page;
+
+  return <PromoLandingClient page={localizedPage} coupon={coupon} locale={locale} />;
 }

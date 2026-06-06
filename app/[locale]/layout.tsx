@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AnnouncementBanner from "@/components/layout/AnnouncementBanner";
 import SiteChrome from "@/components/layout/SiteChrome";
+import TrackVisit from "@/components/TrackVisit";
 
 interface LocaleLayoutProps {
   children: React.ReactNode;
@@ -23,8 +24,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   return (
     <NextIntlClientProvider messages={messages}>
+      <TrackVisit />
       <SiteChrome
-        banner={<AnnouncementBanner />}
+        banner={<AnnouncementBanner locale={locale} />}
         header={<Header />}
         footer={<Footer />}
       >

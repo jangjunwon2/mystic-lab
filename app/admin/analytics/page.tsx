@@ -95,6 +95,41 @@ function getDailyRevenue(orders: OrderRow[], days = 30) {
   return Object.entries(map).map(([date, revenue]) => ({ date, revenue }));
 }
 
+function VisitorChart({ data, dataKey, label, color }: { data: { date: string; [k: string]: number | string }[]; dataKey: string; label: string; color: string }) {
+  const W = 640; const H = 140;
+  const pad = { top: 10, right: 8, bottom: 24, left: 40 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+  const maxV = Math.max(...data.map((d) => d[dataKey] as number), 1);
+  const barW = Math.max(1, chartW / data.length - 2);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: "160px" }}>
+      {[0, 0.5, 1].map((frac) => {
+        const y = pad.top + chartH * (1 - frac);
+        return (
+          <g key={frac}>
+            <line x1={pad.left} y1={y} x2={W - pad.right} y2={y} stroke="#2D2D4E" strokeWidth={1} />
+            <text x={pad.left - 4} y={y + 4} fill="#6B7280" fontSize={9} textAnchor="end">{Math.round(maxV * frac)}</text>
+          </g>
+        );
+      })}
+      {data.map((d, i) => {
+        const v = d[dataKey] as number;
+        const x = pad.left + i * (chartW / data.length) + 1;
+        const barH = (v / maxV) * chartH;
+        const y = pad.top + chartH - barH;
+        return (
+          <g key={d.date}>
+            <rect x={x} y={y} width={barW} height={barH} rx={2} fill={v > 0 ? color : "#1A1A2E"} />
+            {i % 5 === 0 && <text x={x + barW / 2} y={H - 4} fill="#6B7280" fontSize={8} textAnchor="middle">{String(d.date).slice(5)}</text>}
+          </g>
+        );
+      })}
+      <text x={pad.left} y={pad.top - 1} fill="#9CA3AF" fontSize={9}>{label}</text>
+    </svg>
+  );
+}
+
 function RevenueChart({ data }: { data: { date: string; revenue: number }[] }) {
   const W = 640;
   const H = 160;
@@ -234,7 +269,7 @@ export default async function AdminAnalyticsPage() {
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
   const [ordersRes, orderItemsRes, profilesRes, allOrdersRes,
-    productsRes, viewsRes, wishlistsRes, sharesRes] = await Promise.all([
+    productsRes, viewsRes, wishlistsRes, sharesRes, visitsRes, productViewsDailyRes] = await Promise.all([
     supabase
       .from("orders")
       .select("total_usd, status, created_at, customer_email")
@@ -257,6 +292,10 @@ export default async function AdminAnalyticsPage() {
     supabase.from("wishlists").select("user_id, product_id").limit(20000),
     // 공유 이벤트 (최근 30일)
     supabase.from("share_events").select("product_id, channel").gte("created_at", thirtyDaysAgo.toISOString()).limit(20000),
+    // 일일 방문자 (최근 30일)
+    supabase.from("site_visits").select("date, session_id").gte("date", thirtyDaysAgo.toISOString().slice(0, 10)).limit(50000),
+    // 일일 상품 조회수 집계
+    supabase.from("product_views").select("product_id, viewed_at").gte("viewed_at", thirtyDaysAgo.toISOString()).limit(20000),
   ]);
 
   const allOrders: OrderRow[] = ordersRes.data ?? [];
@@ -383,6 +422,26 @@ export default async function AdminAnalyticsPage() {
     cvr: (viewsByProduct[p.id] ?? 0) > 0 ? Math.round(((salesByProduct[p.id]?.qty ?? 0) / (viewsByProduct[p.id] ?? 1)) * 100) : 0,
   })).sort((a, b) => b.revenue - a.revenue || b.views - a.views);
 
+  // ───── 일일 방문자 ─────
+  const visitRows = (visitsRes.data ?? []) as { date: string; session_id: string }[];
+  const dailyVisitorMap: Record<string, number> = {};
+  const now2 = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now2); d.setDate(d.getDate() - i);
+    dailyVisitorMap[d.toISOString().slice(0, 10)] = 0;
+  }
+  for (const v of visitRows) { if (v.date in dailyVisitorMap) dailyVisitorMap[v.date] = (dailyVisitorMap[v.date] ?? 0) + 1; }
+  const dailyVisitors = Object.entries(dailyVisitorMap).map(([date, visitors]) => ({ date, visitors }));
+  const totalVisitors30d = visitRows.length;
+  const todayVisitors = dailyVisitorMap[new Date().toISOString().slice(0, 10)] ?? 0;
+
+  // 일일 조회수
+  const pvRows = (productViewsDailyRes.data ?? []) as { product_id: string; viewed_at: string }[];
+  const dailyViewMap: Record<string, number> = {};
+  for (const k of Object.keys(dailyVisitorMap)) dailyViewMap[k] = 0;
+  for (const pv of pvRows) { const d = pv.viewed_at.slice(0, 10); if (d in dailyViewMap) dailyViewMap[d]++; }
+  const dailyViewsData = Object.entries(dailyViewMap).map(([date, views]) => ({ date, views }));
+
   // 공유 채널별 집계
   const shareByChannel: Record<string, number> = {};
   for (const s of shares) shareByChannel[s.channel] = (shareByChannel[s.channel] ?? 0) + 1;
@@ -425,6 +484,26 @@ export default async function AdminAnalyticsPage() {
           통계
         </h1>
         <AnalyticsExportButton />
+      </div>
+
+      {/* 방문자 / 조회수 차트 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-xl border p-5" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>일일 방문자 (30일)</h2>
+            <span className="text-xs" style={{ color: "#A855F7" }}>
+              오늘 {todayVisitors.toLocaleString()}명 · 30일 합계 {totalVisitors30d.toLocaleString()}명
+            </span>
+          </div>
+          <VisitorChart data={dailyVisitors} dataKey="visitors" label="방문자" color="#7C3AED" />
+        </div>
+        <div className="rounded-xl border p-5" style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>일일 상품 조회수 (30일)</h2>
+            <span className="text-xs" style={{ color: "#A855F7" }}>총 {totalViews.toLocaleString()}회</span>
+          </div>
+          <VisitorChart data={dailyViewsData} dataKey="views" label="조회수" color="#A855F7" />
+        </div>
       </div>
 
       {/* KPI Cards */}

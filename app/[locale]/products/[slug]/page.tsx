@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
 import ProductDetail from "@/components/products/ProductDetail";
+import TrackProductView from "@/components/TrackProductView";
 import type { ProductCategory } from "@/lib/supabase/types";
 
 export type ProductTranslation = {
@@ -354,6 +355,7 @@ export default async function ProductPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <TrackProductView productId={product.id} locale={locale} />
       <ProductDetail
         product={product}
         translation={translation}

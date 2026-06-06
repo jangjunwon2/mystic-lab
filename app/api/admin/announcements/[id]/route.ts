@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { translateAnnouncement } from "@/lib/auto-translate";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -12,6 +13,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const body = await request.json();
+
+  // message가 변경되면 자동번역 재실행
+  if (body.message && typeof body.message === "string") {
+    const translations = await translateAnnouncement(body.message);
+    if (Object.keys(translations).length) body.translations = translations;
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;

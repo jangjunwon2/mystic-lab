@@ -9,13 +9,15 @@ interface Announcement {
   link_url: string | null;
   link_label: string | null;
   coupon_code: string | null;
+  translations?: Record<string, string> | null;
 }
 
 interface Props {
   announcement: Announcement | null;
+  locale: string;
 }
 
-export default function AnnouncementBannerClient({ announcement }: Props) {
+export default function AnnouncementBannerClient({ announcement, locale }: Props) {
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -55,7 +57,9 @@ export default function AnnouncementBannerClient({ announcement }: Props) {
       }}
     >
       <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
-        <span className="whitespace-pre-line break-words">{announcement.message}</span>
+        <span className="whitespace-pre-line break-words">
+          {announcement.translations?.[locale] ?? announcement.message}
+        </span>
         {announcement.coupon_code && (
           <span className="font-mono font-bold rounded px-2 py-0.5" style={{ background: "rgba(255,255,255,0.18)", color: "#fff" }}>
             {announcement.coupon_code}
