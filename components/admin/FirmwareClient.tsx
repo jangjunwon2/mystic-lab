@@ -47,6 +47,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [rebuilding, setRebuilding] = useState(false);
   const [polling, setPolling] = useState(false);
   const [newReleaseAlert, setNewReleaseAlert] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -186,6 +187,24 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
     }
     setUploading(false);
+  }
+
+  async function handleRebuildAll() {
+    if (!confirm("모든 장치를 강제 재빌드합니다. GitHub Actions가 실행되며 5~10분 소요됩니다.")) return;
+    setRebuilding(true);
+    try {
+      const res = await fetch("/api/admin/firmware/rebuild", { method: "POST" });
+      if (res.ok) {
+        setUploadStatus({ msg: "✅ 전체 재빌드 요청 완료 — GitHub Actions에서 빌드 중입니다. 완료되면 자동으로 업데이트됩니다.", type: "ok" });
+        startPolling();
+      } else {
+        const d = await res.json();
+        setUploadStatus({ msg: `재빌드 요청 실패: ${d.error}`, type: "err" });
+      }
+    } catch {
+      setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
+    }
+    setRebuilding(false);
   }
 
   async function toggleActive(id: string, current: boolean) {
@@ -335,6 +354,16 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
           >
             <Upload className="w-4 h-4" />
             {uploading ? "업로드 중…" : "배포하기"}
+          </button>
+          <button
+            onClick={handleRebuildAll}
+            disabled={rebuilding || uploading}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+            style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7", border: "1px solid rgba(124,58,237,0.3)" }}
+            title="파일 변경 없이 모든 장치를 강제 재빌드합니다"
+          >
+            <RefreshCw className={`w-4 h-4 ${rebuilding ? "animate-spin" : ""}`} />
+            {rebuilding ? "요청 중…" : "전체 재빌드"}
           </button>
           {uploadStatus.msg && (
             <span
