@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CARD_STYLE, INPUT_STYLE_DARK, SAVE_BTN_STYLE, INPUT_CLS } from "./ui/styles";
 
 export interface SignupCoupon {
   enabled: boolean;
@@ -8,11 +9,6 @@ export interface SignupCoupon {
   months: number;
 }
 
-const cardStyle = { background: "#1A1A2E", borderColor: "#2D2D4E" } as const;
-const inputStyle = { background: "#13131F", borderColor: "#2D2D4E", color: "#F59E0B" } as const;
-const saveBtnStyle = { background: "linear-gradient(135deg,#7C3AED,#A855F7)", color: "#fff" } as const;
-
-// 가입 환영 쿠폰 설정 — 신규 회원 자동발급 on/off·할인율·유효기간. /api/admin/settings 에 저장.
 export default function SignupCouponCard({ initial }: { initial: SignupCoupon }) {
   const [enabled, setEnabled] = useState(initial.enabled);
   const [percent, setPercent] = useState(String(initial.percent));
@@ -26,26 +22,19 @@ export default function SignupCouponCard({ initial }: { initial: SignupCoupon })
     const m = parseInt(months, 10);
     if (isNaN(p) || p <= 0 || p > 100) { setErr("할인율은 0~100% 사이여야 합니다."); return; }
     if (isNaN(m) || m <= 0 || m > 60) { setErr("유효기간은 1~60개월 사이여야 합니다."); return; }
-    setSaving(true);
-    setErr("");
-    setMsg("");
+    setSaving(true); setErr(""); setMsg("");
     const res = await fetch("/api/admin/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ signupCoupon: { enabled, percent: p, months: m } }),
     });
     setSaving(false);
-    if (res.ok) {
-      setMsg("저장되었습니다.");
-      setTimeout(() => setMsg(""), 2500);
-    } else {
-      const j = await res.json().catch(() => ({}));
-      setErr(j.error ?? "저장에 실패했습니다.");
-    }
+    if (res.ok) { setMsg("저장되었습니다."); setTimeout(() => setMsg(""), 2500); }
+    else { const j = await res.json().catch(() => ({})); setErr(j.error ?? "저장에 실패했습니다."); }
   }
 
   return (
-    <div className="rounded-xl border p-6 max-w-md" style={cardStyle}>
+    <div className="rounded-xl border p-6 max-w-md" style={CARD_STYLE}>
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-base font-semibold" style={{ color: "#F0E6FF" }}>가입 환영 쿠폰</h2>
         <button
@@ -65,27 +54,16 @@ export default function SignupCouponCard({ initial }: { initial: SignupCoupon })
       </p>
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <input
-            type="number" min={0} max={100} step={0.1}
-            value={percent} onChange={(e) => setPercent(e.target.value)}
-            className="w-24 px-3 py-2 rounded-lg text-sm outline-none border focus:border-purple-500" style={inputStyle}
-          />
+          <input type="number" min={0} max={100} step={0.1} value={percent} onChange={(e) => setPercent(e.target.value)}
+            className={`w-24 ${INPUT_CLS}`} style={INPUT_STYLE_DARK} />
           <span className="text-sm" style={{ color: "#9CA3AF" }}>% 할인</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <input
-            type="number" min={1} max={60} step={1}
-            value={months} onChange={(e) => setMonths(e.target.value)}
-            className="w-20 px-3 py-2 rounded-lg text-sm outline-none border focus:border-purple-500" style={inputStyle}
-          />
+          <input type="number" min={1} max={60} step={1} value={months} onChange={(e) => setMonths(e.target.value)}
+            className={`w-20 ${INPUT_CLS}`} style={INPUT_STYLE_DARK} />
           <span className="text-sm" style={{ color: "#9CA3AF" }}>개월 유효</span>
         </div>
-        <button
-          onClick={save}
-          disabled={saving}
-          className="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
-          style={saveBtnStyle}
-        >
+        <button onClick={save} disabled={saving} className="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50" style={SAVE_BTN_STYLE}>
           {saving ? "저장 중…" : "저장"}
         </button>
       </div>

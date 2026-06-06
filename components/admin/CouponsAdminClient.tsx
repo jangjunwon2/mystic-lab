@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateKo } from "@/lib/utils/format";
+
 import { useState } from "react";
 
 export interface IssuedCoupon {
@@ -485,7 +487,7 @@ export default function CouponsAdminClient({ initialCoupons, products, categorie
                   const cat = categoryOf(c);
                   const catLabel = CATEGORY_TABS.find((t) => t.key === cat)?.label ?? cat;
                   const period = c.starts_at || c.expires_at
-                    ? `${c.starts_at ? fmt(c.starts_at) : "즉시"} ~ ${c.expires_at ? fmt(c.expires_at) : "무기한"}`
+                    ? `${c.starts_at ? formatDateKo(c.starts_at) : "즉시"} ~ ${c.expires_at ? formatDateKo(c.expires_at) : "무기한"}`
                     : "무기한";
                   return (
                     <tr key={c.id} className="border-b last:border-0" style={{ borderColor: "#2D2D4E", opacity: suspended ? 0.55 : 1 }}>

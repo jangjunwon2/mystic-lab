@@ -114,94 +114,29 @@ export async function getCartCouponConfig(admin: any): Promise<CartCouponConfig>
   };
 }
 
-// 장바구니 N일+ 미갱신 상품 → 해당 회원에게 그 상품 한정 개인 쿠폰 자동 발급.
-// 멱등: 이미 활성 cart_trigger 쿠폰을 같은 (회원, 상품)으로 가진 경우 건너뜀. cron 호출.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function runCartCoupons(admin: any): Promise<{ issued: number }> {
-  const cfg = await getCartCouponConfig(admin);
-  if (!cfg.enabled) return { issued: 0 };
+interface TriggerCouponRunConfig {
+  enabled: boolean;
+  days: number;
+  percent: number;
+  months: number;
+  name: string;
+}
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function runTriggerCoupons(admin: any, cfg: TriggerCouponRunConfig, opts: {
+  table: string; dateCol: string; source: string;
+}): Promise<{ issued: number }> {
+  if (!cfg.enabled) return { issued: 0 };
   const cutoff = new Date(Date.now() - cfg.days * 24 * 60 * 60 * 1000).toISOString();
-  const { data: rows } = await admin
-    .from("cart_items")
-    .select("user_id, product_id")
-    .lte("synced_at", cutoff)
-    .limit(500);
+
+  const { data: rows } = await admin.from(opts.table).select("user_id, product_id").lte(opts.dateCol, cutoff).limit(500);
   const items = (rows ?? []) as { user_id: string; product_id: string }[];
   if (items.length === 0) return { issued: 0 };
 
-  // 이미 활성 cart_trigger 쿠폰 보유 (회원, 상품) 수집 → 중복 방지
   const userIds = [...new Set(items.map((r) => r.user_id))];
   const { data: existing } = await admin
-    .from("issued_coupons")
-    .select("id, user_id")
-    .eq("source", "cart_trigger")
-    .eq("is_used", false)
-    .eq("is_active", true)
-    .in("user_id", userIds);
-  const existRows = (existing ?? []) as { id: string; user_id: string }[];
-  const covered = new Set<string>();
-  if (existRows.length > 0) {
-    const byCoupon = new Map(existRows.map((e) => [e.id, e.user_id]));
-    const { data: cps } = await admin
-      .from("coupon_products")
-      .select("coupon_id, product_id")
-      .in("coupon_id", existRows.map((e) => e.id));
-    for (const cp of (cps ?? []) as { coupon_id: string; product_id: string }[]) {
-      const uid = byCoupon.get(cp.coupon_id);
-      if (uid) covered.add(`${uid}:${cp.product_id}`);
-    }
-  }
-
-  let issued = 0;
-  for (const r of items) {
-    const key = `${r.user_id}:${r.product_id}`;
-    if (covered.has(key)) continue;
-    covered.add(key);
-
-    let email: string | null = null;
-    try {
-      const { data: u } = await admin.auth.admin.getUserById(r.user_id);
-      email = u?.user?.email ?? null;
-    } catch { /* 이메일 조회 실패 — 쿠폰은 발급(앱 내 노출) */ }
-
-    const code = await issueCoupon(admin, {
-      userId: r.user_id, email, type: "percent", value: cfg.percent,
-      source: "cart_trigger", expiresMonths: cfg.months, productIds: [r.product_id], name: cfg.name,
-    });
-    if (code) {
-      issued++;
-      if (email) await sendCouponEmail({ to: email, code, type: "percent", value: cfg.percent }).catch(() => {});
-    }
-  }
-  return { issued };
-}
-
-// 위시리스트 N일+ 잔존 상품 → 해당 회원에게 그 상품 한정 개인 쿠폰 자동 발급(재구매 유도).
-// 멱등: 이미 활성(미사용·미만료) 트리거 쿠폰을 같은 (회원, 상품)으로 가진 경우 건너뜀. cron 호출.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function runWishlistCoupons(admin: any): Promise<{ issued: number }> {
-  const cfg = await getWishlistCouponConfig(admin);
-  if (!cfg.enabled) return { issued: 0 };
-
-  const cutoff = new Date(Date.now() - cfg.days * 24 * 60 * 60 * 1000).toISOString();
-  const { data: rows } = await admin
-    .from("wishlists")
-    .select("user_id, product_id")
-    .lte("created_at", cutoff)
-    .limit(500);
-  const wl = (rows ?? []) as { user_id: string; product_id: string }[];
-  if (wl.length === 0) return { issued: 0 };
-
-  // 이미 활성 트리거 쿠폰을 가진 (회원, 상품) 조합 수집 → 중복 발급 방지.
-  const userIds = [...new Set(wl.map((r) => r.user_id))];
-  const { data: existing } = await admin
-    .from("issued_coupons")
-    .select("id, user_id")
-    .eq("source", "trigger")
-    .eq("is_used", false)
-    .eq("is_active", true)
-    .in("user_id", userIds);
+    .from("issued_coupons").select("id, user_id")
+    .eq("source", opts.source).eq("is_used", false).eq("is_active", true).in("user_id", userIds);
   const existRows = (existing ?? []) as { id: string; user_id: string }[];
   const covered = new Set<string>();
   if (existRows.length > 0) {
@@ -214,20 +149,15 @@ export async function runWishlistCoupons(admin: any): Promise<{ issued: number }
   }
 
   let issued = 0;
-  for (const r of wl) {
+  for (const r of items) {
     const key = `${r.user_id}:${r.product_id}`;
     if (covered.has(key)) continue;
     covered.add(key);
-
     let email: string | null = null;
-    try {
-      const { data: u } = await admin.auth.admin.getUserById(r.user_id);
-      email = u?.user?.email ?? null;
-    } catch { /* 이메일 조회 실패 — 쿠폰은 그래도 발급(앱 내 노출) */ }
-
+    try { const { data: u } = await admin.auth.admin.getUserById(r.user_id); email = u?.user?.email ?? null; } catch { /* skip */ }
     const code = await issueCoupon(admin, {
       userId: r.user_id, email, type: "percent", value: cfg.percent,
-      source: "trigger", expiresMonths: cfg.months, productIds: [r.product_id], name: cfg.name,
+      source: opts.source, expiresMonths: cfg.months, productIds: [r.product_id], name: cfg.name,
     });
     if (code) {
       issued++;
@@ -235,4 +165,16 @@ export async function runWishlistCoupons(admin: any): Promise<{ issued: number }
     }
   }
   return { issued };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function runCartCoupons(admin: any): Promise<{ issued: number }> {
+  const cfg = await getCartCouponConfig(admin);
+  return runTriggerCoupons(admin, cfg, { table: "cart_items", dateCol: "synced_at", source: "cart_trigger" });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function runWishlistCoupons(admin: any): Promise<{ issued: number }> {
+  const cfg = await getWishlistCouponConfig(admin);
+  return runTriggerCoupons(admin, cfg, { table: "wishlists", dateCol: "created_at", source: "trigger" });
 }

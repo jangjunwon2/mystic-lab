@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateKo } from "@/lib/utils/format";
+
 import { useState } from "react";
 import { Copy, Check, Trash2, Unlink, Smartphone, Lock, LockOpen, RotateCcw } from "lucide-react";
 
@@ -341,7 +343,7 @@ export default function UnlockCodesManager({ products, codes: initialCodes }: Pr
                       })()}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-xs" style={{ color: "#9CA3AF" }}>
-                      {fmt(code.last_activated_at) ?? "—"}
+                      {code.last_activated_at ? formatDateKo(code.last_activated_at) : "—"}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2 flex-wrap">

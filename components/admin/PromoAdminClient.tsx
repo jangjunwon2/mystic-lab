@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateKo } from "@/lib/utils/format";
+
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Check, X, ExternalLink, ToggleLeft, ToggleRight } from "lucide-react";
 
@@ -176,10 +178,10 @@ export default function PromoAdminClient({ initialPages, publicCoupons }: { init
                   )}
                   {p.ends_at && (
                     <p className="text-xs mt-0.5" style={{ color: new Date(p.ends_at) < new Date() ? "#EF4444" : "#F59E0B" }}>
-                      ⏱ {fmt(p.ends_at)} 까지
+                      ⏱ {formatDateKo(p.ends_at)} 까지
                     </p>
                   )}
-                  <p className="text-[11px] mt-1" style={{ color: "#4B5563" }}>생성: {fmt(p.created_at)}</p>
+                  <p className="text-[11px] mt-1" style={{ color: "#4B5563" }}>생성: {formatDateKo(p.created_at)}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => toggle(p)} title={p.is_active ? "비활성화" : "활성화"} className="p-1.5 rounded hover:opacity-80">

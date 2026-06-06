@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { RotateCcw, Trash2 } from "lucide-react";
+import TrackingInput from "./ui/TrackingInput";
+import FeedbackMsg from "./ui/FeedbackMsg";
+import FilterTabs from "./ui/FilterTabs";
+import { INPUT_STYLE_TABLE } from "./ui/styles";
 
 const ORDER_STATUSES = ["pending", "paid", "shipped", "completed", "refunded"] as const;
 type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -219,64 +223,22 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
   }
 
 
-  const inputStyle = {
-    background: "#0D0D1A",
-    border: "1px solid #2D2D4E",
-    borderRadius: "8px",
-    color: "#F0E6FF",
-    padding: "6px 10px",
-    fontSize: "13px",
-  };
-
   return (
     <div className="space-y-4">
-      {trackingMsg && (
-        <div
-          className="rounded-lg px-4 py-3 text-sm"
-          style={{
-            background: trackingMsg.startsWith("❌") ? "#EF444422" : "#10B98122",
-            color: trackingMsg.startsWith("❌") ? "#EF4444" : "#10B981",
-            border: "1px solid",
-            borderColor: trackingMsg.startsWith("❌") ? "#EF444444" : "#10B98144",
-          }}
-        >
-          {trackingMsg}
-        </div>
-      )}
-      {refundMsg && (
-        <div
-          className="rounded-lg px-4 py-3 text-sm"
-          style={{
-            background: refundMsg.startsWith("❌") ? "#EF444422" : "#10B98122",
-            color: refundMsg.startsWith("❌") ? "#EF4444" : "#10B981",
-            border: "1px solid",
-            borderColor: refundMsg.startsWith("❌") ? "#EF444444" : "#10B98144",
-          }}
-        >
-          {refundMsg}
-        </div>
-      )}
+      <FeedbackMsg msg={trackingMsg} />
+      <FeedbackMsg msg={refundMsg} />
       {/* Filter + CSV Export */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm" style={{ color: "#9CA3AF" }}>
-            필터:
-          </span>
-          {["all", ...ORDER_STATUSES].map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className="px-3 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80"
-              style={{
-                background: filter === s ? "#7C3AED" : "#1A1A2E",
-                color: filter === s ? "#fff" : "#9CA3AF",
-                border: "1px solid",
-                borderColor: filter === s ? "#7C3AED" : "#2D2D4E",
-              }}
-            >
-              {s === "all" ? `전체 (${orders.length})` : STATUS_LABELS[s as OrderStatus]}
-            </button>
-          ))}
+          <span className="text-sm" style={{ color: "#9CA3AF" }}>필터:</span>
+          <FilterTabs
+            tabs={[
+              { key: "all", label: `전체 (${orders.length})` },
+              ...ORDER_STATUSES.map((s) => ({ key: s, label: STATUS_LABELS[s] })),
+            ]}
+            active={filter}
+            onChange={setFilter}
+          />
         </div>
         <div className="flex items-center gap-2">
           {selected.size > 0 && (
@@ -390,7 +352,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                             value={order.status}
                             disabled={loadingId === order.id}
                             onChange={(e) => updateStatus(order.id, e.target.value as OrderStatus)}
-                            style={{ ...inputStyle, cursor: "pointer" }}
+                            style={{ ...INPUT_STYLE_TABLE, cursor: "pointer" }}
                           >
                             {ORDER_STATUSES.map((s) => (
                               <option key={s} value={s}>
@@ -465,7 +427,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                                 value={refundReason}
                                 onChange={(e) => setRefundReason(e.target.value)}
                                 placeholder="환불 사유 (예: 고객 요청, 상품 불량)"
-                                style={{ ...inputStyle, width: "100%" }}
+                                style={{ ...INPUT_STYLE_TABLE, width: "100%" }}
                               />
                               <div className="flex items-center gap-2">
                                 <button
@@ -575,43 +537,15 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                                 {order.tracking_carrier && <span style={{ color: "#9CA3AF" }}> · {order.tracking_carrier}</span>}
                               </p>
                             ) : (
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <input
-                                  placeholder="운송장 번호"
-                                  value={trackingInputs[order.id]?.number ?? ""}
-                                  onChange={(e) => setTrackingInputs((p) => ({ ...p, [order.id]: { ...p[order.id], number: e.target.value, carrier: p[order.id]?.carrier ?? "" } }))}
-                                  style={{ ...inputStyle, width: "180px" }}
-                                />
-                                <select
-                                  value={trackingInputs[order.id]?.carrier ?? ""}
-                                  onChange={(e) => setTrackingInputs((p) => ({ ...p, [order.id]: { ...p[order.id], carrier: e.target.value, number: p[order.id]?.number ?? "" } }))}
-                                  style={{ ...inputStyle, width: "150px", cursor: "pointer" }}
-                                >
-                                  <option value="">배송사 선택</option>
-                                  <optgroup label="국내">
-                                    <option>CJ대한통운</option>
-                                    <option>한진택배</option>
-                                    <option>롯데택배</option>
-                                    <option>우체국</option>
-                                    <option>로젠</option>
-                                  </optgroup>
-                                  <optgroup label="국제">
-                                    <option>DHL</option>
-                                    <option>FedEx</option>
-                                    <option>UPS</option>
-                                    <option>EMS</option>
-                                    <option>우체국EMS</option>
-                                  </optgroup>
-                                </select>
-                                <button
-                                  onClick={() => saveTracking(order.id)}
-                                  disabled={!trackingInputs[order.id]?.number?.trim() || loadingId === order.id}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
-                                  style={{ background: "#3B82F622", color: "#3B82F6" }}
-                                >
-                                  저장 & 발송 알림
-                                </button>
-                              </div>
+                              <TrackingInput
+                                number={trackingInputs[order.id]?.number ?? ""}
+                                carrier={trackingInputs[order.id]?.carrier ?? ""}
+                                saving={loadingId === order.id}
+                                btnLabel="저장 & 발송 알림"
+                                onNumberChange={(v) => setTrackingInputs((p) => ({ ...p, [order.id]: { ...p[order.id], number: v, carrier: p[order.id]?.carrier ?? "" } }))}
+                                onCarrierChange={(v) => setTrackingInputs((p) => ({ ...p, [order.id]: { ...p[order.id], carrier: v, number: p[order.id]?.number ?? "" } }))}
+                                onSave={() => saveTracking(order.id)}
+                              />
                             )}
                           </div>
                         </td>

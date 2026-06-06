@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import TrackingInput from "./ui/TrackingInput";
+import FeedbackMsg from "./ui/FeedbackMsg";
+import FilterTabs from "./ui/FilterTabs";
 
 interface ShippingAddress {
   name?: string;
@@ -56,14 +59,6 @@ function formatShippingAddress(addr: ShippingAddress | null): string {
   return parts.join(" / ") || "—";
 }
 
-const inputStyle = {
-  background: "#0D0D1A",
-  border: "1px solid #2D2D4E",
-  borderRadius: "8px",
-  color: "#F0E6FF",
-  padding: "6px 10px",
-  fontSize: "13px",
-};
 
 export default function ShippingAdminTable({ orders: initialOrders }: Props) {
   const [orders, setOrders] = useState(initialOrders);
@@ -147,40 +142,14 @@ export default function ShippingAdminTable({ orders: initialOrders }: Props) {
         </div>
       </div>
 
-      {/* Message */}
-      {msg && (
-        <div
-          className="rounded-lg px-4 py-3 text-sm"
-          style={{
-            background: msg.startsWith("❌") ? "#EF444422" : "#10B98122",
-            color: msg.startsWith("❌") ? "#EF4444" : "#10B981",
-            border: "1px solid",
-            borderColor: msg.startsWith("❌") ? "#EF444444" : "#10B98144",
-          }}
-        >
-          {msg}
-        </div>
-      )}
+      <FeedbackMsg msg={msg} />
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setFilter(tab.value)}
-            className="px-3 py-1.5 rounded-full text-xs font-medium transition-opacity hover:opacity-80"
-            style={{
-              background: filter === tab.value ? "#7C3AED" : "#1A1A2E",
-              color: filter === tab.value ? "#fff" : "#9CA3AF",
-              border: "1px solid",
-              borderColor: filter === tab.value ? "#7C3AED" : "#2D2D4E",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
+      <FilterTabs
+        tabs={FILTER_TABS.map((t) => ({ key: t.value, label: t.label }))}
+        active={filter}
+        onChange={(k) => setFilter(k as FilterTab)}
+      />
       {/* Table */}
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #2D2D4E" }}>
         <div className="overflow-x-auto">
@@ -278,53 +247,14 @@ export default function ShippingAdminTable({ orders: initialOrders }: Props) {
                       {/* 액션 — 운송장 입력 (paid 상태만) */}
                       <td className="px-4 py-3">
                         {order.status === "paid" ? (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <input
-                              placeholder="운송장 번호"
-                              value={trackingInput?.number ?? ""}
-                              onChange={(e) =>
-                                setTrackingInputs((p) => ({
-                                  ...p,
-                                  [order.id]: { carrier: p[order.id]?.carrier ?? "", number: e.target.value },
-                                }))
-                              }
-                              style={{ ...inputStyle, width: "160px" }}
-                            />
-                            <select
-                              value={trackingInput?.carrier ?? ""}
-                              onChange={(e) =>
-                                setTrackingInputs((p) => ({
-                                  ...p,
-                                  [order.id]: { number: p[order.id]?.number ?? "", carrier: e.target.value },
-                                }))
-                              }
-                              style={{ ...inputStyle, width: "140px", cursor: "pointer" }}
-                            >
-                              <option value="">배송사 선택</option>
-                              <optgroup label="국내">
-                                <option>CJ대한통운</option>
-                                <option>한진택배</option>
-                                <option>롯데택배</option>
-                                <option>우체국</option>
-                                <option>로젠</option>
-                              </optgroup>
-                              <optgroup label="국제">
-                                <option>DHL</option>
-                                <option>FedEx</option>
-                                <option>UPS</option>
-                                <option>EMS</option>
-                                <option>우체국EMS</option>
-                              </optgroup>
-                            </select>
-                            <button
-                              onClick={() => saveTracking(order.id)}
-                              disabled={!trackingInput?.number?.trim() || loadingId === order.id}
-                              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
-                              style={{ background: "#3B82F622", color: "#3B82F6" }}
-                            >
-                              {loadingId === order.id ? "저장 중…" : "발송 처리"}
-                            </button>
-                          </div>
+                          <TrackingInput
+                            number={trackingInput?.number ?? ""}
+                            carrier={trackingInput?.carrier ?? ""}
+                            saving={loadingId === order.id}
+                            onNumberChange={(v) => setTrackingInputs((p) => ({ ...p, [order.id]: { carrier: p[order.id]?.carrier ?? "", number: v } }))}
+                            onCarrierChange={(v) => setTrackingInputs((p) => ({ ...p, [order.id]: { number: p[order.id]?.number ?? "", carrier: v } }))}
+                            onSave={() => saveTracking(order.id)}
+                          />
                         ) : (
                           <span className="text-xs" style={{ color: "#6B7280" }}>—</span>
                         )}

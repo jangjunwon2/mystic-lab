@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateKo } from "@/lib/utils/format";
+
 import { useState } from "react";
 import { Trash2, Pin, MessageSquare, Pencil, Check, X } from "lucide-react";
 import type { AdminCommunityPost } from "@/lib/community-admin";
@@ -125,7 +127,7 @@ export default function CommunityAdminClient({ initialPosts }: { initialPosts: A
                     </div>
                     {p.title && <p className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>{p.title}</p>}
                     <p className="text-sm whitespace-pre-wrap break-words" style={{ color: "#F0E6FF" }}>{p.body}</p>
-                    <p className="text-xs mt-1" style={{ color: "#6B7280" }}>{p.authorName} · {fmt(p.createdAt)}</p>
+                    <p className="text-xs mt-1" style={{ color: "#6B7280" }}>{p.authorName} · {formatDateKo(p.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
