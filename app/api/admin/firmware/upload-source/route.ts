@@ -121,6 +121,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "zip 안에 소스 파일(.ino .h .cpp .c)이 없습니다" }, { status: 400 });
   }
 
+  // 각 장치 폴더에 빌드 타임스탬프 파일 추가 — 파일 내용이 동일해도 git diff에 항상 잡히도록
+  const ts = new Date().toISOString();
+  for (const device of uploadedDevices) {
+    sourceFiles[`${device}/.build`] = Buffer.from(ts).toString("base64");
+  }
+
   // GitHub Tree API — 단일 커밋
   const refData    = await gh(`/repos/${OWNER}/${REPO}/git/ref/heads/${BRANCH}`);
   const latestSha  = refData.object.sha;
