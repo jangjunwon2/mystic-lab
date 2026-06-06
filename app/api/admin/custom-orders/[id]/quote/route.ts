@@ -20,10 +20,10 @@ export async function POST(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin = (await createAdminClient()) as any;
+  const supabase = (await createAdminClient()) as any;
   const token = crypto.randomUUID();
 
-  const { data: order, error } = await admin
+  const { data: order, error } = await supabase
     .from("custom_order_requests")
     .update({
       quoted_price_usd: quotedPriceUsd,
