@@ -1,0 +1,130 @@
+# ============================================================
+# GitHub Actions — ESP32-S3 Arduino 자동 빌드 + Mystic Lab 배포
+#
+# 사용법:
+#   1. 이 파일을 펌웨어 GitHub 리포지토리의
+#      .github/workflows/firmware-deploy.yml 로 복사
+#
+#   2. 펌웨어 리포 → Settings → Secrets and variables → Actions에서
+#      시크릿 2개 추가:
+#        FIRMWARE_CI_TOKEN  : 아래 FIRMWARE_CI_TOKEN 환경변수와 동일한 값
+#        SUPABASE_FIRMWARE_UPLOAD_URL : 사용 안 해도 됨 (서명 URL은 API에서 발급)
+#
+#   3. Mystic Lab Vercel에 환경변수 추가:
+#        FIRMWARE_CI_TOKEN  : 랜덤 토큰 (예: openssl rand -hex 32 결과)
+#
+#   4. matrix.include 배열에 장치 타입별로 항목 추가
+#      - sketch    : .ino 파일 경로 (리포 루트 기준)
+#      - device    : 어드민에서 사용할 장치 타입 이름
+#      - board     : arduino-cli FQBN (ESP32-S3 기본: esp32:esp32:esp32s3)
+#
+#   5. 라이브러리가 필요하면 "Install libraries" 단계에 추가
+# ============================================================
+
+name: Build and Deploy Firmware
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.ino"
+      - "**/*.cpp"
+      - "**/*.h"
+      - "**/*.c"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # 장치 타입 1 — 경로와 이름을 실제 프로젝트에 맞게 수정
+          - sketch: src/device-a/device-a.ino
+            device: device-a
+            board: esp32:esp32:esp32s3
+          # 장치 타입 2 — 필요없으면 삭제
+          - sketch: src/device-b/device-b.ino
+            device: device-b
+            board: esp32:esp32:esp32s3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install ESP32 board package
+        run: |
+          arduino-cli config init --overwrite
+          arduino-cli config add board_manager.additional_urls \
+            https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
+      # 필요한 라이브러리가 있으면 아래에 추가
+      # - name: Install libraries
+      #   run: |
+      #     arduino-cli lib install "ArduinoJson"
+      #     arduino-cli lib install "WiFiManager"
+
+      - name: Compile firmware
+        run: |
+          mkdir -p build
+          arduino-cli compile \
+            --fqbn ${{ matrix.board }} \
+            ${{ matrix.sketch }} \
+            --output-dir ./build
+
+      - name: Get signed upload URL from Mystic Lab
+        id: get-url
+        env:
+          FIRMWARE_CI_TOKEN: ${{ secrets.FIRMWARE_CI_TOKEN }}
+        run: |
+          VERSION="${{ github.sha }}"
+          SHORT="${VERSION:0:8}"
+          FILENAME="firmware-${SHORT}.bin"
+
+          RESPONSE=$(curl -sf -X POST \
+            https://mystic-lab.vercel.app/api/admin/firmware/upload-url \
+            -H "Authorization: Bearer ${FIRMWARE_CI_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"device_type\":\"${{ matrix.device }}\",\"version\":\"${SHORT}\",\"filename\":\"${FILENAME}\"}")
+
+          echo "signed_url=$(echo "$RESPONSE" | jq -r '.signedUrl')" >> "$GITHUB_OUTPUT"
+          echo "storage_path=$(echo "$RESPONSE" | jq -r '.storagePath')" >> "$GITHUB_OUTPUT"
+          echo "public_url=$(echo "$RESPONSE" | jq -r '.publicUrl')" >> "$GITHUB_OUTPUT"
+          echo "version=${SHORT}" >> "$GITHUB_OUTPUT"
+          echo "filename=${FILENAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload binary to Supabase Storage
+        run: |
+          BIN=$(find ./build -name "*.bin" | head -1)
+          echo "Uploading: $BIN"
+          curl -sf -X PUT "${{ steps.get-url.outputs.signed_url }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"${BIN}"
+
+      - name: Register firmware release in Mystic Lab
+        env:
+          FIRMWARE_CI_TOKEN: ${{ secrets.FIRMWARE_CI_TOKEN }}
+        run: |
+          BIN=$(find ./build -name "*.bin" | head -1)
+          FILE_SIZE=$(stat -c%s "$BIN")
+          SHORT_SHA="${{ github.sha }}"
+          SHORT="${SHORT_SHA:0:8}"
+
+          curl -sf -X POST \
+            https://mystic-lab.vercel.app/api/admin/firmware \
+            -H "Authorization: Bearer ${FIRMWARE_CI_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"device_type\": \"${{ matrix.device }}\",
+              \"version\": \"${{ steps.get-url.outputs.version }}\",
+              \"download_url\": \"${{ steps.get-url.outputs.public_url }}\",
+              \"storage_path\": \"${{ steps.get-url.outputs.storage_path }}\",
+              \"file_size\": ${FILE_SIZE},
+              \"notes\": \"Auto-build · commit ${SHORT} · ${{ github.event.head_commit.message }}\"
+            }"
+
+          echo "✅ Firmware ${{ matrix.device }} v${{ steps.get-url.outputs.version }} deployed"

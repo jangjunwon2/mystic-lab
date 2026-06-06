@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin-auth";
 
-// 어드민이 Supabase Storage에 직접 업로드할 수 있는 서명된 URL 발급
+function isCIAuth(req: NextRequest): boolean {
+  const ciToken = process.env.FIRMWARE_CI_TOKEN;
+  if (!ciToken) return false;
+  const bearer = req.headers.get("authorization")?.replace("Bearer ", "").trim();
+  return bearer === ciToken;
+}
+
+// 어드민 또는 GitHub Actions CI가 Supabase Storage 서명 URL을 발급받는 엔드포인트
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isCIAuth(req)) {
+    const admin = await requireAdmin();
+    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { device_type, version, filename } = await req.json();
   if (!device_type?.trim() || !version?.trim() || !filename?.trim()) {
