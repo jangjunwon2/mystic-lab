@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, Trash2, ToggleLeft, ToggleRight, Download, Copy, Check, FolderArchive, Pencil, Plus, X } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Upload, Trash2, ToggleLeft, ToggleRight, Download, Copy, Check, FolderArchive, Pencil, Plus, X, RefreshCw } from "lucide-react";
 import type { FirmwareDevice } from "@/app/api/admin/firmware/devices/route";
 
 interface FirmwareRelease {
@@ -47,6 +47,52 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [polling, setPolling] = useState(false);
+  const [newReleaseAlert, setNewReleaseAlert] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollDeadlineRef = useRef<number>(0);
+
+  const fetchReleases = useCallback(async () => {
+    const res = await fetch("/api/admin/firmware");
+    if (!res.ok) return null;
+    return res.json() as Promise<FirmwareRelease[]>;
+  }, []);
+
+  const startPolling = useCallback(() => {
+    if (pollRef.current) return;
+    setPolling(true);
+    pollDeadlineRef.current = Date.now() + 20 * 60 * 1000; // 최대 20분
+
+    pollRef.current = setInterval(async () => {
+      if (Date.now() > pollDeadlineRef.current) {
+        clearInterval(pollRef.current!);
+        pollRef.current = null;
+        setPolling(false);
+        return;
+      }
+      const fresh = await fetchReleases();
+      if (!fresh) return;
+      setReleases((prev) => {
+        const prevIds = new Set(prev.map((r) => r.id));
+        const added = fresh.filter((r) => !prevIds.has(r.id));
+        if (added.length > 0) {
+          const names = added.map((r) => `${r.device_type} v${r.version}`).join(", ");
+          setNewReleaseAlert(`새 릴리스 감지: ${names}`);
+          setTimeout(() => setNewReleaseAlert(null), 6000);
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
+          setPolling(false);
+          return fresh;
+        }
+        return fresh.map((r) => {
+          const old = prev.find((p) => p.id === r.id);
+          return old ? { ...old, is_active: r.is_active } : r;
+        });
+      });
+    }, 10_000);
+  }, [fetchReleases]);
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   // 장치 관리 상태
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
@@ -126,10 +172,11 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       }
 
       setUploadStatus({
-        msg: `✅ ${data.files}개 파일 업로드 완료 (커밋 ${data.commit}) — GitHub Actions에서 빌드 중입니다. 완료 후 아래 목록에 자동 추가됩니다.`,
+        msg: `✅ ${data.files}개 파일 업로드 완료 (커밋 ${data.commit}) — GitHub Actions에서 빌드 중입니다. 완료되면 아래 목록에 자동으로 추가됩니다.`,
         type: "ok",
       });
       setZipFile(null);
+      startPolling();
       const fi = document.getElementById("fw-zip") as HTMLInputElement;
       if (fi) fi.value = "";
     } catch {
@@ -381,10 +428,27 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
 
       {/* 릴리스 목록 */}
       <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
+        {newReleaseAlert && (
+          <div
+            className="px-6 py-3 text-sm font-medium flex items-center gap-2"
+            style={{ background: "rgba(16,185,129,0.12)", borderBottom: "1px solid rgba(16,185,129,0.25)", color: "#10B981" }}
+          >
+            <Check className="w-4 h-4 shrink-0" />
+            {newReleaseAlert}
+          </div>
+        )}
         <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid #2D2D4E" }}>
-          <h2 className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>
-            릴리스 이력 ({releases.length})
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>
+              릴리스 이력 ({releases.length})
+            </h2>
+            {polling && (
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: "#9CA3AF" }}>
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                빌드 완료 대기 중…
+              </span>
+            )}
+          </div>
           {selectedIds.size > 0 && (
             <button
               onClick={bulkDelete}
@@ -397,6 +461,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
             </button>
           )}
         </div>
+
 
         {releases.length === 0 ? (
           <p className="px-6 py-12 text-center text-sm" style={{ color: "#6B7280" }}>
