@@ -661,6 +661,89 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
           </motion.div>
         )}
       </div>
+
+      {/* 계정 탈퇴 */}
+      <WithdrawSection locale={locale} />
+    </div>
+  );
+}
+
+function WithdrawSection({ locale }: { locale: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const supabase = createClient();
+
+  // 현재 로그인 이메일 조회
+  const [myEmail, setMyEmail] = useState<string | null>(null);
+  useState(() => { supabase.auth.getUser().then(({ data }) => setMyEmail(data.user?.email ?? null)); });
+
+  const LABELS: Record<string, { title: string; warn: string; confirm: string; placeholder: string; btn: string; cancel: string }> = {
+    ko: { title: "계정 탈퇴", warn: "탈퇴 시 주문 내역, 포인트, 쿠폰 등 모든 데이터가 삭제되며 복구할 수 없습니다. 이메일 주소를 입력해 확인하세요.", confirm: "탈퇴하기", placeholder: "이메일 주소 입력", btn: "계정 탈퇴", cancel: "취소" },
+    en: { title: "Delete Account", warn: "All your data (orders, points, coupons) will be permanently deleted. Enter your email address to confirm.", confirm: "Delete my account", placeholder: "Enter email address", btn: "Delete Account", cancel: "Cancel" },
+    ja: { title: "アカウント削除", warn: "全データ（注文・ポイント・クーポン）が完全に削除されます。メールアドレスを入力して確認してください。", confirm: "削除する", placeholder: "メールアドレス", btn: "アカウント削除", cancel: "キャンセル" },
+    "zh-CN": { title: "注销账户", warn: "所有数据（订单、积分、优惠券）将被永久删除且无法恢复。请输入您的邮箱地址进行确认。", confirm: "确认注销", placeholder: "输入邮箱地址", btn: "注销账户", cancel: "取消" },
+    es: { title: "Eliminar cuenta", warn: "Todos tus datos (pedidos, puntos, cupones) se eliminarán permanentemente. Introduce tu correo electrónico para confirmar.", confirm: "Eliminar mi cuenta", placeholder: "Introduce tu email", btn: "Eliminar cuenta", cancel: "Cancelar" },
+    fr: { title: "Supprimer le compte", warn: "Toutes vos données (commandes, points, coupons) seront définitivement supprimées. Entrez votre adresse e-mail pour confirmer.", confirm: "Supprimer mon compte", placeholder: "Entrez votre email", btn: "Supprimer le compte", cancel: "Annuler" },
+    de: { title: "Konto löschen", warn: "Alle Daten (Bestellungen, Punkte, Coupons) werden dauerhaft gelöscht. Geben Sie Ihre E-Mail-Adresse zur Bestätigung ein.", confirm: "Konto löschen", placeholder: "E-Mail-Adresse eingeben", btn: "Konto löschen", cancel: "Abbrechen" },
+  };
+  const l = LABELS[locale] ?? LABELS.en;
+
+  async function withdraw() {
+    if (emailInput.trim() !== myEmail) return;
+    setBusy(true);
+    const res = await fetch("/api/account/me", { method: "DELETE" });
+    if (res.ok) {
+      await supabase.auth.signOut();
+      router.push(`/${locale}`);
+    } else {
+      const d = await res.json();
+      alert(d.error ?? "탈퇴에 실패했습니다.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-12 pt-8" style={{ borderTop: "1px solid #2D2D4E" }}>
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="text-xs transition-colors hover:opacity-80"
+          style={{ color: "#4B5563" }}
+        >
+          {l.btn}
+        </button>
+      ) : (
+        <div className="rounded-xl border p-5 max-w-md" style={{ background: "#1A1A2E", borderColor: "rgba(239,68,68,0.4)" }}>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: "#EF4444" }}>{l.title}</h3>
+          <p className="text-xs mb-4" style={{ color: "#9CA3AF" }}>{l.warn}</p>
+          <input
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+            placeholder={l.placeholder}
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none focus:border-red-500 mb-3"
+            style={{ background: "#13131F", border: "1px solid #2D2D4E", color: "#F0E6FF" }}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={withdraw}
+              disabled={busy || emailInput.trim() !== myEmail}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+              style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)" }}
+            >
+              {busy ? "…" : l.confirm}
+            </button>
+            <button
+              onClick={() => { setOpen(false); setEmailInput(""); }}
+              className="px-4 py-2 rounded-lg text-sm hover:opacity-80"
+              style={{ background: "#2D2D4E", color: "#9CA3AF" }}
+            >
+              {l.cancel}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

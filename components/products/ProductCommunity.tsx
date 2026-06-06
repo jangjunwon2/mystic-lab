@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MessageSquare, Trash2, Pin, Send } from "lucide-react";
+import { MessageSquare, Trash2, Pin, Send, Pencil, Check, X } from "lucide-react";
 
 type PostType = "suggestion" | "staging" | "update";
 
@@ -82,6 +82,10 @@ export default function ProductCommunity({ productId, locale, isLoggedIn }: Prop
   const [bodyText, setBodyText] = useState("");
   const [busy, setBusy] = useState(false);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [editingPost, setEditingPost] = useState<string | null>(null);
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editTitle, setEditTitle] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -142,6 +146,20 @@ export default function ProductCommunity({ productId, locale, isLoggedIn }: Prop
       body: JSON.stringify({ kind, id }),
     });
     if (res.ok) load();
+  }
+
+  async function saveEdit(kind: "post" | "comment", id: string) {
+    if (!editText.trim()) return;
+    const res = await fetch(`/api/community/${productId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, id, body: editText.trim(), title: kind === "post" ? editTitle.trim() || undefined : undefined }),
+    });
+    if (res.ok) {
+      setEditingPost(null);
+      setEditingComment(null);
+      load();
+    }
   }
 
   function fmtDate(iso: string): string {
@@ -230,37 +248,101 @@ export default function ProductCommunity({ productId, locale, isLoggedIn }: Prop
             ) : (
               posts[tab].map((p) => (
                 <div key={p.id} className="rounded-lg p-3" style={{ background: "#13131F", border: "1px solid #2D2D4E" }}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      {p.isPinned && (
-                        <span className="inline-flex items-center gap-1 text-[11px] mb-1 px-1.5 py-0.5 rounded" style={{ background: "#7C3AED22", color: "#A855F7" }}>
-                          <Pin className="w-3 h-3" /> {t.pinned}
-                        </span>
+                  {editingPost === p.id ? (
+                    <div className="space-y-2">
+                      {p.type === "update" && (
+                        <input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          placeholder={t.titlePlaceholder}
+                          maxLength={200}
+                          className="w-full text-sm rounded-md px-2 py-1.5 outline-none"
+                          style={{ background: "#0D0D1A", border: "1px solid #2D2D4E", color: "#F0E6FF" }}
+                        />
                       )}
-                      {p.title && <p className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>{p.title}</p>}
-                      <p className="text-sm whitespace-pre-wrap break-words" style={{ color: "#F0E6FF" }}>{p.body}</p>
-                      <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
-                        {p.authorName} {t.by} {fmtDate(p.createdAt)}
-                      </p>
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        maxLength={5000}
+                        rows={3}
+                        className="w-full text-sm rounded-md px-2 py-1.5 outline-none resize-none"
+                        style={{ background: "#0D0D1A", border: "1px solid #2D2D4E", color: "#F0E6FF" }}
+                      />
+                      <div className="flex gap-2">
+                        <button onClick={() => saveEdit("post", p.id)} disabled={!editText.trim()} className="p-1.5 rounded hover:opacity-80 disabled:opacity-40" style={{ color: "#10B981" }}>
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setEditingPost(null)} className="p-1.5 rounded hover:opacity-80" style={{ color: "#6B7280" }}>
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    {(p.mine || isAdmin) && (
-                      <button onClick={() => remove("post", p.id)} title={t.del} className="shrink-0 p-1 rounded hover:opacity-80" style={{ color: "#EF4444" }}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        {p.isPinned && (
+                          <span className="inline-flex items-center gap-1 text-[11px] mb-1 px-1.5 py-0.5 rounded" style={{ background: "#7C3AED22", color: "#A855F7" }}>
+                            <Pin className="w-3 h-3" /> {t.pinned}
+                          </span>
+                        )}
+                        {p.title && <p className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>{p.title}</p>}
+                        <p className="text-sm whitespace-pre-wrap break-words" style={{ color: "#F0E6FF" }}>{p.body}</p>
+                        <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
+                          {p.authorName} {t.by} {fmtDate(p.createdAt)}
+                        </p>
+                      </div>
+                      {(p.mine || isAdmin) && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => { setEditingPost(p.id); setEditText(p.body); setEditTitle(p.title ?? ""); }}
+                            className="p-1 rounded hover:opacity-80" style={{ color: "#9CA3AF" }}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => remove("post", p.id)} title={t.del} className="p-1 rounded hover:opacity-80" style={{ color: "#EF4444" }}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Comments */}
                   <div className="mt-3 pl-3 space-y-2" style={{ borderLeft: "1px solid #2D2D4E" }}>
                     {p.comments.map((c) => (
                       <div key={c.id} className="flex items-start justify-between gap-2">
-                        <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                          <span style={{ color: "#A855F7" }}>{c.authorName}</span> {c.body}
-                        </p>
-                        {(c.mine || isAdmin) && (
-                          <button onClick={() => remove("comment", c.id)} title={t.del} className="shrink-0 p-0.5 rounded hover:opacity-80" style={{ color: "#EF4444" }}>
-                            <Trash2 className="w-3 h-3" />
-                          </button>
+                        {editingComment === c.id ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <input
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              maxLength={5000}
+                              className="flex-1 text-xs rounded-md px-2 py-1 outline-none"
+                              style={{ background: "#0D0D1A", border: "1px solid #2D2D4E", color: "#F0E6FF" }}
+                            />
+                            <button onClick={() => saveEdit("comment", c.id)} disabled={!editText.trim()} className="p-1 rounded hover:opacity-80 disabled:opacity-40" style={{ color: "#10B981" }}>
+                              <Check className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => setEditingComment(null)} className="p-1 rounded hover:opacity-80" style={{ color: "#6B7280" }}>
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-xs" style={{ color: "#9CA3AF" }}>
+                              <span style={{ color: "#A855F7" }}>{c.authorName}</span> {c.body}
+                            </p>
+                            {(c.mine || isAdmin) && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button onClick={() => { setEditingComment(c.id); setEditText(c.body); }} className="p-0.5 rounded hover:opacity-80" style={{ color: "#9CA3AF" }}>
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                                <button onClick={() => remove("comment", c.id)} title={t.del} className="p-0.5 rounded hover:opacity-80" style={{ color: "#EF4444" }}>
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     ))}

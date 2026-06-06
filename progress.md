@@ -84,7 +84,7 @@
 > 마이그레이션 **019~035 적용 완료** (포인트 hold·site_settings·쿠폰/레퍼럴 등) — 재확인 불필요.
 
 - [x] **마이그레이션 `036`~`044` — 작업하며 순차 적용 완료** (036 pending_checkouts · 037 쿠폰통합(scope·공개쿠폰·discount_codes 백필·redeem_public_coupon) · 039 주문 가격분해 · 040 사용기간 · 041 1인당 한도+coupon_redemptions · 042 상품/카테고리 한정 · 043 쿠폰 이름 · 044 공개쿠폰 발급(claim)). `038_drop_discount_codes.sql`은 **선택**(미사용 테이블·RPC 정리, 미실행 무방). ※ 누락분 있으면 번호 순서대로 실행
-- [ ] **마이그레이션 `045_cart_items.sql` 실행** — 장바구니 잔존 트리거 쿠폰용 서버 장바구니 테이블. Supabase SQL Editor에서 실행 필요
+- [x] **마이그레이션 `045_cart_items.sql` 실행 완료** — 장바구니 잔존 트리거 쿠폰용 서버 장바구니 테이블.
 - [ ] **(선택) 위시리스트 정기 쿠폰 켜기** — `/admin/coupons`의 "위시리스트 정기 쿠폰" 카드에서 활성화(기본 OFF). cron은 `vercel.json`에 등록됨 — `CRON_SECRET` 필요
 - [ ] **(선택) 장바구니 잔존 쿠폰 켜기** — `/admin/coupons`의 "장바구니 잔존 쿠폰" 카드에서 활성화(기본 OFF). `045_cart_items.sql` 실행 선행 필요
 - [ ] **법적고지 `/legal-notice` 자리표시자 기입** — 대표자명·사업장 주소·연락처·통신판매업 신고번호(+EU 판매 시 VAT). ⚠️ 모든 법률 문구는 템플릿이며 **변호사/법률 서비스 검토 후** 적용 권장

@@ -16,7 +16,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
-  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations, options } = body;
+  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations, options, point_earn_rate } = body;
 
   const updatePayload: Record<string, unknown> = {};
   if (slug !== undefined) updatePayload.slug = slug;
@@ -29,6 +29,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (thumbnail_url !== undefined) updatePayload.thumbnail_url = thumbnail_url;
   if (demo_video_cloudflare_id !== undefined) updatePayload.demo_video_cloudflare_id = demo_video_cloudflare_id;
   if (image_urls !== undefined) updatePayload.image_urls = image_urls;
+  // null = 전역 적립률 사용, 숫자 = 해당 상품 전용 적립률
+  if (point_earn_rate !== undefined) updatePayload.point_earn_rate = point_earn_rate === null ? null : Number(point_earn_rate);
 
   if (Object.keys(updatePayload).length > 0) {
     const { error } = await supabase.from("products").update(updatePayload).eq("id", id);

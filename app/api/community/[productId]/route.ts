@@ -168,6 +168,38 @@ export async function POST(request: NextRequest, ctx: RouteContext) {
   return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
 }
 
+// PATCH — 본인 글/댓글 수정 또는 어드민 수정. body { kind:"post"|"comment", id, body, title? }
+export async function PATCH(request: NextRequest, ctx: RouteContext) {
+  const { productId } = await ctx.params;
+  const { user, isAdmin, admin } = await resolveAccess(productId);
+  if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+
+  const body = await request.json().catch(() => ({}));
+  const kind = body?.kind;
+  const id = body?.id as string;
+  const newBody = typeof body?.body === "string" ? body.body.trim() : "";
+
+  if (!id || (kind !== "post" && kind !== "comment") || !newBody || newBody.length > MAX_BODY) {
+    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+  }
+
+  const table = kind === "post" ? "product_posts" : "product_post_comments";
+  const { data: row } = await admin.from(table).select("id, author_id").eq("id", id).maybeSingle();
+  if (!row) return NextResponse.json({ error: "대상을 찾을 수 없습니다." }, { status: 404 });
+  if (!isAdmin && row.author_id !== user.id) {
+    return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+  }
+
+  const update: Record<string, unknown> = { body: newBody };
+  if (kind === "post" && body?.title !== undefined) {
+    update.title = typeof body.title === "string" ? body.title.trim().slice(0, MAX_TITLE) || null : null;
+  }
+
+  const { error } = await admin.from(table).update(update).eq("id", id);
+  if (error) return NextResponse.json({ error: "수정에 실패했습니다." }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
+
 // DELETE — 본인 글/댓글 또는 어드민 삭제. body { kind:"post"|"comment", id }
 export async function DELETE(request: NextRequest, ctx: RouteContext) {
   const { productId } = await ctx.params;

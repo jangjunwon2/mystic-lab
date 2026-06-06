@@ -174,14 +174,26 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
     }
   }
 
-  // 마일리지 적립 — 회원이며 결제 금액이 있을 때 (5%). 적립분은 12개월 후 만료.
+  // 마일리지 적립 — 회원이며 결제 금액이 있을 때. 상품별 적립률 우선, 없으면 전역률.
   if (userId && input.totalUsd > 0) {
-    const earnRate = await getPointEarnRate(supabase);
-    const earned = earnPointsForUsd(input.totalUsd, earnRate);
-    if (earned > 0) {
+    const globalRate = await getPointEarnRate(supabase);
+    const productIds = [...new Set(input.items.map((i) => i.id))];
+    const { data: prodRates } = await supabase
+      .from("products")
+      .select("id, point_earn_rate")
+      .in("id", productIds);
+    const rateMap = new Map<string, number | null>(
+      ((prodRates ?? []) as { id: string; point_earn_rate: number | null }[]).map((p) => [p.id, p.point_earn_rate])
+    );
+    let totalEarned = 0;
+    for (const item of input.items) {
+      const rate = rateMap.get(item.id) ?? globalRate;
+      totalEarned += earnPointsForUsd(item.price_usd * item.quantity, rate);
+    }
+    if (totalEarned > 0) {
       await addPoints(supabase, {
         userId,
-        amount: earned,
+        amount: totalEarned,
         type: "earn",
         orderId: order.id,
         note: `주문 적립 (${input.gateway})`,
