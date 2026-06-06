@@ -24,6 +24,7 @@ export const NAV_ITEMS = [
   { href: "/admin/newsletter", label: "뉴스레터", icon: "📧" },
   { href: "/admin/referrals", label: "레퍼럴", icon: "🔗" },
   { href: "/admin/points", label: "포인트 설정", icon: "💰" },
+  { href: "/admin/firmware", label: "펌웨어 관리", icon: "📡" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
