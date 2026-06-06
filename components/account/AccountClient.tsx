@@ -99,14 +99,25 @@ interface Coupon {
   created_at: string;
 }
 
+interface CustomOrderRow {
+  id: string;
+  description: string;
+  quoted_price_usd: number | null;
+  quoted_price_krw: number | null;
+  payment_status: string;
+  status: string;
+  created_at: string;
+}
+
 interface Props {
   locale: string;
   profile: { display_name: string | null; avatar_url: string | null; role: string } | null;
   orders: unknown[];
+  customOrders?: unknown[];
   wishlist: WishlistItem[];
 }
 
-export default function AccountClient({ locale, profile, orders, wishlist }: Props) {
+export default function AccountClient({ locale, profile, orders, customOrders = [], wishlist }: Props) {
   const t = useTranslations("account");
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"orders" | "tutorials" | "wishlist" | "addresses" | "points" | "coupons">("orders");
@@ -127,6 +138,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
   const [currentName, setCurrentName] = useState(profile?.display_name ?? "");
 
   const typedOrders = orders as Order[];
+  const typedCustomOrders = customOrders as CustomOrderRow[];
   const purchasedOrders = typedOrders.filter((o) =>
     ["paid", "shipped", "completed"].includes(o.status)
   );
@@ -324,7 +336,7 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            {typedOrders.length === 0 ? (
+            {typedOrders.length === 0 && typedCustomOrders.length === 0 ? (
               <div className="text-center py-16 text-[#9CA3AF]">
                 <Package className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="text-sm">{t("noOrders")}</p>
@@ -340,6 +352,60 @@ export default function AccountClient({ locale, profile, orders, wishlist }: Pro
                 {typedOrders.map((order) => (
                   <OrderCard key={order.id} order={order} locale={locale} />
                 ))}
+                {typedCustomOrders.length > 0 && (
+                  <>
+                    {typedOrders.length > 0 && (
+                      <div className="flex items-center gap-3 pt-2">
+                        <div className="flex-1 h-px" style={{ background: "#2D2D4E" }} />
+                        <span className="text-xs font-medium px-2" style={{ color: "#6B7280" }}>커스텀 주문</span>
+                        <div className="flex-1 h-px" style={{ background: "#2D2D4E" }} />
+                      </div>
+                    )}
+                    {typedCustomOrders.map((co) => (
+                      <div
+                        key={co.id}
+                        className="rounded-xl border p-4"
+                        style={{ background: "#1A1A2E", borderColor: "#2D2D4E" }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span
+                                className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                style={{ background: "rgba(168,85,247,0.15)", color: "#A855F7" }}
+                              >
+                                커스텀 주문
+                              </span>
+                              <span
+                                className="px-2 py-0.5 rounded-full text-xs border"
+                                style={{
+                                  background: co.status === "completed" ? "rgba(16,185,129,0.1)" : "rgba(59,130,246,0.1)",
+                                  color: co.status === "completed" ? "#10B981" : "#60A5FA",
+                                  borderColor: co.status === "completed" ? "rgba(16,185,129,0.3)" : "rgba(59,130,246,0.3)",
+                                }}
+                              >
+                                {co.status === "completed" ? "완료" : "진행 중"}
+                              </span>
+                            </div>
+                            <p className="text-sm line-clamp-2" style={{ color: "#D1D5DB" }}>
+                              {co.description}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            {co.quoted_price_usd && (
+                              <p className="text-sm font-semibold" style={{ color: "#F59E0B" }}>
+                                ${co.quoted_price_usd.toFixed(2)}
+                              </p>
+                            )}
+                            <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
+                              {new Date(co.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             )}
           </motion.div>
