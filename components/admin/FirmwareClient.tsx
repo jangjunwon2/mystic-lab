@@ -49,7 +49,6 @@ function formatBytes(b: number) {
 export default function FirmwareClient({ initialReleases, initialDevices }: Props) {
   const [releases, setReleases] = useState(initialReleases);
   const [devices, setDevices] = useState<FirmwareDevice[]>(initialDevices);
-  const [deviceType, setDeviceType] = useState("auto");
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ msg: string; type: "idle" | "ok" | "err" | "info" }>({ msg: "", type: "idle" });
@@ -129,7 +128,6 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
     });
     if (res.ok) {
       setDevices(next);
-      if (!next.find(d => d.name === deviceType)) setDeviceType(next[0]?.name ?? "");
     } else {
       const d = await res.json();
       setDeviceError(d.error ?? "저장 실패");
@@ -170,13 +168,9 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       return;
     }
     const id = `staged-${Date.now()}`;
-    const label =
-      deviceType === "auto"
-        ? "자동 감지 (다중 장치)"
-        : (devices.find((d) => d.name === deviceType)?.label ?? deviceType);
     setStagedDevices((prev) => [
       ...prev,
-      { id, deviceType, deviceLabel: label, file: zipFile, status: "pending" },
+      { id, deviceType: "auto", deviceLabel: "감지 중…", file: zipFile, status: "pending" },
     ]);
     setZipFile(null);
     setUploadStatus({ msg: "", type: "idle" });
@@ -195,7 +189,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
     try {
       const fd = new FormData();
       fd.append("zip", staged.file);
-      fd.append("device_type", staged.deviceType);
+      // device_type 불필요 — 백엔드가 .ino 파일명/폴더명으로 자동 감지
 
       const res = await fetch("/api/admin/firmware/upload-source", { method: "POST", body: fd });
       const data = await res.json();
@@ -207,11 +201,16 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
         return;
       }
 
-      const deviceList: string[] = data.devices ?? [staged.deviceType];
+      const deviceList: string[] = data.devices ?? [];
+      const detectedLabel = deviceList.join(", ") || "알 수 없음";
       setStagedDevices((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, status: "done", message: `커밋 ${data.commit}` } : s))
+        prev.map((s) => (s.id === id ? { ...s, status: "done", deviceLabel: detectedLabel, message: `커밋 ${data.commit}` } : s))
       );
       startPolling(deviceList.length);
+
+      // 신규 장치가 자동 등록됐을 수 있으므로 장치 목록 갱신
+      const devRes = await fetch("/api/admin/firmware/devices");
+      if (devRes.ok) setDevices(await devRes.json());
     } catch {
       setStagedDevices((prev) =>
         prev.map((s) => (s.id === id ? { ...s, status: "error", message: "네트워크 오류" } : s))
@@ -317,25 +316,14 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>
-              장치 선택
-              {deviceType === "auto" && (
-                <span className="ml-2 text-[10px]" style={{ color: "#A855F7" }}>
-                  zip 내 폴더 구조로 자동 감지
-                </span>
-              )}
-            </label>
-            <select value={deviceType} onChange={(e) => setDeviceType(e.target.value)} style={inputStyle}>
-              <option value="auto">🔍 자동 감지 (다중 장치 zip)</option>
-              {devices.map((d) => <option key={d.name} value={d.name}>{d.label}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>소스코드 (.zip)</label>
-            <div
+        <div>
+          <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>
+            소스코드 (.zip)
+            <span className="ml-2 text-[10px]" style={{ color: "#A855F7" }}>
+              .ino 파일명으로 장치 자동 감지
+            </span>
+          </label>
+          <div
               className="rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition-colors"
               style={{ borderColor: zipFile ? "#7C3AED" : "#2D2D4E", background: zipFile ? "rgba(124,58,237,0.05)" : "transparent" }}
               onClick={() => document.getElementById("fw-zip")?.click()}
@@ -363,7 +351,6 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
                 onChange={(e) => setZipFile(e.target.files?.[0] ?? null)}
               />
             </div>
-          </div>
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">
@@ -475,7 +462,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#A855F7" }}>장치 관리</h2>
             <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
-              업로드 드롭다운에 표시될 장치 목록. 이름은 GitHub 폴더명과 동일해야 합니다.
+              등록된 장치 목록. 소스 업로드 시 .ino 파일명으로 자동 감지되며, 신규 장치는 자동 추가됩니다.
             </p>
           </div>
           <button

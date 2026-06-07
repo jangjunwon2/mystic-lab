@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
+import { createAdminClient } from "@/lib/supabase/server";
+import { getSetting, setSetting } from "@/lib/settings";
 import { unzipSync } from "fflate";
 
-const OWNER = "jangjunwon2";
-const REPO  = "nexus-firmware";
+const OWNER  = "jangjunwon2";
+const REPO   = "nexus-firmware";
 const BRANCH = "main";
 
 async function gh(path: string, options?: RequestInit) {
@@ -27,6 +29,30 @@ function isSrcFile(rel: string): boolean {
   return /\.(h|cpp|c|hpp)$/i.test(rel) || rel === "version.txt";
 }
 
+// "nexus_flux_case" → "Nexus Flux Case"
+function deviceNameToLabel(name: string): string {
+  return name.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+// 감지된 장치 중 site_settings에 없는 것을 자동 등록 (non-fatal)
+async function autoRegisterDevices(detected: string[]) {
+  try {
+    const supabase = createAdminClient();
+    const raw = await getSetting(supabase as any, "firmware_devices", "");
+    const existing: { name: string; label: string }[] = raw ? JSON.parse(raw) : [];
+    const existingNames = new Set(existing.map((d: { name: string }) => d.name));
+    const toAdd = detected.filter(n => !existingNames.has(n));
+    if (toAdd.length === 0) return;
+    const updated = [
+      ...existing,
+      ...toAdd.map(n => ({ name: n, label: deviceNameToLabel(n) })),
+    ];
+    await setSetting(supabase as any, "firmware_devices", JSON.stringify(updated));
+  } catch {
+    // 장치 목록 자동 등록 실패는 업로드 자체를 막지 않음
+  }
+}
+
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,11 +63,7 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData();
   const file = formData.get("zip") as File | null;
-  const deviceTypeFromForm = (formData.get("device_type") as string)?.trim();
-
-  if (!file) {
-    return NextResponse.json({ error: "zip 파일 필수" }, { status: 400 });
-  }
+  if (!file) return NextResponse.json({ error: "zip 파일 필수" }, { status: 400 });
 
   const buffer = Buffer.from(await file.arrayBuffer());
   let unzipped: ReturnType<typeof unzipSync>;
@@ -51,7 +73,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "zip 파일 압축 해제 실패" }, { status: 400 });
   }
 
-  // 공통 최상위 폴더 prefix 제거
+  // 공통 최상위 폴더 prefix 제거 (예: "nexus_pot-main/" 같은 래퍼 폴더)
   const allPaths = Object.keys(unzipped);
   const firstSlash = allPaths[0]?.indexOf("/") ?? -1;
   const prefix =
@@ -63,8 +85,9 @@ export async function POST(req: NextRequest) {
     .map(orig => ({ orig, rel: prefix ? orig.replace(prefix, "") : orig }))
     .filter(({ rel }) => rel && !rel.endsWith("/"));
 
-  // 단일 vs 다중 장치 감지
-  // .ino 파일이 루트에 있으면 단일 장치, 서브폴더에만 있으면 다중 장치
+  // ── 장치 감지 ────────────────────────────────────────────────────────────
+  // 루트에 .ino → 단일 장치 (파일명 = 장치명)
+  // 서브폴더에만 .ino → 다중 장치 (폴더명 = 장치명)
   const hasRootIno = entries.some(({ rel }) => /^[^/]+\.ino$/i.test(rel));
 
   const sourceFiles: Record<string, string> = {};
@@ -72,24 +95,21 @@ export async function POST(req: NextRequest) {
   let uploadedDevices: string[] = [];
 
   if (hasRootIno) {
-    // ── 단일 장치 모드 ──────────────────────────────────────────────
-    if (!deviceTypeFromForm || deviceTypeFromForm === "auto") {
-      return NextResponse.json({ error: "단일 장치 zip은 장치 선택 필수" }, { status: 400 });
-    }
-    const sketchName = deviceTypeFromForm.split("/").pop()!;
+    // ── 단일 장치 모드 ────────────────────────────────────────────────────
+    const rootIno = entries.find(({ rel }) => /^[^/]+\.ino$/i.test(rel))!;
+    const device = rootIno.rel.replace(/\.ino$/i, "");
+
     for (const { orig, rel } of entries) {
       if (rel.toLowerCase().endsWith(".ino")) {
-        const base = rel.split("/").pop()!.replace(/\.ino$/i, "");
-        if (base !== sketchName) { skippedIno.push(rel); continue; }
+        if (rel.replace(/\.ino$/i, "") !== device) { skippedIno.push(rel); continue; }
       } else if (!isSrcFile(rel)) {
         continue;
       }
-      sourceFiles[`${deviceTypeFromForm}/${rel}`] = Buffer.from(unzipped[orig]).toString("base64");
+      sourceFiles[`${device}/${rel}`] = Buffer.from(unzipped[orig]).toString("base64");
     }
-    uploadedDevices = [deviceTypeFromForm];
+    uploadedDevices = [device];
   } else {
-    // ── 다중 장치 모드 ──────────────────────────────────────────────
-    // 서브폴더 중 .ino 파일을 포함하는 것을 장치 폴더로 인식
+    // ── 다중 장치 모드 ────────────────────────────────────────────────────
     const deviceDirs = new Set<string>();
     for (const { rel } of entries) {
       const slash = rel.indexOf("/");
@@ -106,7 +126,7 @@ export async function POST(req: NextRequest) {
         if (!rel.startsWith(`${device}/`)) continue;
         const fileRel = rel.slice(device.length + 1);
         if (fileRel.toLowerCase().endsWith(".ino")) {
-          const base = fileRel.split("/").pop()!.replace(/\.ino$/i, "");
+          const base = fileRel.replace(/\.ino$/i, "");
           if (base !== sketchName) { skippedIno.push(rel); continue; }
         } else if (!isSrcFile(fileRel)) {
           continue;
@@ -121,13 +141,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "zip 안에 소스 파일(.ino .h .cpp .c)이 없습니다" }, { status: 400 });
   }
 
-  // 각 장치 폴더에 빌드 타임스탬프 파일 추가 — 파일 내용이 동일해도 git diff에 항상 잡히도록
+  // 각 장치 폴더에 빌드 타임스탬프 파일 추가 (파일 내용 동일해도 git diff에 잡히도록)
   const ts = new Date().toISOString();
   for (const device of uploadedDevices) {
     sourceFiles[`${device}/.build`] = Buffer.from(ts).toString("base64");
   }
 
-  // GitHub Tree API — 단일 커밋
+  // GitHub Tree API — 단일 커밋으로 모든 파일 푸시
   const refData    = await gh(`/repos/${OWNER}/${REPO}/git/ref/heads/${BRANCH}`);
   const latestSha  = refData.object.sha;
   const commitData = await gh(`/repos/${OWNER}/${REPO}/git/commits/${latestSha}`);
@@ -166,6 +186,9 @@ export async function POST(req: NextRequest) {
     method: "PATCH",
     body: JSON.stringify({ sha: newCommit.sha }),
   });
+
+  // 신규 장치는 site_settings에 자동 등록
+  await autoRegisterDevices(uploadedDevices);
 
   return NextResponse.json({
     ok: true,
