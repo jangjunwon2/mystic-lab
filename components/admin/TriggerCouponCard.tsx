@@ -62,7 +62,7 @@ export default function TriggerCouponCard({ initial, title, description, setting
           {enabled ? "활성" : "비활성"}
         </button>
       </div>
-      <p className="text-xs mb-4" style={{ color: "#9CA3AF" }} dangerouslySetInnerHTML={{ __html: description }} />
+      <p className="text-xs mb-4" style={{ color: "#9CA3AF" }}>{description}</p>
       <div className="space-y-3">
         <div>
           <label className="block text-xs mb-1" style={{ color: "#9CA3AF" }}>쿠폰 이름(고객 표시)</label>
