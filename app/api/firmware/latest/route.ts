@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
     .from("firmware_releases")
     .select("id, version, download_url, notes, created_at, file_size")
     .eq("device_type", device)
-    .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

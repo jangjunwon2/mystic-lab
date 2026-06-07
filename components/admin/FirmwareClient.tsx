@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Upload, Trash2, ToggleLeft, ToggleRight, Download, Copy, Check, FolderArchive, Pencil, Plus, X, RefreshCw } from "lucide-react";
+import { Upload, Trash2, Download, Copy, Check, FolderArchive, Pencil, Plus, X, RefreshCw } from "lucide-react";
 import type { FirmwareDevice } from "@/app/api/admin/firmware/devices/route";
 
 interface FirmwareRelease {
@@ -12,7 +12,7 @@ interface FirmwareRelease {
   storage_path: string;
   file_size: number | null;
   notes: string | null;
-  is_active: boolean;
+
   created_at: string;
 }
 
@@ -239,19 +239,6 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
     }
     setRebuilding(false);
-  }
-
-  async function toggleActive(id: string, current: boolean) {
-    const res = await fetch(`/api/admin/firmware/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: !current }),
-    });
-    if (res.ok) {
-      setReleases((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, is_active: !current } : r))
-      );
-    }
   }
 
   async function deleteRelease(id: string, version: string) {
@@ -620,7 +607,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
                       style={{ accentColor: "#7C3AED" }}
                     />
                   </th>
-                  {["장치 타입", "버전", "파일 크기", "날짜", "상태", "다운로드 URL", ""].map((h) => (
+                  {["장치 타입", "버전", "파일 크기", "날짜", "다운로드 URL", ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-medium" style={{ color: "#9CA3AF" }}>
                       {h}
                     </th>
@@ -634,7 +621,6 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
                     className="transition-colors"
                     style={{
                       borderBottom: "1px solid #2D2D4E",
-                      opacity: rel.is_active ? 1 : 0.5,
                       background: selectedIds.has(rel.id) ? "rgba(124,58,237,0.06)" : "transparent",
                     }}
                   >
@@ -660,16 +646,6 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
                     </td>
                     <td className="px-4 py-3 text-xs" style={{ color: "#9CA3AF" }}>
                       {new Date(rel.created_at).toLocaleDateString("ko-KR")}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleActive(rel.id, rel.is_active)}
-                        className="flex items-center gap-1 text-xs transition-colors"
-                        style={{ color: rel.is_active ? "#10B981" : "#6B7280" }}
-                      >
-                        {rel.is_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                        {rel.is_active ? "활성" : "비활성"}
-                      </button>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
