@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Star, CheckCircle2, XCircle, Trash2 } from "lucide-react";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import { useAdminDialogs } from "@/hooks/useAdminDialogs";
 
 interface Product {
   slug: string;
@@ -28,6 +30,7 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
   // 게시-후-관리: 작성 즉시 게시되며 어드민은 미노출/게시/삭제로 사후 관리
   const [filter, setFilter] = useState<"all" | "hidden" | "visible">("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const { confirmState, showConfirm, handleConfirmYes, handleConfirmNo } = useAdminDialogs();
 
   const filtered = reviews.filter((r) => {
     if (filter === "hidden") return !r.is_approved;
@@ -53,7 +56,13 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
   }
 
   async function deleteReview(id: string) {
-    if (!window.confirm("이 리뷰를 영구 삭제할까요?")) return;
+    const ok = await showConfirm({
+      title: "리뷰 삭제",
+      message: "이 리뷰를 영구 삭제할까요?",
+      confirmLabel: "삭제",
+      destructive: true,
+    });
+    if (!ok) return;
     setLoadingId(id);
     const res = await fetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
     if (res.ok) setReviews((prev) => prev.filter((r) => r.id !== id));
@@ -184,6 +193,18 @@ export default function ReviewsAdminTable({ reviews: initial }: Props) {
           })
         )}
       </div>
+      {confirmState && (
+        <ConfirmDialog
+          open
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmLabel={confirmState.confirmLabel}
+          cancelLabel={confirmState.cancelLabel}
+          destructive={confirmState.destructive}
+          onConfirm={handleConfirmYes}
+          onCancel={handleConfirmNo}
+        />
+      )}
     </div>
   );
 }

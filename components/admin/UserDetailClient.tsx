@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShieldOff, ShieldCheck, Ban, Plus, Trash2, Package, Play, Mail, UserCog, Clock } from "lucide-react";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import PromptDialog from "@/components/admin/ui/PromptDialog";
+import { useAdminDialogs } from "@/hooks/useAdminDialogs";
 
 interface Product { id: string; slug: string; product_translations: { name: string; language: string }[] }
 interface Grant { id: string; note: string | null; expires_at: string | null; created_at: string; products: Product | null }
@@ -45,6 +48,12 @@ export default function UserDetailClient({ profile: initialProfile, email, order
   const [emailMessage, setEmailMessage] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailStatus, setEmailStatus] = useState("");
+  const {
+    confirmState, promptState,
+    showConfirm, showPrompt,
+    handleConfirmYes, handleConfirmNo,
+    handlePromptConfirm, handlePromptCancel,
+  } = useAdminDialogs();
 
   const st = STATUS_STYLES[profile.status] ?? STATUS_STYLES.active;
 
@@ -64,7 +73,8 @@ export default function UserDetailClient({ profile: initialProfile, email, order
     const msg = nextRole === "admin"
       ? `${profile.display_name ?? profile.id}을(를) 어드민으로 승급할까요?`
       : `${profile.display_name ?? profile.id}의 어드민 권한을 해제할까요?`;
-    if (!window.confirm(msg)) return;
+    const ok = await showConfirm({ title: "역할 변경", message: msg });
+    if (!ok) return;
     setLoadingRole(true);
     const res = await fetch(`/api/admin/users/${profile.id}`, {
       method: "PATCH",
@@ -76,7 +86,7 @@ export default function UserDetailClient({ profile: initialProfile, email, order
   }
 
   async function handleSuspend() {
-    const reason = window.prompt("정지 사유:");
+    const reason = await showPrompt({ title: "정지 사유 입력", message: "정지 사유를 입력하세요:" });
     if (reason === null) return;
     await updateStatus("suspended", reason);
   }
@@ -114,7 +124,8 @@ export default function UserDetailClient({ profile: initialProfile, email, order
   }
 
   async function revokeGrant(grantId: string) {
-    if (!window.confirm("이 영상 접근 권한을 취소할까요?")) return;
+    const ok = await showConfirm({ title: "권한 취소", message: "이 영상 접근 권한을 취소할까요?", destructive: true });
+    if (!ok) return;
     const res = await fetch(`/api/admin/users/${profile.id}/grants?grant_id=${grantId}`, { method: "DELETE" });
     if (res.ok) setGrants((prev) => prev.filter((g) => g.id !== grantId));
   }
@@ -133,12 +144,21 @@ export default function UserDetailClient({ profile: initialProfile, email, order
   }
 
   async function deleteUser() {
-    const confirmEmail = window.prompt(
-      `⚠️ 회원을 완전히 삭제합니다.\n주문·포인트·쿠폰 등 모든 데이터가 삭제되며 복구 불가합니다.\n\n확인하려면 이메일 주소를 입력하세요:\n${email ?? profile.id}`
-    );
+    const confirmEmail = await showPrompt({
+      title: "⚠️ 회원 삭제",
+      message: `회원을 완전히 삭제합니다.\n주문·포인트·쿠폰 등 모든 데이터가 삭제되며 복구 불가합니다.\n\n확인하려면 이메일 주소를 입력하세요:\n${email ?? profile.id}`,
+      placeholder: email ?? profile.id,
+      confirmLabel: "삭제",
+      destructive: true,
+    });
     if (confirmEmail === null) return;
     if (confirmEmail.trim() !== (email ?? profile.id)) {
-      alert("이메일이 일치하지 않습니다. 삭제를 취소합니다.");
+      await showConfirm({
+        title: "삭제 취소",
+        message: "이메일이 일치하지 않습니다. 삭제를 취소합니다.",
+        confirmLabel: "확인",
+        cancelLabel: "",
+      });
       return;
     }
     setDeletingUser(true);
@@ -147,7 +167,12 @@ export default function UserDetailClient({ profile: initialProfile, email, order
       router.push("/admin/users");
     } else {
       const data = await res.json();
-      alert(data.error ?? "삭제에 실패했습니다.");
+      await showConfirm({
+        title: "삭제 실패",
+        message: data.error ?? "삭제에 실패했습니다.",
+        confirmLabel: "확인",
+        cancelLabel: "",
+      });
       setDeletingUser(false);
     }
   }
@@ -230,7 +255,7 @@ export default function UserDetailClient({ profile: initialProfile, email, order
                       <ShieldOff className="w-3.5 h-3.5" /> 정지
                     </button>
                     <button
-                      onClick={() => { if (window.confirm("휴면 처리하시겠습니까?")) updateStatus("dormant"); }}
+                      onClick={async () => { const ok = await showConfirm({ title: "휴면 처리", message: "휴면 처리하시겠습니까?" }); if (ok) updateStatus("dormant"); }}
                       disabled={loadingStatus}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
                       style={{ background: "rgba(99,102,241,0.12)", color: "#818CF8" }}
@@ -238,7 +263,7 @@ export default function UserDetailClient({ profile: initialProfile, email, order
                       <Clock className="w-3.5 h-3.5" /> 휴면
                     </button>
                     <button
-                      onClick={() => { if (window.confirm("영구 차단하시겠습니까?")) updateStatus("banned"); }}
+                      onClick={async () => { const ok = await showConfirm({ title: "영구 차단", message: "영구 차단하시겠습니까?", destructive: true }); if (ok) updateStatus("banned"); }}
                       disabled={loadingStatus}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
                       style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}
@@ -502,6 +527,31 @@ export default function UserDetailClient({ profile: initialProfile, email, order
           </button>
         )}
       </div>
+      {confirmState && (
+        <ConfirmDialog
+          open
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmLabel={confirmState.confirmLabel}
+          cancelLabel={confirmState.cancelLabel}
+          destructive={confirmState.destructive}
+          onConfirm={handleConfirmYes}
+          onCancel={handleConfirmNo}
+        />
+      )}
+      {promptState && (
+        <PromptDialog
+          open
+          title={promptState.title}
+          message={promptState.message}
+          placeholder={promptState.placeholder}
+          confirmLabel={promptState.confirmLabel}
+          cancelLabel={promptState.cancelLabel}
+          destructive={promptState.destructive}
+          onConfirm={handlePromptConfirm}
+          onCancel={handlePromptCancel}
+        />
+      )}
     </div>
   );
 }

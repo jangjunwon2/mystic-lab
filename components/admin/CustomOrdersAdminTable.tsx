@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import { useAdminDialogs } from "@/hooks/useAdminDialogs";
 
 const STATUSES = ["received", "reviewing", "quoted", "in_progress", "completed", "rejected"] as const;
 type CustomStatus = (typeof STATUSES)[number];
@@ -45,6 +47,7 @@ interface Props {
 export default function CustomOrdersAdminTable({ requests: initialRequests }: Props) {
   const [requests, setRequests] = useState(initialRequests);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { confirmState, showConfirm, handleConfirmYes, handleConfirmNo } = useAdminDialogs();
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [quoteUsd, setQuoteUsd] = useState<Record<string, string>>({});
@@ -164,7 +167,13 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
   }
 
   async function deleteRequest(id: string) {
-    if (!window.confirm("이 의뢰를 영구 삭제할까요? 되돌릴 수 없습니다.")) return;
+    const ok = await showConfirm({
+      title: "의뢰 삭제",
+      message: "이 의뢰를 영구 삭제할까요?\n되돌릴 수 없습니다.",
+      confirmLabel: "삭제",
+      destructive: true,
+    });
+    if (!ok) return;
     setLoadingId(id);
     const res = await fetch(`/api/admin/custom-orders/${id}`, { method: "DELETE" });
     if (res.ok) {
@@ -502,6 +511,18 @@ export default function CustomOrdersAdminTable({ requests: initialRequests }: Pr
           </tbody>
         </table>
       </div>
+      {confirmState && (
+        <ConfirmDialog
+          open
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmLabel={confirmState.confirmLabel}
+          cancelLabel={confirmState.cancelLabel}
+          destructive={confirmState.destructive}
+          onConfirm={handleConfirmYes}
+          onCancel={handleConfirmNo}
+        />
+      )}
     </div>
   );
 }

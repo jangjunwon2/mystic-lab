@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Search, ShieldOff, ShieldCheck, Ban, Clock } from "lucide-react";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import PromptDialog from "@/components/admin/ui/PromptDialog";
+import { useAdminDialogs } from "@/hooks/useAdminDialogs";
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
   active:    { bg: "rgba(16,185,129,0.12)",  color: "#10B981", label: "활성" },
@@ -32,6 +35,12 @@ export default function UsersAdminTable({ users: initial }: Props) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const {
+    confirmState, promptState,
+    showConfirm, showPrompt,
+    handleConfirmYes, handleConfirmNo,
+    handlePromptConfirm, handlePromptCancel,
+  } = useAdminDialogs();
 
   const filtered = users.filter((u) => {
     const matchQ =
@@ -60,7 +69,10 @@ export default function UsersAdminTable({ users: initial }: Props) {
   }
 
   async function handleSuspend(user: AdminUser) {
-    const reason = window.prompt(`${user.email ?? user.display_name} 회원 정지 사유:`);
+    const reason = await showPrompt({
+      title: "정지 사유 입력",
+      message: `${user.email ?? user.display_name} 회원 정지 사유:`,
+    });
     if (reason === null) return;
     await updateStatus(user.id, "suspended", reason);
   }
@@ -239,10 +251,9 @@ export default function UsersAdminTable({ users: initial }: Props) {
                                     <ShieldOff className="w-3.5 h-3.5" />
                                   </button>
                                   <button
-                                    onClick={() => {
-                                      if (window.confirm(`${user.email} 회원을 휴면 처리할까요?`)) {
-                                        updateStatus(user.id, "dormant");
-                                      }
+                                    onClick={async () => {
+                                      const ok = await showConfirm({ title: "휴면 처리", message: `${user.email} 회원을 휴면 처리할까요?` });
+                                      if (ok) updateStatus(user.id, "dormant");
                                     }}
                                     disabled={isLoading}
                                     title="휴면"
@@ -252,10 +263,9 @@ export default function UsersAdminTable({ users: initial }: Props) {
                                     <Clock className="w-3.5 h-3.5" />
                                   </button>
                                   <button
-                                    onClick={() => {
-                                      if (window.confirm(`${user.email} 회원을 영구 차단할까요?`)) {
-                                        updateStatus(user.id, "banned");
-                                      }
+                                    onClick={async () => {
+                                      const ok = await showConfirm({ title: "영구 차단", message: `${user.email} 회원을 영구 차단할까요?`, destructive: true });
+                                      if (ok) updateStatus(user.id, "banned");
                                     }}
                                     disabled={isLoading}
                                     title="영구 차단"
@@ -297,6 +307,31 @@ export default function UsersAdminTable({ users: initial }: Props) {
           </table>
         </div>
       </div>
+      {confirmState && (
+        <ConfirmDialog
+          open
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmLabel={confirmState.confirmLabel}
+          cancelLabel={confirmState.cancelLabel}
+          destructive={confirmState.destructive}
+          onConfirm={handleConfirmYes}
+          onCancel={handleConfirmNo}
+        />
+      )}
+      {promptState && (
+        <PromptDialog
+          open
+          title={promptState.title}
+          message={promptState.message}
+          placeholder={promptState.placeholder}
+          confirmLabel={promptState.confirmLabel}
+          cancelLabel={promptState.cancelLabel}
+          destructive={promptState.destructive}
+          onConfirm={handlePromptConfirm}
+          onCancel={handlePromptCancel}
+        />
+      )}
     </div>
   );
 }
