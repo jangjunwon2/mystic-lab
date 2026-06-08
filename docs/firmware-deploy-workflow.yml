@@ -21,6 +21,11 @@ on:
       - "**/*.cpp"
       - "**/*.c"
 
+# 새 push가 들어오면 이전 실행 취소 — stale build가 DB를 덮어쓰지 못하게 방지
+concurrency:
+  group: firmware-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # 1단계: 리포에서 .ino 파일 위치를 자동 감지해 빌드 매트릭스 생성
   discover:

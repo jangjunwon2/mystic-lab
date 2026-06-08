@@ -57,7 +57,7 @@ export async function DELETE(req: NextRequest) {
   return NextResponse.json({ ok: true, deleted: ids.length });
 }
 
-// POST: 업로드 완료 후 메타데이터 저장
+// POST: GitHub Actions 빌드 완료 후 릴리스 등록
 export async function POST(req: NextRequest) {
   if (!isCIAuth(req)) {
     const admin = await requireAdmin();
@@ -71,41 +71,32 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // 이 장치의 가장 최신 pending 행(빈 URL)을 조회
-  // 최신 pending 버전이 이 빌드 버전과 다르면 → 사용자가 이미 다른 버전을 올린 것 → 무시
-  const { data: latestPending } = await (supabase as any)
+  // pending 행(download_url="")을 장치+버전으로 직접 UPDATE
+  // 매칭 실패(0 rows) → 사용자가 이미 다른 버전을 올렸거나 이미 완료됨 → stale build 무시
+  const { data: updated } = await (supabase as any)
     .from("firmware_releases")
-    .select("id, version")
+    .update({
+      download_url,
+      storage_path,
+      file_size: file_size ?? null,
+      notes: notes?.trim() || null,
+    })
     .eq("device_type", device_type.trim())
+    .eq("version", version.trim())
     .eq("download_url", "")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .select("id, device_type, version, download_url, storage_path, file_size, notes, created_at, is_active")
+    .single();
 
-  if (!latestPending || latestPending.version !== version.trim()) {
-    return NextResponse.json({ skipped: true, reason: "stale build — latest pending version differs" });
+  if (!updated) {
+    return NextResponse.json({ skipped: true, reason: "no matching pending row for this version" });
   }
 
-  // 해당 장치의 모든 행 삭제 후 완료 행 단일 삽입
+  // 같은 장치의 다른 행(구 릴리스) 정리
   await (supabase as any)
     .from("firmware_releases")
     .delete()
-    .eq("device_type", device_type.trim());
+    .eq("device_type", device_type.trim())
+    .neq("id", updated.id);
 
-  const { data, error } = await (supabase as any)
-    .from("firmware_releases")
-    .insert({
-      device_type: device_type.trim(),
-      version: version.trim(),
-      notes: notes?.trim() || null,
-      storage_path,
-      download_url,
-      file_size: file_size ?? null,
-      is_active: true,
-    })
-    .select("*")
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(updated);
 }
