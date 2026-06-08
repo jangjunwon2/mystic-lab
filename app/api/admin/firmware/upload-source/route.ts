@@ -224,14 +224,22 @@ export async function POST(req: NextRequest) {
 
   // 소스 업로드 즉시 버전을 firmware_releases에 선반영 (빌드 완료 전)
   // download_url을 빈 값으로 저장 → 기기는 url.isEmpty() 조건으로 다운로드 스킵
-  // GitHub Actions 빌드 완료 후 실제 URL이 있는 새 행이 추가되어 최신이 됨
+  // 동일 device+version으로 이미 빌드 대기 중인 행(빈 URL)이 있으면 중복 생성 방지
   {
     const supabase = createAdminClient();
     await Promise.allSettled(
       uploadedDevices
         .filter((d) => detectedVersions[d])
-        .map((d) =>
-          (supabase as any)
+        .map(async (d) => {
+          // 같은 device+version의 기존 대기 행(빈 URL) 삭제 — 재업로드 시 created_at 갱신을 위해
+          await (supabase as any)
+            .from("firmware_releases")
+            .delete()
+            .eq("device_type", d)
+            .eq("version", detectedVersions[d])
+            .eq("download_url", "");
+
+          return (supabase as any)
             .from("firmware_releases")
             .insert({
               device_type: d,
@@ -240,8 +248,8 @@ export async function POST(req: NextRequest) {
               storage_path: "",
               notes: "[빌드 대기] GitHub Actions 빌드 완료 후 실제 URL 등록",
               is_active: true,
-            })
-        )
+            });
+        })
     );
   }
 

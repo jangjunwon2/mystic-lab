@@ -70,6 +70,15 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createAdminClient();
+
+  // 빌드 완료 → 대기 행(빈 URL) 먼저 정리
+  await (supabase as any)
+    .from("firmware_releases")
+    .delete()
+    .eq("device_type", device_type.trim())
+    .eq("version", version.trim())
+    .eq("download_url", "");
+
   const { data, error } = await (supabase as any)
     .from("firmware_releases")
     .insert({

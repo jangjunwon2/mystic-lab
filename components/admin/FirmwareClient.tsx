@@ -91,9 +91,12 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       const added = fresh.filter((r) => !knownIdsRef.current.has(r.id));
       setReleases(fresh);
 
-      if (added.length > 0) {
-        for (const r of added) foundNewIdsRef.current.add(r.id);
-        const names = added.map((r) => `${r.device_type} v${r.version}`).join(", ");
+      // 빈 URL(빌드 대기) 행은 완료 카운트에서 제외 — 실제 빌드 완료 행만 카운트
+      const addedCompleted = added.filter((r) => r.download_url !== "");
+
+      if (addedCompleted.length > 0) {
+        for (const r of addedCompleted) foundNewIdsRef.current.add(r.id);
+        const names = addedCompleted.map((r) => `${r.device_type} v${r.version}`).join(", ");
         setNewReleaseAlert(`새 릴리스 감지: ${names}`);
         setTimeout(() => setNewReleaseAlert(null), 8000);
 
