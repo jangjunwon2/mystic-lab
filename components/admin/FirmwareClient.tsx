@@ -147,7 +147,10 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       }
 
       const deviceList: string[] = data.devices ?? [];
-      const detectedLabel = deviceList.join(", ") || "알 수 없음";
+      const versions: Record<string, string | null> = data.versions ?? {};
+      const detectedLabel = deviceList.length > 0
+        ? deviceList.map((d) => versions[d] ? `${d} v${versions[d]}` : d).join(", ")
+        : "알 수 없음";
       setStagedDevices((prev) =>
         prev.map((s) => (s.id === id ? { ...s, status: "done", deviceLabel: detectedLabel, message: `커밋 ${data.commit}` } : s))
       );
@@ -374,7 +377,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
             <span className="text-sm font-medium" style={{ color: "#F0E6FF" }}>소스코드 업로드 방법</span>
           </div>
           <div className="px-5 py-4 space-y-3 text-xs" style={{ color: "#9CA3AF" }}>
-            <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>①</span><span>장치 폴더 안 <strong style={{ color: "#F0E6FF" }}>version.txt</strong>를 새 버전으로 수정합니다. (예: <code style={{ color: "#A855F7" }}>1.0</code> → <code style={{ color: "#A855F7" }}>1.1</code>)</span></div>
+            <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>①</span><span>장치 폴더 안 <strong style={{ color: "#F0E6FF" }}>config.h</strong>의 <code style={{ color: "#A855F7" }}>FIRMWARE_VERSION</code>을 새 버전으로 수정합니다. (예: <code style={{ color: "#A855F7" }}>"1.0"</code> → <code style={{ color: "#A855F7" }}>"1.1"</code>)</span></div>
             <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>②</span><span>해당 <strong style={{ color: "#F0E6FF" }}>장치 폴더 전체</strong>를 zip으로 압축합니다.<br /><span style={{ color: "#6B7280" }}>예) nexus_flux_case 폴더 우클릭 → 압축(ZIP)으로 보내기</span></span></div>
             <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>③</span><span>위 소스코드 업로드 섹션에서 장치를 선택하고 zip을 업로드합니다.</span></div>
             <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>④</span><span>빌드 완료까지 <strong style={{ color: "#F0E6FF" }}>약 5~10분</strong> 소요. 완료 후 이전 버전은 자동 삭제됩니다.<br /><span style={{ color: "#6B7280" }}>진행 상황: github.com/jangjunwon2/nexus-firmware → Actions 탭</span></span></div>
@@ -393,17 +396,26 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
             <div className="rounded-lg px-4 py-3 text-xs space-y-1" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
               <p className="font-semibold" style={{ color: "#FCA5A5" }}>반드시 확인할 사항</p>
               <p style={{ color: "#9CA3AF" }}>• <code style={{ color: "#F0E6FF" }}>OTA_DEVICE_TYPE</code>은 장치 관리의 폴더명과 정확히 일치해야 합니다.</p>
-              <p style={{ color: "#9CA3AF" }}>• <code style={{ color: "#F0E6FF" }}>OTA_CURRENT_VER</code>이 서버 버전과 다를 때만 업데이트가 실행됩니다.</p>
+              <p style={{ color: "#9CA3AF" }}>• <code style={{ color: "#F0E6FF" }}>FIRMWARE_VERSION</code>보다 서버 버전이 높을 때만 업데이트가 실행됩니다. (동일·낮은 버전은 무시)</p>
             </div>
             <pre className="rounded-lg p-4 text-xs leading-relaxed overflow-x-auto" style={{ background: "#0D0D1A", color: "#A855F7", fontFamily: "monospace" }}>{`#pragma once
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Update.h>
 
+// config.h의 FIRMWARE_VERSION과 동일하게 유지
 #define OTA_DEVICE_TYPE  "nexus_flux_case"
-#define OTA_CURRENT_VER  "1.0"
 #define OTA_CHECK_URL \\
   "https://mystic-lab.vercel.app/api/firmware/latest?device=" OTA_DEVICE_TYPE
+
+// "1.0" 형식 비교 — 서버 버전이 현재보다 높을 때만 true
+static bool isNewerVersion(const String& newVer, const String& curVer) {
+  int nMaj = 0, nMin = 0, cMaj = 0, cMin = 0;
+  sscanf(newVer.c_str(), "%d.%d", &nMaj, &nMin);
+  sscanf(curVer.c_str(), "%d.%d", &cMaj, &cMin);
+  if (nMaj != cMaj) return nMaj > cMaj;
+  return nMin > cMin;
+}
 
 void otaCheckAndUpdate() {
   HTTPClient http;
@@ -415,7 +427,7 @@ void otaCheckAndUpdate() {
   DynamicJsonDocument doc(512);
   if (deserializeJson(doc, body)) return;
   String latest = doc["version"].as<String>();
-  if (latest == OTA_CURRENT_VER) return;
+  if (!isNewerVersion(latest, FIRMWARE_VERSION)) return;
   String url = doc["url"].as<String>();
   if (url.isEmpty()) return;
   http.begin(url);
