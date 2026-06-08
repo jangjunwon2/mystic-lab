@@ -223,21 +223,16 @@ export async function POST(req: NextRequest) {
   await autoRegisterDevices(uploadedDevices);
 
   // 소스 업로드 즉시 버전을 firmware_releases에 선반영 (빌드 완료 전)
-  // download_url을 빈 값으로 저장 → 기기는 url.isEmpty() 조건으로 다운로드 스킵
-  // 동일 device+version으로 이미 빌드 대기 중인 행(빈 URL)이 있으면 중복 생성 방지
+  // INSERT-FIRST: 새 pending 행을 먼저 삽입한 뒤 다른 행을 삭제
+  // → DELETE가 먼저 실패하더라도 최신 행이 항상 DB에 존재하여 경쟁 조건 방지
   {
     const supabase = createAdminClient();
     await Promise.allSettled(
       uploadedDevices
         .filter((d) => detectedVersions[d])
         .map(async (d) => {
-          // 해당 장치의 모든 기존 릴리스 삭제 — 새 버전으로 교체
-          await (supabase as any)
-            .from("firmware_releases")
-            .delete()
-            .eq("device_type", d);
-
-          return (supabase as any)
+          // 1. 새 pending 행 삽입 (가장 최신 created_at 확보)
+          const { data: inserted } = await (supabase as any)
             .from("firmware_releases")
             .insert({
               device_type: d,
@@ -246,7 +241,18 @@ export async function POST(req: NextRequest) {
               storage_path: "",
               notes: "[빌드 대기] GitHub Actions 빌드 완료 후 실제 URL 등록",
               is_active: true,
-            });
+            })
+            .select("id")
+            .single();
+
+          // 2. 방금 삽입한 행을 제외하고 나머지 모두 삭제
+          if (inserted?.id) {
+            await (supabase as any)
+              .from("firmware_releases")
+              .delete()
+              .eq("device_type", d)
+              .neq("id", inserted.id);
+          }
         })
     );
   }

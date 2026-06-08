@@ -71,18 +71,19 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // 해당 버전의 빌드 대기 행이 있는지 먼저 확인
-  // 없다면 → 사용자가 이미 다른 버전을 올린 것 (스테일 빌드) → 덮어쓰기 금지
-  const { data: pendingRow } = await (supabase as any)
+  // 이 장치의 가장 최신 pending 행(빈 URL)을 조회
+  // 최신 pending 버전이 이 빌드 버전과 다르면 → 사용자가 이미 다른 버전을 올린 것 → 무시
+  const { data: latestPending } = await (supabase as any)
     .from("firmware_releases")
-    .select("id")
+    .select("id, version")
     .eq("device_type", device_type.trim())
-    .eq("version", version.trim())
     .eq("download_url", "")
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  if (!pendingRow) {
-    return NextResponse.json({ skipped: true, reason: "stale build — a different version was uploaded since this build started" });
+  if (!latestPending || latestPending.version !== version.trim()) {
+    return NextResponse.json({ skipped: true, reason: "stale build — latest pending version differs" });
   }
 
   // 해당 장치의 모든 행 삭제 후 완료 행 단일 삽입
