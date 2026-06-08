@@ -20,6 +20,7 @@ on:
       - "**/*.h"
       - "**/*.cpp"
       - "**/*.c"
+      - "**/version.txt"
 
 jobs:
   # 1단계: 리포에서 .ino 파일 위치를 자동 감지해 빌드 매트릭스 생성
@@ -72,13 +73,49 @@ jobs:
           git clone --depth 1 https://github.com/me-no-dev/ESPAsyncWebServer \
             ~/Arduino/libraries/ESPAsyncWebServer
 
+      - name: Extract version
+        id: extract-version
+        run: |
+          DEVICE_DIR="${{ matrix.device }}"
+          VERSION=""
+
+          # version.txt 우선 — 내용 전체가 버전 문자열
+          if [ -f "${DEVICE_DIR}/version.txt" ]; then
+            VERSION=$(tr -d '[:space:]' < "${DEVICE_DIR}/version.txt")
+          fi
+
+          # version.txt 없으면 config.h에서 FIRMWARE_VERSION 추출
+          if [ -z "$VERSION" ] && [ -f "${DEVICE_DIR}/config.h" ]; then
+            VERSION=$(grep -oP '#define\s+FIRMWARE_VERSION\s+"\K[^"]+' "${DEVICE_DIR}/config.h" || true)
+          fi
+
+          # major.minor 형식으로 정규화 (1.0.2 → 1.0 / 1.0 → 1.0)
+          if [ -n "$VERSION" ]; then
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            if echo "$MAJOR" | grep -qE '^[0-9]+$' && echo "$MINOR" | grep -qE '^[0-9]+$'; then
+              VERSION="${MAJOR}.${MINOR}"
+            else
+              VERSION=""
+            fi
+          fi
+
+          # 버전을 감지 못하면 빌드 실패
+          if [ -z "$VERSION" ]; then
+            echo "::error::버전을 감지하지 못했습니다. ${DEVICE_DIR}/version.txt 또는 ${DEVICE_DIR}/config.h에 FIRMWARE_VERSION을 정의하세요."
+            exit 1
+          fi
+
+          echo "감지된 버전: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Compile
         run: |
           mkdir -p build
           SKETCH=$(find ./${{ matrix.device }} -name "*.ino" | head -1)
-          echo "빌드: $SKETCH"
+          echo "빌드: $SKETCH (v${{ steps.extract-version.outputs.version }})"
           arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3 \
+            --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc" \
             "$SKETCH" \
             --output-dir ./build
 
@@ -87,17 +124,17 @@ jobs:
         env:
           FIRMWARE_CI_TOKEN: ${{ secrets.FIRMWARE_CI_TOKEN }}
         run: |
-          SHORT="${GITHUB_SHA:0:8}"
-          FILENAME="firmware-${SHORT}.bin"
+          VERSION="${{ steps.extract-version.outputs.version }}"
+          FILENAME="firmware-v${VERSION}.bin"
           RESPONSE=$(curl -sf -X POST \
             https://mystic-lab.vercel.app/api/admin/firmware/upload-url \
             -H "Authorization: Bearer ${FIRMWARE_CI_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"device_type\":\"${{ matrix.device }}\",\"version\":\"${SHORT}\",\"filename\":\"${FILENAME}\"}")
+            -d "{\"device_type\":\"${{ matrix.device }}\",\"version\":\"${VERSION}\",\"filename\":\"${FILENAME}\"}")
           echo "signed_url=$(echo "$RESPONSE" | jq -r '.signedUrl')" >> "$GITHUB_OUTPUT"
           echo "storage_path=$(echo "$RESPONSE" | jq -r '.storagePath')" >> "$GITHUB_OUTPUT"
           echo "public_url=$(echo "$RESPONSE" | jq -r '.publicUrl')" >> "$GITHUB_OUTPUT"
-          echo "version=${SHORT}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Upload binary
         run: |

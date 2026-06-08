@@ -29,6 +29,39 @@ function isSrcFile(rel: string): boolean {
   return /\.(h|cpp|c|hpp)$/i.test(rel) || rel === "version.txt";
 }
 
+// version.txt の内容またはconfig.hのFIRMWARE_VERSIONを "major.minor" 形式で返す
+function extractVersion(
+  entries: { orig: string; rel: string }[],
+  unzipped: Record<string, Uint8Array>,
+  device: string,
+): string | null {
+  const norm = (v: string): string | null => {
+    const parts = v.trim().split(".");
+    if (parts.length >= 2 && parts.slice(0, 2).every((p) => /^\d+$/.test(p))) {
+      return `${parts[0]}.${parts[1]}`;
+    }
+    return null;
+  };
+
+  // version.txt 우선 (장치 폴더 안 또는 루트)
+  const vTxt = entries.find(({ rel }) => rel === `${device}/version.txt` || rel === "version.txt");
+  if (vTxt) {
+    const content = Buffer.from(unzipped[vTxt.orig]).toString("utf-8");
+    const normalized = norm(content);
+    if (normalized) return normalized;
+  }
+
+  // config.h에서 #define FIRMWARE_VERSION "x.x" 파싱
+  const cfgH = entries.find(({ rel }) => rel === `${device}/config.h` || rel === "config.h");
+  if (cfgH) {
+    const content = Buffer.from(unzipped[cfgH.orig]).toString("utf-8");
+    const match = content.match(/#define\s+FIRMWARE_VERSION\s+"([^"]+)"/);
+    if (match) return norm(match[1]);
+  }
+
+  return null;
+}
+
 // "nexus_flux_case" → "Nexus Flux Case"
 function deviceNameToLabel(name: string): string {
   return name.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -141,6 +174,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "zip 안에 소스 파일(.ino .h .cpp .c)이 없습니다" }, { status: 400 });
   }
 
+  // 장치별 버전 추출 (version.txt 우선, 없으면 config.h)
+  const detectedVersions: Record<string, string | null> = {};
+  for (const device of uploadedDevices) {
+    detectedVersions[device] = extractVersion(entries, unzipped, device);
+  }
+
   // 각 장치 폴더에 빌드 타임스탬프 파일 추가 (파일 내용 동일해도 git diff에 잡히도록)
   const ts = new Date().toISOString();
   for (const device of uploadedDevices) {
@@ -173,10 +212,14 @@ export async function POST(req: NextRequest) {
       ? uploadedDevices[0]
       : `${uploadedDevices.length}개 장치 (${uploadedDevices.join(", ")})`;
 
+  const versionLabel = uploadedDevices
+    .map((d) => (detectedVersions[d] ? `${d} v${detectedVersions[d]}` : d))
+    .join(", ");
+
   const newCommit = await gh(`/repos/${OWNER}/${REPO}/git/commits`, {
     method: "POST",
     body: JSON.stringify({
-      message: `[admin] ${deviceLabel} 소스 업로드 (파일 ${Object.keys(sourceFiles).length}개)`,
+      message: `[admin] ${deviceLabel} 소스 업로드 — ${versionLabel} (파일 ${Object.keys(sourceFiles).length}개)`,
       tree: newTree.sha,
       parents: [latestSha],
     }),
@@ -195,6 +238,7 @@ export async function POST(req: NextRequest) {
     commit: newCommit.sha.slice(0, 8),
     files: Object.keys(sourceFiles).length,
     devices: uploadedDevices,
+    versions: detectedVersions,
     skippedIno: skippedIno.length > 0 ? skippedIno : undefined,
   });
 }
