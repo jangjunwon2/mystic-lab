@@ -71,13 +71,25 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // 빌드 완료 → 대기 행(빈 URL) 먼저 정리
+  // 해당 버전의 빌드 대기 행이 있는지 먼저 확인
+  // 없다면 → 사용자가 이미 다른 버전을 올린 것 (스테일 빌드) → 덮어쓰기 금지
+  const { data: pendingRow } = await (supabase as any)
+    .from("firmware_releases")
+    .select("id")
+    .eq("device_type", device_type.trim())
+    .eq("version", version.trim())
+    .eq("download_url", "")
+    .maybeSingle();
+
+  if (!pendingRow) {
+    return NextResponse.json({ skipped: true, reason: "stale build — a different version was uploaded since this build started" });
+  }
+
+  // 해당 장치의 모든 행 삭제 후 완료 행 단일 삽입
   await (supabase as any)
     .from("firmware_releases")
     .delete()
-    .eq("device_type", device_type.trim())
-    .eq("version", version.trim())
-    .eq("download_url", "");
+    .eq("device_type", device_type.trim());
 
   const { data, error } = await (supabase as any)
     .from("firmware_releases")
