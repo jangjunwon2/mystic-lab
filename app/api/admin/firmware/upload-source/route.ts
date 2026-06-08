@@ -231,13 +231,11 @@ export async function POST(req: NextRequest) {
       uploadedDevices
         .filter((d) => detectedVersions[d])
         .map(async (d) => {
-          // 같은 device+version의 기존 대기 행(빈 URL) 삭제 — 재업로드 시 created_at 갱신을 위해
+          // 해당 장치의 모든 기존 릴리스 삭제 — 새 버전으로 교체
           await (supabase as any)
             .from("firmware_releases")
             .delete()
-            .eq("device_type", d)
-            .eq("version", detectedVersions[d])
-            .eq("download_url", "");
+            .eq("device_type", d);
 
           return (supabase as any)
             .from("firmware_releases")
