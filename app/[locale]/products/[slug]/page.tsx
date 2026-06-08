@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
 import ProductDetail from "@/components/products/ProductDetail";
 import RecentlyViewed from "@/components/products/RecentlyViewed";
+import RelatedProducts from "@/components/products/RelatedProducts";
 import TrackProductView from "@/components/TrackProductView";
 import type { ProductCategory } from "@/lib/supabase/types";
 
@@ -185,6 +186,7 @@ export default async function ProductPage({ params }: Props) {
   let isAdmin = false;
   let hasPurchased = false;
   let hasDelivered = false;
+  let relatedProducts: { id: string; slug: string; name: string; thumbnail: string | null; price: number }[] = [];
 
   try {
     const supabase = await createClient();
@@ -255,6 +257,30 @@ export default async function ProductPage({ params }: Props) {
         profiles: profMap.get(r.user_id) ?? null,
       })) as ReviewWithProfile[];
     }
+
+    // 관련 상품 — 같은 카테고리, 자기 자신 제외, 최대 4개
+    const { data: relatedData } = await supabase
+      .from("products")
+      .select("id, slug, thumbnail_url, price_usd, product_translations(name, language)")
+      .eq("is_active", true)
+      .eq("category", product.category)
+      .neq("id", product.id)
+      .order("display_order", { ascending: true })
+      .limit(4);
+
+    relatedProducts = ((relatedData ?? []) as {
+      id: string; slug: string; thumbnail_url: string | null; price_usd: number;
+      product_translations: { name: string; language: string }[];
+    }[]).map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      thumbnail: p.thumbnail_url,
+      price: p.price_usd,
+      name:
+        p.product_translations?.find((t) => t.language === locale)?.name ??
+        p.product_translations?.find((t) => t.language === "en")?.name ??
+        p.slug,
+    }));
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -377,6 +403,7 @@ export default async function ProductPage({ params }: Props) {
         solutionVideo={solutionVideo}
         signedVideoUrl={signedVideoUrl}
       />
+      <RelatedProducts products={relatedProducts} locale={locale} />
       <RecentlyViewed locale={locale} currentProductId={product.id} />
     </>
   );

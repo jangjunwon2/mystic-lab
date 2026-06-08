@@ -84,7 +84,8 @@
     },
     "all": "全部",
     "noProducts": "暂无商品。",
-    "recentlyViewed": "最近浏览"
+    "recentlyViewed": "最近浏览",
+    "youMayAlsoLike": "您可能还喜欢"
   },
   "customOrder": {
     "title": "定制电子设备",

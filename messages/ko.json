@@ -84,7 +84,8 @@
     },
     "all": "전체",
     "noProducts": "아직 등록된 상품이 없습니다.",
-    "recentlyViewed": "최근 본 상품"
+    "recentlyViewed": "최근 본 상품",
+    "youMayAlsoLike": "이런 상품은 어떠세요"
   },
   "customOrder": {
     "title": "커스텀 전자 장치",

@@ -84,7 +84,8 @@
     },
     "all": "すべて",
     "noProducts": "まだ商品がありません。",
-    "recentlyViewed": "最近チェックした商品"
+    "recentlyViewed": "最近チェックした商品",
+    "youMayAlsoLike": "こちらもおすすめ"
   },
   "customOrder": {
     "title": "カスタム電子デバイス",

@@ -84,7 +84,8 @@
     },
     "all": "Todos",
     "noProducts": "Aún no hay productos.",
-    "recentlyViewed": "Vistos recientemente"
+    "recentlyViewed": "Vistos recientemente",
+    "youMayAlsoLike": "También te puede gustar"
   },
   "customOrder": {
     "title": "Dispositivo Electrónico Personalizado",
