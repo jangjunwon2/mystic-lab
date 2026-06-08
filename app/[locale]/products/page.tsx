@@ -76,7 +76,11 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
         short_description: translation?.short_description ?? null,
       };
     })
-    .filter((p) => !searchLower || p.name.toLowerCase().includes(searchLower));
+    .filter((p) =>
+      !searchLower ||
+      p.name.toLowerCase().includes(searchLower) ||
+      (p.short_description ?? "").toLowerCase().includes(searchLower)
+    );
 
   const { data: { user } } = await supabase.auth.getUser();
 
