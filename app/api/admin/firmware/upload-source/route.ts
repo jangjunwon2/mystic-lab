@@ -29,24 +29,27 @@ function isSrcFile(rel: string): boolean {
   return /\.(h|cpp|c|hpp)$/i.test(rel);
 }
 
-// config.h / config_t.h의 FIRMWARE_VERSION을 "major.minor" 형식으로 반환
+// config.h → config_t.h 순서로 FIRMWARE_VERSION을 찾아 "major.minor" 형식으로 반환
 // #define FIRMWARE_VERSION "x.x" 및 constexpr const char* FIRMWARE_VERSION = "x.x" 두 형식 모두 지원
+// 첫 번째 파일에서 버전을 못 찾으면 다음 후보 파일을 시도 (config.h에 버전 없고 config_t.h에 있는 경우 대응)
 function extractVersion(
   entries: { orig: string; rel: string }[],
   unzipped: Record<string, Uint8Array>,
   device: string,
 ): string | null {
   const candidates = [`${device}/config.h`, "config.h", `${device}/config_t.h`, "config_t.h"];
-  const cfgH = entries.find(({ rel }) => candidates.includes(rel));
-  if (!cfgH) return null;
-  const content = Buffer.from(unzipped[cfgH.orig]).toString("utf-8");
-  const match = content.match(
-    /(?:#define\s+FIRMWARE_VERSION\s+"|constexpr\s+const\s+char\s*\*\s*FIRMWARE_VERSION\s*=\s*")([^"]+)/,
-  );
-  if (!match) return null;
-  const parts = match[1].trim().split(".");
-  if (parts.length >= 2 && parts.slice(0, 2).every((p) => /^\d+$/.test(p))) {
-    return `${parts[0]}.${parts[1]}`;
+  for (const candidate of candidates) {
+    const cfgH = entries.find(({ rel }) => rel === candidate);
+    if (!cfgH) continue;
+    const content = Buffer.from(unzipped[cfgH.orig]).toString("utf-8");
+    const match = content.match(
+      /(?:#define\s+FIRMWARE_VERSION\s+"|constexpr\s+const\s+char\s*\*\s*FIRMWARE_VERSION\s*=\s*")([^"]+)/,
+    );
+    if (!match) continue;
+    const parts = match[1].trim().split(".");
+    if (parts.length >= 2 && parts.slice(0, 2).every((p) => /^\d+$/.test(p))) {
+      return `${parts[0]}.${parts[1]}`;
+    }
   }
   return null;
 }
