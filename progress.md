@@ -45,10 +45,11 @@
 - **대상 기기**: nexus_pot · nexus_flux_case · nexus_receiver · nexus_transmitter · nexus_smoke (5종, ESP32-S3)
 - **GitHub**: `jangjunwon2/nexus-firmware` · Actions `firmware-deploy.yml` — 빌드(`CDCOnBoot=cdc` FQBN 포함)·릴리즈 자동화
 - **CDCOnBoot=cdc**: OTA 후 시리얼이 USB CDC 대신 물리 UART로 빠지는 문제 해결. `--fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc"` 반영 + 각 스케치 폴더 `sketch.yaml` 추가(Arduino IDE 2.x 기본 FQBN). **nexus_pot 실기기 OTA 후 시리얼 정상 확인 ✅**
-- **OTA 흐름**: 기기 → `/api/admin/firmware/version?device=X` JSON(`version`, `url`, `notes`) → 버전 다르면(`!=`, 다운그레이드 포함) 저장된 URL로 바이너리 다운로드 → `Update.h` 적용 → 재부팅
+- **OTA 흐름**: 기기 → `/api/firmware/latest?device=X` JSON(`version`, `url`, `notes`) → 서버 버전이 현재보다 높을 때만(`isVersionNewer`) 저장된 URL로 바이너리 다운로드 → `Update.h` 적용 → 재부팅
   - Vercel chunked 전송: `http.getStream()` → `http.getString()` 변경(JSON 파싱 깨짐 수정) — 5종 전체 적용
-  - `_otaFirmwareUrl` 멤버 변수(pot·flux·receiver·smoke) / `otaState.firmwareUrl`(transmitter)로 version check → download URL 전달. config.h 정적 `OTA_FIRMWARE_URL` 상수 제거
-- **버전 비교**: `isVersionNewer()`(시맨틱) → `!= current` 동등 비교 — 낮은 버전(v1.1→v1.0) 다운그레이드 가능
+  - `_otaFirmwareUrl` 멤버 변수(pot·flux·receiver·smoke) / `otaState.firmwareUrl`(transmitter)로 version check → download URL 전달
+- **버전 관리**: `config.h`(또는 transmitter는 `config_t.h`)의 `FIRMWARE_VERSION` 단일 소스 — `#define` 및 `constexpr const char*` 형식 모두 지원. 형식은 `"major.minor"` (예: `"1.0"`, `"1.1"`). `version.txt` 사용 안 함
+- **버전 비교**: `isVersionNewer()`(시맨틱) — 서버 버전이 엄격히 높을 때만 업데이트. 동일·낮은 버전은 무시(다운그레이드 불가)
 - **어드민 업로드 자동화**: ZIP `.ino` 파일명으로 장치 자동 감지 · 신규 장치 `site_settings` 자동 등록(라벨 자동 생성) · 수동 선택 드롭다운 제거
 - ⚠️ **업로드 주의**: 어드민 ZIP 업로드 시 반드시 로컬 수정본(`도구 개발 - 복사본`)을 압축할 것 — 원본 파일로 덮어쓰면 패치가 초기화됨
 
