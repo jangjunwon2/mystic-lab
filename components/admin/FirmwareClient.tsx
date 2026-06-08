@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Upload, Trash2, Download, Copy, Check, FolderArchive, Pencil, Plus, X, RefreshCw } from "lucide-react";
+import { Upload, FolderArchive, X, RefreshCw } from "lucide-react";
 import type { FirmwareDevice } from "@/app/api/admin/firmware/devices/route";
+import FirmwareDeviceList from "./FirmwareDeviceList";
+import FirmwareDeviceManager from "./FirmwareDeviceManager";
 
 interface FirmwareRelease {
   id: string;
@@ -52,9 +54,6 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ msg: string; type: "idle" | "ok" | "err" | "info" }>({ msg: "", type: "idle" });
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
   const [stagedDevices, setStagedDevices] = useState<StagedDevice[]>([]);
   const [polling, setPolling] = useState(false);
@@ -107,60 +106,6 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   }, [stopPolling]);
 
   useEffect(() => () => stopPolling(), [stopPolling]);
-
-  // 장치 관리 상태
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editLabel, setEditLabel] = useState("");
-  const [addingDevice, setAddingDevice] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newLabel, setNewLabel] = useState("");
-  const [deviceSaving, setDeviceSaving] = useState(false);
-  const [deviceError, setDeviceError] = useState("");
-
-  async function saveDevices(next: FirmwareDevice[]) {
-    setDeviceSaving(true);
-    setDeviceError("");
-    const res = await fetch("/api/admin/firmware/devices", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
-    });
-    if (res.ok) {
-      setDevices(next);
-    } else {
-      const d = await res.json();
-      setDeviceError(d.error ?? "저장 실패");
-    }
-    setDeviceSaving(false);
-  }
-
-  function startEdit(idx: number) {
-    setEditingIdx(idx);
-    setEditName(devices[idx].name);
-    setEditLabel(devices[idx].label);
-    setAddingDevice(false);
-  }
-
-  async function commitEdit(idx: number) {
-    if (!editName.trim() || !editLabel.trim()) return;
-    const next = devices.map((d, i) => i === idx ? { name: editName.trim(), label: editLabel.trim() } : d);
-    await saveDevices(next);
-    setEditingIdx(null);
-  }
-
-  async function deleteDevice(idx: number) {
-    if (!confirm(`"${devices[idx].label}" 장치를 삭제할까요?`)) return;
-    await saveDevices(devices.filter((_, i) => i !== idx));
-  }
-
-  async function addDevice() {
-    if (!newName.trim() || !newLabel.trim()) { setDeviceError("이름과 표시명 모두 입력하세요."); return; }
-    if (devices.some(d => d.name === newName.trim())) { setDeviceError("이미 존재하는 장치 이름입니다."); return; }
-    const next = [...devices, { name: newName.trim(), label: newLabel.trim() }];
-    await saveDevices(next);
-    setNewName(""); setNewLabel(""); setAddingDevice(false);
-  }
 
   function handleUpload() {
     if (!zipFile) {
@@ -238,54 +183,6 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
     }
     setRebuilding(false);
-  }
-
-  async function deleteRelease(id: string, version: string) {
-    if (!confirm(`버전 ${version}을 삭제할까요? 파일도 함께 삭제됩니다.`)) return;
-    const res = await fetch(`/api/admin/firmware/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setReleases((prev) => prev.filter((r) => r.id !== id));
-      setSelectedIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
-    }
-  }
-
-  async function bulkDelete() {
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
-    if (!confirm(`선택한 ${ids.length}개 릴리스를 삭제할까요? 파일도 함께 삭제됩니다.`)) return;
-    setBulkDeleting(true);
-    const res = await fetch("/api/admin/firmware", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
-    });
-    if (res.ok) {
-      setReleases((prev) => prev.filter((r) => !selectedIds.has(r.id)));
-      setSelectedIds(new Set());
-    }
-    setBulkDeleting(false);
-  }
-
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
-      return s;
-    });
-  }
-
-  function toggleSelectAll() {
-    if (selectedIds.size === releases.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(releases.map((r) => r.id)));
-    }
-  }
-
-  function copyUrl(url: string, id: string) {
-    navigator.clipboard.writeText(url);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
   }
 
   return (
@@ -457,219 +354,15 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       </div>
 
       {/* 장치 관리 */}
-      <div className="rounded-xl p-6 space-y-3" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#A855F7" }}>장치 관리</h2>
-            <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>
-              등록된 장치 목록. 소스 업로드 시 .ino 파일명으로 자동 감지되며, 신규 장치는 자동 추가됩니다.
-            </p>
-          </div>
-          <button
-            onClick={() => { setAddingDevice(true); setEditingIdx(null); setDeviceError(""); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
-            style={{ background: "rgba(124,58,237,0.2)", color: "#A855F7" }}
-          >
-            <Plus className="w-3.5 h-3.5" /> 장치 추가
-          </button>
-        </div>
-
-        <div className="space-y-1.5">
-          {devices.map((device, idx) => (
-            <div
-              key={device.name}
-              className="flex items-center gap-2 rounded-lg px-3 py-2"
-              style={{ background: "#0D0D1A", border: "1px solid #2D2D4E" }}
-            >
-              {editingIdx === idx ? (
-                <>
-                  <input
-                    value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                    placeholder="폴더명"
-                    className="flex-1 bg-transparent text-xs outline-none"
-                    style={{ color: "#F0E6FF", borderBottom: "1px solid #7C3AED" }}
-                  />
-                  <input
-                    value={editLabel}
-                    onChange={e => setEditLabel(e.target.value)}
-                    placeholder="표시 이름"
-                    className="flex-1 bg-transparent text-xs outline-none"
-                    style={{ color: "#F0E6FF", borderBottom: "1px solid #7C3AED" }}
-                  />
-                  <button onClick={() => commitEdit(idx)} disabled={deviceSaving} className="text-xs px-2 py-0.5 rounded" style={{ background: "#7C3AED", color: "#fff" }}>저장</button>
-                  <button onClick={() => setEditingIdx(null)} className="p-0.5" style={{ color: "#6B7280" }}><X className="w-3.5 h-3.5" /></button>
-                </>
-              ) : (
-                <>
-                  <span className="text-xs font-mono flex-1" style={{ color: "#A855F7" }}>{device.name}</span>
-                  <span className="text-xs flex-1" style={{ color: "#9CA3AF" }}>{device.label}</span>
-                  <button onClick={() => startEdit(idx)} className="p-1" style={{ color: "#6B7280" }} onMouseEnter={e => (e.currentTarget.style.color = "#A855F7")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => deleteDevice(idx)} className="p-1" style={{ color: "#6B7280" }} onMouseEnter={e => (e.currentTarget.style.color = "#EF4444")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}><Trash2 className="w-3.5 h-3.5" /></button>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {addingDevice && (
-          <div
-            className="flex items-center gap-2 rounded-lg px-3 py-2"
-            style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.3)" }}
-          >
-            <input
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              placeholder="폴더명 (예: nexus_new)"
-              className="flex-1 bg-transparent text-xs outline-none"
-              style={{ color: "#F0E6FF", borderBottom: "1px solid #7C3AED" }}
-            />
-            <input
-              value={newLabel}
-              onChange={e => setNewLabel(e.target.value)}
-              placeholder="표시 이름 (예: Nexus New)"
-              className="flex-1 bg-transparent text-xs outline-none"
-              style={{ color: "#F0E6FF", borderBottom: "1px solid #7C3AED" }}
-            />
-            <button onClick={addDevice} disabled={deviceSaving} className="text-xs px-2 py-0.5 rounded" style={{ background: "#7C3AED", color: "#fff" }}>추가</button>
-            <button onClick={() => { setAddingDevice(false); setDeviceError(""); }} className="p-0.5" style={{ color: "#6B7280" }}><X className="w-3.5 h-3.5" /></button>
-          </div>
-        )}
-
-        {deviceError && <p className="text-xs" style={{ color: "#EF4444" }}>{deviceError}</p>}
-      </div>
+      <FirmwareDeviceManager devices={devices} setDevices={setDevices} />
 
       {/* 릴리스 목록 */}
-      <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
-        {newReleaseAlert && (
-          <div
-            className="px-6 py-3 text-sm font-medium flex items-center gap-2"
-            style={{ background: "rgba(16,185,129,0.12)", borderBottom: "1px solid rgba(16,185,129,0.25)", color: "#10B981" }}
-          >
-            <Check className="w-4 h-4 shrink-0" />
-            {newReleaseAlert}
-          </div>
-        )}
-        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid #2D2D4E" }}>
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold" style={{ color: "#F0E6FF" }}>
-              릴리스 이력 ({releases.length})
-            </h2>
-            {polling && (
-              <span className="flex items-center gap-1.5 text-xs" style={{ color: "#9CA3AF" }}>
-                <RefreshCw className="w-3 h-3 animate-spin" />
-                빌드 완료 대기 중…
-              </span>
-            )}
-          </div>
-          {selectedIds.size > 0 && (
-            <button
-              onClick={bulkDelete}
-              disabled={bulkDeleting}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-              style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)" }}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              {bulkDeleting ? "삭제 중…" : `선택 삭제 (${selectedIds.size})`}
-            </button>
-          )}
-        </div>
-
-
-        {releases.length === 0 ? (
-          <p className="px-6 py-12 text-center text-sm" style={{ color: "#6B7280" }}>
-            업로드된 펌웨어가 없습니다.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-                  <th className="px-4 py-3 w-8">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.size === releases.length && releases.length > 0}
-                      onChange={toggleSelectAll}
-                      className="cursor-pointer"
-                      style={{ accentColor: "#7C3AED" }}
-                    />
-                  </th>
-                  {["장치 타입", "버전", "파일 크기", "날짜", "다운로드 URL", ""].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium" style={{ color: "#9CA3AF" }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {releases.map((rel) => (
-                  <tr
-                    key={rel.id}
-                    className="transition-colors"
-                    style={{
-                      borderBottom: "1px solid #2D2D4E",
-                      background: selectedIds.has(rel.id) ? "rgba(124,58,237,0.06)" : "transparent",
-                    }}
-                  >
-                    <td className="px-4 py-3 w-8">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(rel.id)}
-                        onChange={() => toggleSelect(rel.id)}
-                        className="cursor-pointer"
-                        style={{ accentColor: "#7C3AED" }}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(168,85,247,0.15)", color: "#A855F7" }}>
-                        {rel.device_type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-mono font-semibold" style={{ color: "#F0E6FF" }}>
-                      {rel.version}
-                    </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: "#9CA3AF" }}>
-                      {rel.file_size ? formatBytes(rel.file_size) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: "#9CA3AF" }}>
-                      {new Date(rel.created_at).toLocaleDateString("ko-KR")}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <a href={rel.download_url} download className="flex items-center gap-1 text-xs" style={{ color: "#7C3AED" }}>
-                          <Download className="w-3.5 h-3.5" />
-                        </a>
-                        <button
-                          onClick={() => copyUrl(rel.download_url, rel.id)}
-                          className="text-xs"
-                          style={{ color: copiedId === rel.id ? "#10B981" : "#6B7280" }}
-                          title="URL 복사"
-                        >
-                          {copiedId === rel.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                        <span className="max-w-[180px] truncate text-xs" style={{ color: "#4B5563" }}>
-                          {rel.download_url}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => deleteRelease(rel.id, rel.version)}
-                        className="p-1 transition-colors"
-                        style={{ color: "#6B7280" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#6B7280")}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <FirmwareDeviceList
+        releases={releases}
+        setReleases={setReleases}
+        polling={polling}
+        newReleaseAlert={newReleaseAlert}
+      />
 
       {/* 가이드 */}
       <div className="space-y-4">
