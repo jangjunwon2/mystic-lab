@@ -15,7 +15,7 @@ export default function RestockAlert({ productId, userEmail }: RestockAlertProps
   const [error, setError] = useState<string | null>(null);
 
   async function subscribe() {
-    if (!email.includes("@")) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError("Please enter a valid email.");
       return;
     }

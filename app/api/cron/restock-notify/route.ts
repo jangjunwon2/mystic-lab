@@ -44,14 +44,16 @@ export async function GET(req: NextRequest) {
       product.product_translations?.find((t) => t.language === "en")?.name ??
       product.slug;
 
-    await sendRestockNotification({
+    const ok = await sendRestockNotification({
       to: alert.email,
       productName: name,
       productSlug: product.slug,
-    }).catch((e) => console.error("[restock-notify] send failed:", e));
+    }).then(() => true).catch((e) => { console.error("[restock-notify] send failed:", e); return false; });
 
-    toMark.push(alert.id);
-    sent++;
+    if (ok) {
+      toMark.push(alert.id);
+      sent++;
+    }
   }
 
   if (toMark.length > 0) {

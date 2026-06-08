@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIP(req);
+  const allowed = await checkRateLimit(`restock-alert:post:${ip}`, 5, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "too many requests" }, { status: 429 });
+  }
+
   const body = await req.json().catch(() => null);
   const productId = typeof body?.productId === "string" ? body.productId : null;
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : null;
 
-  if (!productId || !email || !email.includes("@")) {
+  if (!productId || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: "invalid input" }, { status: 400 });
   }
 
@@ -30,6 +37,12 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const ip = getClientIP(req);
+  const allowed = await checkRateLimit(`restock-alert:delete:${ip}`, 10, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "too many requests" }, { status: 429 });
+  }
+
   const body = await req.json().catch(() => null);
   const productId = typeof body?.productId === "string" ? body.productId : null;
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : null;
