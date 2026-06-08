@@ -5,6 +5,7 @@ import ProductDetail from "@/components/products/ProductDetail";
 import RecentlyViewed from "@/components/products/RecentlyViewed";
 import RelatedProducts from "@/components/products/RelatedProducts";
 import TrackProductView from "@/components/TrackProductView";
+import RestockAlert from "@/components/products/RestockAlert";
 import type { ProductCategory } from "@/lib/supabase/types";
 
 export type ProductTranslation = {
@@ -184,6 +185,7 @@ export default async function ProductPage({ params }: Props) {
   let signedVideoUrl: string | null = null;
   let isLoggedIn = false;
   let isAdmin = false;
+  let userEmail: string | null = null;
   let hasPurchased = false;
   let hasDelivered = false;
   let relatedProducts: { id: string; slug: string; name: string; thumbnail: string | null; price: number }[] = [];
@@ -285,6 +287,7 @@ export default async function ProductPage({ params }: Props) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       isLoggedIn = true;
+      userEmail = user.email ?? null;
 
       const profileRes = await supabase
         .from("profiles")
@@ -403,6 +406,11 @@ export default async function ProductPage({ params }: Props) {
         solutionVideo={solutionVideo}
         signedVideoUrl={signedVideoUrl}
       />
+      {product.stock === 0 && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <RestockAlert productId={product.id} userEmail={userEmail} />
+        </div>
+      )}
       <RelatedProducts products={relatedProducts} locale={locale} />
       <RecentlyViewed locale={locale} currentProductId={product.id} />
     </>

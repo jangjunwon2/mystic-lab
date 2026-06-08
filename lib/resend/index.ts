@@ -706,6 +706,61 @@ export async function sendCouponEmailsBatch(
   return { sent, failed };
 }
 
+export async function sendRestockNotification({
+  to,
+  productName,
+  productSlug,
+  locale = "en",
+}: {
+  to: string;
+  productName: string;
+  productSlug: string;
+  locale?: string;
+}): Promise<void> {
+  if (!isConfigured()) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const productUrl = `${siteUrl}/${locale}/products/${productSlug}`;
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0D0D1A;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0D0D1A;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#1A1A2E;border-radius:16px;border:1px solid #2D2D4E;overflow:hidden;">
+        <tr><td style="background:linear-gradient(135deg,#7C3AED,#A855F7);padding:24px 32px;">
+          <div style="font-size:18px;font-weight:700;color:#fff;letter-spacing:2px;">✦ MYSTIC LAB</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:4px;letter-spacing:1px;">BACK IN STOCK</div>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <p style="color:#F0E6FF;font-size:16px;margin:0 0 8px;">Good news! <strong style="color:#A855F7;">${escapeHtml(productName)}</strong> is back in stock.</p>
+          <p style="color:#9CA3AF;font-size:14px;margin:0 0 24px;">
+            You subscribed to restock alerts for this item. Grab yours before it sells out again!
+          </p>
+          <div style="text-align:center;">
+            <a href="${escapeHtml(productUrl)}"
+               style="display:inline-block;background:linear-gradient(135deg,#7C3AED,#A855F7);color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:700;">
+              View Product →
+            </a>
+          </div>
+        </td></tr>
+        <tr><td style="padding:16px 32px;border-top:1px solid #2D2D4E;text-align:center;">
+          <p style="color:#6B7280;font-size:12px;margin:0;">Questions? Contact support@mysticlab.com</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  const res = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `${productName} is back in stock — Mystic Lab`,
+    html,
+  });
+  logSendResult("restock", res);
+}
+
 function customOrderAdminHtml({
   customerName,
   customerEmail,
