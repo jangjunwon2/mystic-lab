@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { createHash } from "crypto";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 type UnlockCode = {
   id: string;
@@ -15,6 +16,15 @@ type SolutionVideoRow = {
 };
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIP(request);
+  const allowed = await checkRateLimit(`unlock:${ip}`, 10, 15 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   try {
     const { code, productId } = await request.json();
 

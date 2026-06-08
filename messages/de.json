@@ -85,7 +85,24 @@
     "all": "Alle",
     "noProducts": "Noch keine Produkte.",
     "recentlyViewed": "Zuletzt angesehen",
-    "youMayAlsoLike": "Das könnte Ihnen auch gefallen"
+    "youMayAlsoLike": "Das könnte Ihnen auch gefallen",
+    "restockAlert": {
+      "notify": "Benachrichtigung bei Wiederverfügbarkeit",
+      "button": "Benachrichtigen",
+      "invalidEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
+      "error": "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
+      "success": "Du wirst benachrichtigt, wenn der Artikel verfügbar ist.",
+      "cancel": "Benachrichtigung abbestellen"
+    },
+    "reviewForm": {
+      "title": "Teile deine Erfahrung",
+      "placeholder": "Schreibe deine Bewertung (optional)...",
+      "ratingRequired": "Bitte wähle eine Bewertung aus.",
+      "success": "Danke! Deine Bewertung wurde veröffentlicht.",
+      "submit": "Bewertung absenden",
+      "submitting": "Wird gesendet…",
+      "failed": "Senden fehlgeschlagen."
+    }
   },
   "customOrder": {
     "title": "Individuelles Elektronisches Gerät",

@@ -85,7 +85,24 @@
     "all": "All",
     "noProducts": "No products available yet.",
     "recentlyViewed": "Recently Viewed",
-    "youMayAlsoLike": "You May Also Like"
+    "youMayAlsoLike": "You May Also Like",
+    "restockAlert": {
+      "notify": "Notify me when back in stock",
+      "button": "Notify Me",
+      "invalidEmail": "Please enter a valid email.",
+      "error": "Something went wrong. Please try again.",
+      "success": "You'll be notified when this item is back.",
+      "cancel": "Cancel notification"
+    },
+    "reviewForm": {
+      "title": "Share your experience",
+      "placeholder": "Write your review (optional)...",
+      "ratingRequired": "Please select a rating.",
+      "success": "Thank you! Your review has been posted.",
+      "submit": "Submit Review",
+      "submitting": "Submitting…",
+      "failed": "Failed to submit."
+    }
   },
   "customOrder": {
     "title": "Custom Electronic Device",

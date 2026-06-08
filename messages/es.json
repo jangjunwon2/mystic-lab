@@ -85,7 +85,24 @@
     "all": "Todos",
     "noProducts": "Aún no hay productos.",
     "recentlyViewed": "Vistos recientemente",
-    "youMayAlsoLike": "También te puede gustar"
+    "youMayAlsoLike": "También te puede gustar",
+    "restockAlert": {
+      "notify": "Notificarme cuando esté disponible",
+      "button": "Notificarme",
+      "invalidEmail": "Por favor, introduce un email válido.",
+      "error": "Algo salió mal. Por favor, inténtalo de nuevo.",
+      "success": "Te avisaremos cuando el artículo esté disponible.",
+      "cancel": "Cancelar notificación"
+    },
+    "reviewForm": {
+      "title": "Comparte tu experiencia",
+      "placeholder": "Escribe tu reseña (opcional)...",
+      "ratingRequired": "Por favor, selecciona una puntuación.",
+      "success": "¡Gracias! Tu reseña ha sido publicada.",
+      "submit": "Enviar reseña",
+      "submitting": "Enviando…",
+      "failed": "No se pudo enviar."
+    }
   },
   "customOrder": {
     "title": "Dispositivo Electrónico Personalizado",

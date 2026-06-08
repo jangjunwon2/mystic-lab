@@ -85,7 +85,24 @@
     "all": "전체",
     "noProducts": "아직 등록된 상품이 없습니다.",
     "recentlyViewed": "최근 본 상품",
-    "youMayAlsoLike": "이런 상품은 어떠세요"
+    "youMayAlsoLike": "이런 상품은 어떠세요",
+    "restockAlert": {
+      "notify": "재입고 시 알림 받기",
+      "button": "알림 신청",
+      "invalidEmail": "유효한 이메일 주소를 입력해 주세요.",
+      "error": "오류가 발생했습니다. 다시 시도해 주세요.",
+      "success": "재입고 시 이메일로 알려드리겠습니다.",
+      "cancel": "알림 취소"
+    },
+    "reviewForm": {
+      "title": "사용 후기를 남겨주세요",
+      "placeholder": "리뷰를 작성해 주세요 (선택)...",
+      "ratingRequired": "별점을 선택해 주세요.",
+      "success": "리뷰가 등록되었습니다. 감사합니다!",
+      "submit": "리뷰 등록",
+      "submitting": "등록 중…",
+      "failed": "등록에 실패했습니다."
+    }
   },
   "customOrder": {
     "title": "커스텀 전자 장치",

@@ -85,7 +85,24 @@
     "all": "全部",
     "noProducts": "暂无商品。",
     "recentlyViewed": "最近浏览",
-    "youMayAlsoLike": "您可能还喜欢"
+    "youMayAlsoLike": "您可能还喜欢",
+    "restockAlert": {
+      "notify": "补货时通知我",
+      "button": "订阅通知",
+      "invalidEmail": "请输入有效的电子邮件地址。",
+      "error": "发生错误，请重试。",
+      "success": "补货时我们将通过邮件通知您。",
+      "cancel": "取消通知"
+    },
+    "reviewForm": {
+      "title": "分享您的使用体验",
+      "placeholder": "写下您的评价（可选）...",
+      "ratingRequired": "请选择评分。",
+      "success": "感谢您的评价，已成功发布！",
+      "submit": "提交评价",
+      "submitting": "提交中…",
+      "failed": "提交失败。"
+    }
   },
   "customOrder": {
     "title": "定制电子设备",

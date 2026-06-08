@@ -85,7 +85,24 @@
     "all": "Tous",
     "noProducts": "Aucun produit pour le moment.",
     "recentlyViewed": "Récemment consultés",
-    "youMayAlsoLike": "Vous aimerez aussi"
+    "youMayAlsoLike": "Vous aimerez aussi",
+    "restockAlert": {
+      "notify": "Me notifier lors du réapprovisionnement",
+      "button": "Me notifier",
+      "invalidEmail": "Veuillez entrer un email valide.",
+      "error": "Une erreur s'est produite. Veuillez réessayer.",
+      "success": "Vous serez notifié(e) lorsque cet article sera disponible.",
+      "cancel": "Annuler la notification"
+    },
+    "reviewForm": {
+      "title": "Partagez votre expérience",
+      "placeholder": "Rédigez votre avis (facultatif)...",
+      "ratingRequired": "Veuillez sélectionner une note.",
+      "success": "Merci ! Votre avis a été publié.",
+      "submit": "Soumettre l'avis",
+      "submitting": "Envoi en cours…",
+      "failed": "La soumission a échoué."
+    }
   },
   "customOrder": {
     "title": "Appareil Électronique Personnalisé",

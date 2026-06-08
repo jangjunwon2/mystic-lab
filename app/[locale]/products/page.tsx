@@ -7,10 +7,19 @@ interface ProductsPageProps {
   searchParams: Promise<{ category?: string; sort?: string; page?: string; search?: string }>;
 }
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
+const LOCALES = ["en", "ko", "ja", "zh-CN", "es", "fr", "de"] as const;
+
 export async function generateMetadata({ params }: ProductsPageProps) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "products" });
-  return { title: t("title") };
+  return {
+    title: t("title"),
+    alternates: {
+      canonical: `${SITE_URL}/${locale}/products`,
+      languages: Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}/products`])),
+    },
+  };
 }
 
 export interface ProductItem {

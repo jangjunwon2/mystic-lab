@@ -85,7 +85,24 @@
     "all": "すべて",
     "noProducts": "まだ商品がありません。",
     "recentlyViewed": "最近チェックした商品",
-    "youMayAlsoLike": "こちらもおすすめ"
+    "youMayAlsoLike": "こちらもおすすめ",
+    "restockAlert": {
+      "notify": "再入荷時に通知を受け取る",
+      "button": "通知を登録",
+      "invalidEmail": "有効なメールアドレスを入力してください。",
+      "error": "エラーが発生しました。もう一度お試しください。",
+      "success": "再入荷時にメールでお知らせします。",
+      "cancel": "通知をキャンセル"
+    },
+    "reviewForm": {
+      "title": "レビューを書く",
+      "placeholder": "レビューを入力してください（任意）...",
+      "ratingRequired": "評価を選択してください。",
+      "success": "レビューを投稿しました。ありがとうございます！",
+      "submit": "レビューを投稿",
+      "submitting": "投稿中…",
+      "failed": "投稿に失敗しました。"
+    }
   },
   "customOrder": {
     "title": "カスタム電子デバイス",

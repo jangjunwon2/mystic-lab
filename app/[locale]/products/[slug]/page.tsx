@@ -131,7 +131,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const { slug } = await params;
+  const { slug, locale } = await params;
   const sample = SAMPLE[slug];
   const t = sample?.product_translations[0];
 
@@ -158,19 +158,25 @@ export async function generateMetadata({ params }: Props) {
   const image = product?.thumbnail_url ?? undefined;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
 
+  const LOCALES = ["en", "ko", "ja", "zh-CN", "es", "fr", "de"] as const;
+
   return {
     title: name,
     description,
+    alternates: {
+      canonical: `${siteUrl}/${locale}/products/${slug}`,
+      languages: Object.fromEntries(LOCALES.map((l) => [l, `${siteUrl}/${l}/products/${slug}`])),
+    },
     openGraph: {
       title: `${name} | Mystic Lab`,
       description,
-      images: image ? [{ url: image, width: 1200, height: 630, alt: name }] : [`${siteUrl}/og-image.png`],
+      images: image ? [{ url: image, width: 1200, height: 630, alt: name }] : [`${siteUrl}/opengraph-image`],
     },
     twitter: {
       card: "summary_large_image",
       title: `${name} | Mystic Lab`,
       description,
-      images: image ? [image] : [`${siteUrl}/og-image.png`],
+      images: image ? [image] : [`${siteUrl}/opengraph-image`],
     },
   };
 }

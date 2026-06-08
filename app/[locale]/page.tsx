@@ -5,9 +5,41 @@ import AboutBanner from "@/components/home/AboutBanner";
 import CustomOrderBanner from "@/components/home/CustomOrderBanner";
 import UnlockBanner from "@/components/home/UnlockBanner";
 import { createClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
+const LOCALES = ["en", "ko", "ja", "zh-CN", "es", "fr", "de"] as const;
+
+const HOME_META: Record<string, { title: string; description: string }> = {
+  en: { title: "Mystic Lab — Professional Magic Shop", description: "Premium magic props and custom electronic devices for professional magicians worldwide." },
+  ko: { title: "미스틱 랩 — 프로 마술사 전용 마술 쇼핑몰", description: "전 세계 프로 마술사를 위한 프리미엄 마술 도구와 맞춤 전자 기기." },
+  ja: { title: "ミスティック・ラボ — プロマジシャン専用マジックショップ", description: "世界中のプロマジシャン向けのプレミアムマジック用品とカスタム電子機器。" },
+  "zh-CN": { title: "神秘实验室 — 专业魔术师专用魔术商店", description: "为全球专业魔术师提供优质魔术道具和定制电子设备。" },
+  es: { title: "Mystic Lab — Tienda de Magia Profesional", description: "Accesorios de magia premium y dispositivos electrónicos para magos profesionales de todo el mundo." },
+  fr: { title: "Mystic Lab — Boutique de Magie Professionnelle", description: "Accessoires de magie premium et appareils électroniques pour les magiciens professionnels du monde entier." },
+  de: { title: "Mystic Lab — Professioneller Zauberladen", description: "Premium-Zauberzubehör und maßgeschneiderte elektronische Geräte für professionelle Zauberer weltweit." },
+};
 
 interface Props {
   params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const meta = HOME_META[locale] ?? HOME_META.en;
+  return {
+    title: meta.title,
+    description: meta.description,
+    alternates: {
+      canonical: `${SITE_URL}/${locale}`,
+      languages: Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}`])),
+    },
+    openGraph: {
+      title: meta.title,
+      description: meta.description,
+      url: `${SITE_URL}/${locale}`,
+    },
+  };
 }
 
 export default async function HomePage({ params }: Props) {

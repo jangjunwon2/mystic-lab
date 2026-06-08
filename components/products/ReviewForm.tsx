@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Star, CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface Props {
   productId: string;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function ReviewForm({ productId, hasPurchased }: Props) {
+  const t = useTranslations("products.reviewForm");
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
@@ -25,14 +27,14 @@ export default function ReviewForm({ productId, hasPurchased }: Props) {
         style={{ background: "rgba(16,185,129,0.08)", borderColor: "rgba(16,185,129,0.3)", color: "#10B981" }}
       >
         <CheckCircle2 className="w-4 h-4 shrink-0" />
-        Thank you! Your review has been posted.
+        {t("success")}
       </div>
     );
   }
 
   const handleSubmit = async () => {
     if (!rating) {
-      setError("Please select a rating.");
+      setError(t("ratingRequired"));
       return;
     }
     setSubmitting(true);
@@ -47,7 +49,7 @@ export default function ReviewForm({ productId, hasPurchased }: Props) {
       setSubmitted(true);
     } else {
       const d = await res.json().catch(() => ({}));
-      setError(d.error ?? "Failed to submit.");
+      setError(d.error ?? t("failed"));
     }
   };
 
@@ -57,7 +59,7 @@ export default function ReviewForm({ productId, hasPurchased }: Props) {
       style={{ background: "#13131F", borderColor: "rgba(124,58,237,0.3)" }}
     >
       <p className="text-sm font-medium mb-3" style={{ color: "#F0E6FF" }}>
-        Share your experience
+        {t("title")}
       </p>
       <div className="flex gap-1 mb-3">
         {[1, 2, 3, 4, 5].map((i) => (
@@ -80,7 +82,7 @@ export default function ReviewForm({ productId, hasPurchased }: Props) {
       </div>
       <textarea
         rows={3}
-        placeholder="Write your review (optional)..."
+        placeholder={t("placeholder")}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         className="w-full rounded-lg px-3 py-2 text-sm resize-none"
@@ -93,7 +95,7 @@ export default function ReviewForm({ productId, hasPurchased }: Props) {
         className="mt-3 px-5 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
         style={{ background: "linear-gradient(135deg, #7C3AED, #A855F7)", color: "#fff" }}
       >
-        {submitting ? "Submitting…" : "Submit Review"}
+        {submitting ? t("submitting") : t("submit")}
       </button>
     </div>
   );

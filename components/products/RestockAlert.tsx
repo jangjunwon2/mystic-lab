@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Bell, BellOff, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface RestockAlertProps {
   productId: string;
@@ -9,6 +10,7 @@ interface RestockAlertProps {
 }
 
 export default function RestockAlert({ productId, userEmail }: RestockAlertProps) {
+  const t = useTranslations("products.restockAlert");
   const [email, setEmail] = useState(userEmail ?? "");
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,7 @@ export default function RestockAlert({ productId, userEmail }: RestockAlertProps
 
   async function subscribe() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Please enter a valid email.");
+      setError(t("invalidEmail"));
       return;
     }
     setLoading(true);
@@ -30,7 +32,7 @@ export default function RestockAlert({ productId, userEmail }: RestockAlertProps
       if (!res.ok) throw new Error("Failed");
       setSubscribed(true);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("error"));
     } finally {
       setLoading(false);
     }
@@ -55,12 +57,13 @@ export default function RestockAlert({ productId, userEmail }: RestockAlertProps
       <div className="mt-4 flex items-center gap-3 bg-[#13131F] border border-[#2D2D4E] rounded-xl px-4 py-3">
         <Bell className="w-4 h-4 text-[#A855F7] flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-[#F0E6FF] text-sm font-medium">You&apos;ll be notified when this item is back.</p>
+          <p className="text-[#F0E6FF] text-sm font-medium">{t("success")}</p>
           <p className="text-[#6B7280] text-xs truncate">{email}</p>
         </div>
         <button
           onClick={unsubscribe}
           disabled={loading}
+          aria-label={t("cancel")}
           className="text-xs text-[#6B7280] hover:text-[#9CA3AF] transition-colors flex-shrink-0"
         >
           {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <BellOff className="w-3 h-3" />}
@@ -73,7 +76,7 @@ export default function RestockAlert({ productId, userEmail }: RestockAlertProps
     <div className="mt-4 bg-[#13131F] border border-[#2D2D4E] rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <Bell className="w-4 h-4 text-[#9CA3AF]" />
-        <p className="text-[#9CA3AF] text-sm">Notify me when back in stock</p>
+        <p className="text-[#9CA3AF] text-sm">{t("notify")}</p>
       </div>
       <div className="flex gap-2">
         <input
@@ -89,7 +92,7 @@ export default function RestockAlert({ productId, userEmail }: RestockAlertProps
           className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
         >
           {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-          Notify Me
+          {t("button")}
         </button>
       </div>
       {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
