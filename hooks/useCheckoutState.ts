@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { CartItem } from "@/lib/payments/types";
 import { readCheckoutItems, removePaidItemsFromCart } from "@/lib/cart-storage";
 
-type Track = "international" | "korea";
+export type Track = "international" | "korea";
 
 type SavedAddress = {
   id: string;
@@ -74,7 +74,6 @@ export interface CheckoutStateReturn {
   shippingDetail: string;
   setShippingDetail: (v: string) => void;
   shippingPostal: string;
-  setShippingPostal: (v: string) => void;
   intlName: string;
   setIntlName: (v: string) => void;
   intlPhone: string;
@@ -100,12 +99,10 @@ export interface CheckoutStateReturn {
   setPointsInput: (v: string) => void;
   subtotalUsd: number;
   couponDiscountUsd: number;
-  afterCouponUsd: number;
   canRedeemPoints: boolean;
   maxUsablePoints: number;
   pointsUsed: number;
   pointsDiscountUsd: number;
-  discountedUsd: number;
   shippingCostUsd: number;
   totalUsd: number;
   totalKrw: number;
@@ -478,7 +475,6 @@ export function useCheckoutState(
     shippingDetail,
     setShippingDetail,
     shippingPostal,
-    setShippingPostal,
     intlName,
     setIntlName,
     intlPhone,
@@ -504,12 +500,10 @@ export function useCheckoutState(
     setPointsInput,
     subtotalUsd,
     couponDiscountUsd,
-    afterCouponUsd,
     canRedeemPoints,
     maxUsablePoints,
     pointsUsed,
     pointsDiscountUsd,
-    discountedUsd,
     shippingCostUsd,
     totalUsd,
     totalKrw,

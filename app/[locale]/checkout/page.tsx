@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { COUNTRIES } from "@/lib/constants/countries";
 import CountrySelect from "@/components/ui/CountrySelect";
-import { useCheckoutState } from "@/hooks/useCheckoutState";
+import { useCheckoutState, type Track } from "@/hooks/useCheckoutState";
 
 // Lazy load Toss widget to avoid SSR issues
 const TossPaymentWidget = dynamic(
@@ -44,8 +44,6 @@ declare global {
     };
   }
 }
-
-type Track = "international" | "korea";
 
 interface Props {
   params: Promise<{ locale: string }>;
