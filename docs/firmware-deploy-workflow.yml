@@ -77,8 +77,15 @@ jobs:
         run: |
           DEVICE_DIR="${{ matrix.device }}"
 
-          # config.h에서 FIRMWARE_VERSION 추출
-          VERSION=$(grep -oP '#define\s+FIRMWARE_VERSION\s+"\K[^"]+' "${DEVICE_DIR}/config.h" || true)
+          # config.h 또는 config_t.h에서 FIRMWARE_VERSION 추출
+          # #define FIRMWARE_VERSION "x.x" 형식과 constexpr const char* FIRMWARE_VERSION = "x.x" 형식 모두 지원
+          VERSION=""
+          for CFG in "${DEVICE_DIR}/config.h" "${DEVICE_DIR}/config_t.h"; do
+            if [ -f "$CFG" ]; then
+              V=$(grep -oP '(?:#define\s+FIRMWARE_VERSION\s+"|constexpr\s+const\s+char\s*\*\s*FIRMWARE_VERSION\s*=\s*")\K[^"]+' "$CFG" || true)
+              if [ -n "$V" ]; then VERSION="$V"; break; fi
+            fi
+          done
 
           # major.minor 형식으로 정규화 (1.0.2 → 1.0 / 1.0 → 1.0)
           if [ -n "$VERSION" ]; then
@@ -93,7 +100,7 @@ jobs:
 
           # 버전을 감지 못하면 빌드 실패
           if [ -z "$VERSION" ]; then
-            echo "::error::버전을 감지하지 못했습니다. ${DEVICE_DIR}/version.txt 또는 ${DEVICE_DIR}/config.h에 FIRMWARE_VERSION을 정의하세요."
+            echo "::error::버전을 감지하지 못했습니다. ${DEVICE_DIR}/config.h 또는 config_t.h에 FIRMWARE_VERSION을 정의하세요."
             exit 1
           fi
 
