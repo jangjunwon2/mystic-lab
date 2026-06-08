@@ -176,22 +176,26 @@ export default function FirmwareDeviceList({ releases, setReleases, polling, new
                     {new Date(rel.created_at).toLocaleDateString("ko-KR")}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <a href={rel.download_url} download className="flex items-center gap-1 text-xs" style={{ color: "#7C3AED" }}>
-                        <Download className="w-3.5 h-3.5" />
-                      </a>
-                      <button
-                        onClick={() => copyUrl(rel.download_url, rel.id)}
-                        className="text-xs"
-                        style={{ color: copiedId === rel.id ? "#10B981" : "#6B7280" }}
-                        title="URL 복사"
-                      >
-                        {copiedId === rel.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                      <span className="max-w-[180px] truncate text-xs" style={{ color: "#4B5563" }}>
-                        {rel.download_url}
-                      </span>
-                    </div>
+                    {rel.download_url ? (
+                      <div className="flex items-center gap-2">
+                        <a href={rel.download_url} download className="flex items-center gap-1 text-xs" style={{ color: "#7C3AED" }}>
+                          <Download className="w-3.5 h-3.5" />
+                        </a>
+                        <button
+                          onClick={() => copyUrl(rel.download_url, rel.id)}
+                          className="text-xs"
+                          style={{ color: copiedId === rel.id ? "#10B981" : "#6B7280" }}
+                          title="URL 복사"
+                        >
+                          {copiedId === rel.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                        <span className="max-w-[180px] truncate text-xs" style={{ color: "#4B5563" }}>
+                          {rel.download_url}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs" style={{ color: "#6B7280" }}>빌드 대기 중…</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <button

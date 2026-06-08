@@ -136,7 +136,7 @@ jobs:
 
       - name: Upload binary
         run: |
-          BIN=$(find ./build -name "*.bin" | head -1)
+          BIN=$(find ./build -name "*.ino.bin" | head -1)
           echo "업로드: $BIN ($(stat -c%s "$BIN") bytes)"
           curl -sf -X PUT "${{ steps.get-url.outputs.signed_url }}" \
             -H "Content-Type: application/octet-stream" \
@@ -146,7 +146,7 @@ jobs:
         env:
           FIRMWARE_CI_TOKEN: ${{ secrets.FIRMWARE_CI_TOKEN }}
         run: |
-          BIN=$(find ./build -name "*.bin" | head -1)
+          BIN=$(find ./build -name "*.ino.bin" | head -1)
           FILE_SIZE=$(stat -c%s "$BIN")
           MSG="${{ github.event.head_commit.message }}"
           curl -sf -X POST \
