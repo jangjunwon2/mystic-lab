@@ -222,6 +222,29 @@ export async function POST(req: NextRequest) {
   // 신규 장치는 site_settings에 자동 등록
   await autoRegisterDevices(uploadedDevices);
 
+  // 소스 업로드 즉시 버전을 firmware_releases에 선반영 (빌드 완료 전)
+  // download_url을 빈 값으로 저장 → 기기는 url.isEmpty() 조건으로 다운로드 스킵
+  // GitHub Actions 빌드 완료 후 실제 URL이 있는 새 행이 추가되어 최신이 됨
+  {
+    const supabase = createAdminClient();
+    await Promise.allSettled(
+      uploadedDevices
+        .filter((d) => detectedVersions[d])
+        .map((d) =>
+          (supabase as any)
+            .from("firmware_releases")
+            .insert({
+              device_type: d,
+              version: detectedVersions[d],
+              download_url: "",
+              storage_path: "",
+              notes: "[빌드 대기] GitHub Actions 빌드 완료 후 실제 URL 등록",
+              is_active: true,
+            })
+        )
+    );
+  }
+
   return NextResponse.json({
     ok: true,
     commit: newCommit.sha.slice(0, 8),
