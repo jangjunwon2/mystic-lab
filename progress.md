@@ -32,6 +32,11 @@
 - **최근 본 상품**: localStorage 기반, 상품 상세 하단 표시 (max 6개, 7개 언어) (2026-06-08)
 - **관련 상품 추천**: 같은 카테고리 최대 4개, 상품 상세 하단 표시 (7개 언어) (2026-06-08)
 - **재입고 알림**: `restock_alerts` 테이블 + 구독/취소 API + cron 발송(`/api/cron/restock-notify`) + UI(품절 시 이메일 입력 버튼) · IP rate limit · send-then-mark 보장 (2026-06-08)
+- **동적 OG 이미지**: `app/opengraph-image.tsx` (ImageResponse, 1200×630, 퍼플 테마) — SNS 공유 시 브랜드 이미지 표시 (2026-06-08)
+- **RestockAlert · ReviewForm i18n**: 하드코딩 영어 → `useTranslations` 전환, 7개 언어 메시지 파일 추가 (2026-06-08)
+- **고객 페이지 error.tsx**: `app/[locale]/error.tsx` — 에러 바운더리 (Try again / Go home) (2026-06-08)
+- **로딩 스켈레톤**: 상품 상세(`products/[slug]/loading.tsx`) · 마이페이지(`account/loading.tsx`) (2026-06-08)
+- **SEO 메타데이터 + hreflang**: 홈·상품목록·상품 상세 페이지에 `generateMetadata` + 7개 언어 alternate 태그 (2026-06-08)
 
 ### 어드민 (/admin · 한국어)
 - 대시보드 · 통계(매출·전환율·위시→구매·공유·결제수단/국가 분포·**고객 세그먼트**·**기간 지정 CSV 내보내기**)
@@ -88,9 +93,10 @@
 
 ---
 
-## 🔒 보안·품질 점검 (2026-06-05 완료, 재확인 불필요)
+## 🔒 보안·품질 점검
 
-> 어드민 판별 이메일 기준 통일 · 결제 위조 차단 · Rate limit 확대 · 입력검증 · DB error.message 노출 제거(18곳) · XSS 방지 · 데드코드 제거. (상세는 git 이력)
+> 어드민 판별 이메일 기준 통일 · 결제 위조 차단 · Rate limit 확대 · 입력검증 · DB error.message 노출 제거(18곳) · XSS 방지 · 데드코드 제거. (2026-06-05)
+> `/api/unlock` rate limit 추가(IP당 10회/15분). (2026-06-08)
 
 ---
 
@@ -119,6 +125,13 @@
 ---
 
 ## 🔜 앞으로 할 일 / 후보
+
+### 웹사이트 개선 (발견된 미비 사항)
+- **`/api/contact` rate limit** — 현재 없음, 메일 폭탄 취약점 (HIGH)
+- **`/api/community/[productId]` rate limit** — POST/PATCH/DELETE 모두 없음, 스팸 취약점 (HIGH)
+- **`app/[locale]/not-found.tsx`** — 없음, 404 시 Next.js 기본 화면 노출 (MEDIUM)
+- **loading.tsx 추가** — cart·checkout 페이지 (나머지 법적·정적 페이지는 불필요) (MEDIUM)
+- **SEO 메타데이터** — about·contact·custom-order·법적 페이지(terms/privacy/refund/shipping/legal-notice)에 `generateMetadata` 미추가 (MEDIUM)
 
 ### 쇼핑몰/앱
 - **인스타 앱 마술 기믹 잔여** — 남은 것: 관객 *단어* 예언, 인스타 자체 입력 peek, 검색 탭 위장
