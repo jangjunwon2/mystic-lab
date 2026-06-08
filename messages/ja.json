@@ -83,7 +83,8 @@
       "accessories": "アクセサリー"
     },
     "all": "すべて",
-    "noProducts": "まだ商品がありません。"
+    "noProducts": "まだ商品がありません。",
+    "recentlyViewed": "最近チェックした商品"
   },
   "customOrder": {
     "title": "カスタム電子デバイス",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { RECENTLY_VIEWED_KEY } from "@/lib/constants/storage-keys";
 
 interface TrackProductViewProps {
   productId: string;
@@ -11,7 +12,6 @@ interface TrackProductViewProps {
   priceUsd: number;
 }
 
-const RECENTLY_VIEWED_KEY = "ml_recently_viewed";
 const MAX_ITEMS = 8;
 
 export default function TrackProductView({
@@ -38,8 +38,11 @@ export default function TrackProductView({
 
       // 최근 본 상품 localStorage 저장
       const raw = localStorage.getItem(RECENTLY_VIEWED_KEY);
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
       const existing: { id: string; slug: string; name: string; thumbnail: string | null; price: number }[] =
-        raw ? JSON.parse(raw) : [];
+        Array.isArray(parsed) ? parsed.filter(
+          (p) => typeof p === "object" && p !== null && typeof (p as { id?: unknown }).id === "string"
+        ) : [];
       const filtered = existing.filter((p) => p.id !== productId);
       const updated = [
         { id: productId, slug: productSlug, name: productName, thumbnail: thumbnailUrl, price: priceUsd },

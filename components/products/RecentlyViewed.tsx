@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
+import { RECENTLY_VIEWED_KEY } from "@/lib/constants/storage-keys";
 
 interface RecentItem {
   id: string;
@@ -12,17 +14,25 @@ interface RecentItem {
   price: number;
 }
 
-const RECENTLY_VIEWED_KEY = "ml_recently_viewed";
-
 export default function RecentlyViewed({ locale, currentProductId }: { locale: string; currentProductId: string }) {
   const [items, setItems] = useState<RecentItem[]>([]);
+  const t = useTranslations("products");
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(RECENTLY_VIEWED_KEY);
       if (!raw) return;
-      const all: RecentItem[] = JSON.parse(raw);
-      setItems(all.filter((p) => p.id !== currentProductId).slice(0, 6));
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      const valid = parsed.filter(
+        (p): p is RecentItem =>
+          typeof p === "object" && p !== null &&
+          typeof (p as RecentItem).id === "string" &&
+          typeof (p as RecentItem).slug === "string" &&
+          typeof (p as RecentItem).name === "string" &&
+          typeof (p as RecentItem).price === "number"
+      );
+      setItems(valid.filter((p) => p.id !== currentProductId).slice(0, 6));
     } catch {
       /* ignore */
     }
@@ -36,7 +46,7 @@ export default function RecentlyViewed({ locale, currentProductId }: { locale: s
         className="text-xl font-bold text-[#F0E6FF] mb-6"
         style={{ fontFamily: "var(--font-cinzel), serif" }}
       >
-        Recently Viewed
+        {t("recentlyViewed")}
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {items.map((item) => (

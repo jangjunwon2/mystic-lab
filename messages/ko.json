@@ -83,7 +83,8 @@
       "accessories": "액세서리"
     },
     "all": "전체",
-    "noProducts": "아직 등록된 상품이 없습니다."
+    "noProducts": "아직 등록된 상품이 없습니다.",
+    "recentlyViewed": "최근 본 상품"
   },
   "customOrder": {
     "title": "커스텀 전자 장치",

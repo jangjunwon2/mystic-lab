@@ -83,7 +83,8 @@
       "accessories": "Accessories"
     },
     "all": "All",
-    "noProducts": "No products available yet."
+    "noProducts": "No products available yet.",
+    "recentlyViewed": "Recently Viewed"
   },
   "customOrder": {
     "title": "Custom Electronic Device",

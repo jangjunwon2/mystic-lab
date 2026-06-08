@@ -83,7 +83,8 @@
       "accessories": "Accessoires"
     },
     "all": "Tous",
-    "noProducts": "Aucun produit pour le moment."
+    "noProducts": "Aucun produit pour le moment.",
+    "recentlyViewed": "Récemment consultés"
   },
   "customOrder": {
     "title": "Appareil Électronique Personnalisé",

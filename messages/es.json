@@ -83,7 +83,8 @@
       "accessories": "Accesorios"
     },
     "all": "Todos",
-    "noProducts": "Aún no hay productos."
+    "noProducts": "Aún no hay productos.",
+    "recentlyViewed": "Vistos recientemente"
   },
   "customOrder": {
     "title": "Dispositivo Electrónico Personalizado",
