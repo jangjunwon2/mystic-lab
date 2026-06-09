@@ -970,8 +970,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
         {/* ── 계산기 키패드 키보드 영역 ── */}
         <div
-          className={`grid grid-cols-4 pb-8 ${theme === "android" ? "gap-x-4 gap-y-2.5 px-3.5" : "gap-3.5 px-5"}`}
-          style={theme === "android" ? undefined : { height: "60vh" }}
+          className={`grid grid-cols-4 ${theme === "android" ? "gap-x-4 gap-y-2.5 px-3.5" : "gap-3.5 px-5"}`}
+          style={theme === "android"
+            ? { paddingBottom: "env(safe-area-inset-bottom)" }
+            : { height: "60vh", paddingBottom: "max(2rem, env(safe-area-inset-bottom))" }}
         >
           {theme === "ios" ? (
             // ── iOS 계산기 디자인 키패드 ──
