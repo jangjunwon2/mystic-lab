@@ -42,14 +42,6 @@ const OPTION_LABELS: Record<string, { together: string; totalLabel: string }> = 
   de: { together: "Zusammen kaufen & sparen", totalLabel: "Gesamt" },
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  card_magic: "Card Magic",
-  coin_magic: "Coin Magic",
-  stage_magic: "Stage Magic",
-  mentalism: "Mentalism",
-  electronic: "Electronic",
-  accessories: "Accessories",
-};
 
 interface Props {
   product: ProductWithTranslations;
@@ -147,7 +139,7 @@ export default function ProductDetail({
             className="flex items-center gap-1.5 hover:text-[#A855F7] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            All Products
+            {t("title")}
           </Link>
           <span>/</span>
           <span className="text-[#9CA3AF]">{translation.name}</span>
@@ -174,7 +166,7 @@ export default function ProductDetail({
                   <div className="w-28 h-28 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/40 flex items-center justify-center">
                     <div className="w-14 h-14 rounded-full bg-[#7C3AED]/50 animate-pulse" />
                   </div>
-                  <p className="text-[#4B5563] text-xs">Image Coming Soon</p>
+                  <p className="text-[#4B5563] text-xs">{t("imageComing")}</p>
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D1A]/40 to-transparent pointer-events-none" />
@@ -206,11 +198,11 @@ export default function ProductDetail({
             {/* Badges */}
             <div className="flex items-center gap-2 mb-4">
               <span className="text-[10px] font-medium bg-[#7C3AED]/80 text-white px-2.5 py-1 rounded-full uppercase tracking-wider">
-                {CATEGORY_LABELS[product.category]}
+                {t(`cat.${product.category}` as never)}
               </span>
               {product.is_featured && (
                 <span className="text-[10px] font-medium bg-[#F59E0B]/80 text-[#0D0D1A] px-2.5 py-1 rounded-full uppercase tracking-wider">
-                  Featured
+                  {t("sort.featured")}
                 </span>
               )}
             </div>

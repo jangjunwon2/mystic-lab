@@ -10,12 +10,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json();
   const supabase = createAdminClient();
 
+  const ALLOWED_FIELDS = ["notes", "download_url", "device_type", "version"] as const;
+  const patch: Record<string, unknown> = {};
+  for (const key of ALLOWED_FIELDS) {
+    if (key in body) patch[key] = body[key];
+  }
+
   const { error } = await (supabase as any)
     .from("firmware_releases")
-    .update(body)
+    .update(patch)
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Server error" }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
@@ -41,6 +47,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     .delete()
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Server error" }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

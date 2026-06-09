@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     .single();
 
   if (productError || !product) {
-    return NextResponse.json({ error: productError?.message ?? "Failed to create product" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
 
   if (translations?.length > 0) {

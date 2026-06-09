@@ -6,9 +6,27 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
 import CloudflarePlayer from "@/components/video/CloudflarePlayer";
 import SolutionVideoSection from "@/components/video/SolutionVideoSection";
+import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ locale: string; slug: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const titles: Record<string, string> = {
+    en: "Solution Tutorial",
+    ko: "해법 영상",
+    ja: "解法チュートリアル",
+    "zh-CN": "解法教程",
+    es: "Tutorial de Solución",
+    fr: "Tutoriel de Solution",
+    de: "Lösungs-Tutorial",
+  };
+  return {
+    title: `${titles[locale] ?? titles.en} — ${slug}`,
+    robots: { index: false, follow: false },
+  };
 }
 
 function pickName(translations: { name: string; language: string }[] | undefined, locale: string, slug: string): string {

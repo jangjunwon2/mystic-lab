@@ -7,7 +7,8 @@
     "account": "마이페이지",
     "signIn": "로그인",
     "signOut": "로그아웃",
-    "admin": "관리자"
+    "admin": "관리자",
+    "searchPlaceholder": "상품 검색..."
   },
   "home": {
     "hero": {
@@ -102,7 +103,8 @@
       "submit": "리뷰 등록",
       "submitting": "등록 중…",
       "failed": "등록에 실패했습니다."
-    }
+    },
+    "imageComing": "이미지 준비 중"
   },
   "customOrder": {
     "title": "커스텀 전자 장치",
@@ -127,7 +129,9 @@
       "namePlaceholder": "성함을 입력하세요",
       "selectRange": "범위 선택",
       "optional": "선택"
-    }
+    },
+    "sentTitle": "문의가 전송되었습니다!",
+    "backHome": "홈으로 돌아가기"
   },
   "checkout": {
     "title": "결제",
@@ -270,7 +274,16 @@
     "submit": "잠금 해제",
     "success": "잠금이 해제되었습니다! 즐겁게 시청하세요.",
     "error": "유효하지 않은 코드입니다. 다시 확인해주세요.",
-    "alreadyUnlocked": "이미 잠금 해제됨!"
+    "alreadyUnlocked": "이미 잠금 해제됨!",
+    "deviceCodeLabel": "디바이스 코드",
+    "deviceCodeHint": "기기 패키지 안 카드에 인쇄되어 있습니다 · 형식: XXXX-XXXX-XXXX",
+    "checking": "확인 중…",
+    "haveAccount": "이미 계정이 있으신가요?",
+    "signInLink": "로그인하여 튜토리얼을 이용하세요",
+    "unlockedBadge": "성공적으로 잠금 해제",
+    "codeValidBody": "코드가 유효합니다! 튜토리얼 영상이 업로드되면 여기에 표시됩니다.",
+    "enterAnotherCode": "다른 코드 입력",
+    "browseProducts": "상품 둘러보기"
   },
   "footer": {
     "tagline": "불가능의 예술, 미스틱랩이 만듭니다.",
@@ -287,7 +300,9 @@
     },
     "sectionExplore": "탐색",
     "sectionLegal": "법적 정보",
-    "copyright": "© {year} Mystic Lab. All rights reserved."
+    "copyright": "© {year} Mystic Lab. 무단 전재 및 재배포 금지.",
+    "subscribedSuccess": "구독해 주셔서 감사합니다!",
+    "subscribedError": "오류가 발생했습니다. 다시 시도해 주세요."
   },
   "common": {
     "loading": "로딩 중...",

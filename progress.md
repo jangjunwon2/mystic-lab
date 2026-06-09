@@ -65,6 +65,7 @@
   - **구 릴리스 보호**: "Delete old releases" 스텝이 pending 행(download_url='') 보호
   - **`.ino.bin`**: OTA 애플리케이션 바이너리만 선택(bootloader·partitions.bin 제외)
 - **실기기 OTA 확인**: nexus_pot ✅ (2026-06-08) · nexus_smoke ✅ (2026-06-09, v1.0→v1.1)
+- **펌웨어 notes 기기 전송 제거** (2026-06-09): `/api/firmware/latest` 응답에서 `notes` 필드 제거 — 한글 등 비ASCII 문자가 송신기 화면에서 깨지는 문제 방지. notes는 어드민 릴리스 이력에서만 확인.
 - ⚠️ **업로드 주의**: 어드민 ZIP 업로드 시 반드시 로컬 수정본(`도구 개발 - 복사본`)을 압축할 것 — 원본 파일로 덮어쓰면 패치가 초기화됨
 
 ### 결제·포인트 정합성
@@ -97,6 +98,7 @@
 
 > 어드민 판별 이메일 기준 통일 · 결제 위조 차단 · Rate limit 확대 · 입력검증 · DB error.message 노출 제거(18곳) · XSS 방지 · 데드코드 제거. (2026-06-05)
 > `/api/unlock` rate limit 추가(IP당 10회/15분). (2026-06-08)
+> `error.message` 직접 반환 9곳 추가 수정(firmware·orders 라우트). (2026-06-08)
 
 ---
 
@@ -120,25 +122,34 @@
 - [x] **Nexus OTA — nexus_pot**: CDCOnBoot=cdc OTA 후 USB 시리얼 정상 ✅ (2026-06-08)
 - [x] **Nexus OTA — nexus_smoke**: v1.0→v1.1 OTA 정상 ✅ (2026-06-09)
 - [ ] **Nexus OTA — 나머지 3종**: flux_case · receiver · transmitter — 실기기 OTA + 시리얼 확인 필요
-- [ ] **Nexus WiFi 자동 재연결**: 재부팅 시 등록된 WiFi 자동 접속 여부 확인 (미확인 시 `WiFi.begin()` + 재시도 로직 추가)
+- [x] **Nexus WiFi 자동 재연결**: 해결 완료 ✅ (2026-06-09)
 
 ---
 
 ## 🔜 앞으로 할 일 / 후보
 
 ### 웹사이트 개선 (발견된 미비 사항)
-- **`/api/contact` rate limit** — 현재 없음, 메일 폭탄 취약점 (HIGH)
-- **`/api/community/[productId]` rate limit** — POST/PATCH/DELETE 모두 없음, 스팸 취약점 (HIGH)
-- **`app/[locale]/not-found.tsx`** — 없음, 404 시 Next.js 기본 화면 노출 (MEDIUM)
-- **loading.tsx 추가** — cart·checkout 페이지 (나머지 법적·정적 페이지는 불필요) (MEDIUM)
-- **SEO 메타데이터** — about·contact·custom-order·법적 페이지(terms/privacy/refund/shipping/legal-notice)에 `generateMetadata` 미추가 (MEDIUM)
+- ✅ **`/api/contact` rate limit** — IP당 5회/시간 추가 (2026-06-08)
+- ✅ **`/api/community/[productId]` rate limit** — POST/PATCH/DELETE IP당 20회/분 추가 (2026-06-08)
+- ✅ **`app/[locale]/not-found.tsx`** — 404 페이지 추가 (2026-06-08)
+- ✅ **loading.tsx 추가** — cart·checkout 페이지 (2026-06-08)
+- ✅ **SEO 메타데이터** — about·contact(layout)·custom-order(layout)·terms/privacy/refund/legal-notice에 `generateMetadata` 추가 (2026-06-08)
+- ✅ **SEO 메타데이터 2차** — sign-in·sign-up·coupons·cart(layout)·checkout(layout)·checkout/success(layout) 추가, account에 `robots:noindex` + i18n 개선 (2026-06-08)
+- ✅ **Rate limit 추가** — account/profile PATCH·wishlist POST/DELETE·cart POST (2026-06-08)
+- ✅ **에러 바운더리** — `products/[slug]/error.tsx` 추가 (2026-06-08)
+- ✅ **로딩 스켈레톤** — `tutorials/[slug]/loading.tsx` 추가 (2026-06-08)
+- ✅ **i18n copyright** — ko·ja footer.copyright 영어 그대로 → 각 언어 번역 (2026-06-09)
+- ✅ **ProductDetail 하드코딩 제거** — "All Products"·"Featured"·카테고리 라벨 → i18n (2026-06-09)
+- ✅ **API error.message 노출** — admin/products/route.ts `productError.message` → 제네릭 메시지 (2026-06-09)
+- ✅ **펌웨어 PATCH 입력 검증** — `/api/admin/firmware/[id]` 허용 필드 화이트리스트 적용 (2026-06-09)
+- ✅ **SEO noindex** — forgot-password·reset-password·orders/[id]·calc·insta + tutorials/[slug] generateMetadata 추가 (2026-06-09)
 
 ### 쇼핑몰/앱
 - **인스타 앱 마술 기믹 잔여** — 남은 것: 관객 *단어* 예언, 인스타 자체 입력 peek, 검색 탭 위장
 - **프린터 제어 독립 앱** — 계산기 내장 BLE 인쇄를 이미지·폰트 편집 가능한 별도 앱으로 분리
 
 ### ESP32 펌웨어 (Nexus 기기)
-- **WiFi 자동 재연결** — 미구현 확인 후 `WiFi.begin(ssid, pass)` + 재시도 로직 추가
+- ✅ **WiFi 자동 재연결** — 해결 완료 (2026-06-09)
 
 ---
 
