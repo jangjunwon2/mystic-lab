@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  if (!(await checkRateLimit(`product-view:${getClientIP(request)}`, 60, 60_000))) {
+    return NextResponse.json({ ok: false }, { status: 429 });
+  }
   const { product_id, locale } = (await request.json()) as {
     product_id: string;
     locale?: string;

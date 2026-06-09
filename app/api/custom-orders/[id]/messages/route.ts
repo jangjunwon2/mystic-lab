@@ -64,7 +64,7 @@ export async function POST(
     if (detail.includes("does not exist") || detail.includes("relation")) {
       return NextResponse.json({ error: "DB 테이블 미설정 (migration 051 실행 필요)" }, { status: 500 });
     }
-    return NextResponse.json({ error: `저장 실패: ${detail}` }, { status: 500 });
+    return NextResponse.json({ error: "메시지 저장에 실패했습니다." }, { status: 500 });
   }
 
   // 어드민에게 이메일 알림 (best-effort)

@@ -104,7 +104,9 @@
       "submitting": "Wird gesendet…",
       "failed": "Senden fehlgeschlagen."
     },
-    "imageComing": "Bild demnächst verfügbar"
+    "imageComing": "Bild demnächst verfügbar",
+    "addedToCart": "In den Warenkorb gelegt!",
+    "reviewAnonymous": "Anonym"
   },
   "customOrder": {
     "title": "Individuelles Elektronisches Gerät",

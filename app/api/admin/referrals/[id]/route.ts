@@ -10,13 +10,21 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
-  const body = await request.json();
+  const body = await request.json().catch(() => ({}));
   const admin = await createAdminClient();
+
+  const ALLOWED = ["code", "discount_type", "discount_value", "notes", "is_active", "max_uses", "reward_type", "reward_value"] as const;
+  const patch: Record<string, unknown> = {};
+  for (const key of ALLOWED) {
+    if (key in body) patch[key] = body[key];
+  }
+  if (Object.keys(patch).length === 0)
+    return NextResponse.json({ error: "변경할 필드가 없습니다." }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from("referral_codes")
-    .update(body)
+    .update(patch)
     .eq("id", id)
     .select()
     .single();

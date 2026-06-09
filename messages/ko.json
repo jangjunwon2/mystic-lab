@@ -104,7 +104,9 @@
       "submitting": "등록 중…",
       "failed": "등록에 실패했습니다."
     },
-    "imageComing": "이미지 준비 중"
+    "imageComing": "이미지 준비 중",
+    "addedToCart": "장바구니에 추가됨!",
+    "reviewAnonymous": "익명"
   },
   "customOrder": {
     "title": "커스텀 전자 장치",

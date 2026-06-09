@@ -104,7 +104,9 @@
       "submitting": "Submitting…",
       "failed": "Failed to submit."
     },
-    "imageComing": "Image Coming Soon"
+    "imageComing": "Image Coming Soon",
+    "addedToCart": "Added to Cart!",
+    "reviewAnonymous": "Anonymous"
   },
   "customOrder": {
     "title": "Custom Electronic Device",

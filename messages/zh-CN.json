@@ -104,7 +104,9 @@
       "submitting": "提交中…",
       "failed": "提交失败。"
     },
-    "imageComing": "图片即将上线"
+    "imageComing": "图片即将上线",
+    "addedToCart": "已加入购物车！",
+    "reviewAnonymous": "匿名"
   },
   "customOrder": {
     "title": "定制电子设备",

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 /**
  * POST /api/stream-token
@@ -14,6 +15,10 @@ import { generateSignedUrl } from "@/lib/cloudflare/stream";
  * Returns: { url: string }  (signed Cloudflare Stream iframe URL)
  */
 export async function POST(request: Request) {
+  if (!(await checkRateLimit(`stream-token:${getClientIP(request as Parameters<typeof getClientIP>[0])}`, 30, 60_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   const { stream_id, product_id } = await request.json().catch(() => ({}));
 
   if (!stream_id || !product_id) {

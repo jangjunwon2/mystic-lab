@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 // POST — 상품 조회수 기록. { productId, locale } 를 받아 product_views에 INSERT.
 export async function POST(request: NextRequest) {
+  if (!(await checkRateLimit(`track-view:${getClientIP(request)}`, 60, 60_000))) {
+    return NextResponse.json({ ok: false }, { status: 429 });
+  }
+
   try {
     const { productId, locale } = await request.json().catch(() => ({}));
     if (!productId || typeof productId !== "string") {

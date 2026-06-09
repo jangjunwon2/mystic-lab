@@ -1,8 +1,41 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Sparkles, Star, Globe, Shield } from "lucide-react";
 
 interface Props {
   params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const titles: Record<string, string> = {
+    en: "About Mystic Lab",
+    ko: "Mystic Lab 소개",
+    ja: "Mystic Lab について",
+    "zh-CN": "关于 Mystic Lab",
+    es: "Acerca de Mystic Lab",
+    fr: "À propos de Mystic Lab",
+    de: "Über Mystic Lab",
+  };
+  const descriptions: Record<string, string> = {
+    en: "Where precision engineering meets the art of illusion.",
+    ko: "정밀 공학과 마술의 예술이 만나는 곳.",
+    ja: "精密工学とイリュージョンの芸術が出会う場所。",
+    "zh-CN": "精密工程与幻术艺术的交汇之处。",
+    es: "Donde la ingeniería de precisión se encuentra con el arte de la ilusión.",
+    fr: "Là où l'ingénierie de précision rencontre l'art de l'illusion.",
+    de: "Wo Präzisionstechnik auf die Kunst der Illusion trifft.",
+  };
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
+  const LOCALES = ["en", "ko", "ja", "zh-CN", "es", "fr", "de"] as const;
+  return {
+    title: titles[locale] ?? titles.en,
+    description: descriptions[locale] ?? descriptions.en,
+    alternates: {
+      canonical: `${SITE_URL}/${locale}/about`,
+      languages: Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}/about`])),
+    },
+  };
 }
 
 const backLabel: Record<string, string> = {

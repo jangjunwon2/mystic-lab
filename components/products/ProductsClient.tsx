@@ -187,7 +187,7 @@ function ProductCard({
           <div className="absolute top-2 right-2 flex items-center gap-1.5">
             {product.is_featured && (
               <span className="text-[10px] font-medium bg-[#F59E0B]/80 text-[#0D0D1A] px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Featured
+                {t("sort.featured")}
               </span>
             )}
             <WishlistButton

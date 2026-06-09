@@ -104,7 +104,9 @@
       "submitting": "投稿中…",
       "failed": "投稿に失敗しました。"
     },
-    "imageComing": "画像準備中"
+    "imageComing": "画像準備中",
+    "addedToCart": "カートに追加しました！",
+    "reviewAnonymous": "匿名"
   },
   "customOrder": {
     "title": "カスタム電子デバイス",

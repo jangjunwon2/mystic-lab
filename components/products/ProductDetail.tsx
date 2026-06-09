@@ -310,7 +310,7 @@ export default function ProductDetail({
                 }`}
               >
                 <ShoppingCart className="w-4 h-4" />
-                {addedToCart ? "Added to Cart!" : t("addToCart")}
+                {addedToCart ? t("addedToCart") : t("addToCart")}
               </button>
 
               {product.stock > 0 && (
@@ -444,6 +444,7 @@ function StarRating({ rating, interactive = false }: { rating: number; interacti
 }
 
 function ReviewCard({ review, locale }: { review: ReviewWithProfile; locale: string }) {
+  const t = useTranslations("products");
   const date = new Date(review.created_at).toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
@@ -460,7 +461,7 @@ function ReviewCard({ review, locale }: { review: ReviewWithProfile; locale: str
           </div>
           <div>
             <p className="text-sm font-medium text-[#F0E6FF]">
-              {review.profiles?.display_name ?? "Anonymous"}
+              {review.profiles?.display_name ?? t("reviewAnonymous")}
             </p>
             <p className="text-[11px] text-[#6B7280]">{date}</p>
           </div>

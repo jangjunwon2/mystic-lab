@@ -104,7 +104,9 @@
       "submitting": "Envoi en cours…",
       "failed": "La soumission a échoué."
     },
-    "imageComing": "Image bientôt disponible"
+    "imageComing": "Image bientôt disponible",
+    "addedToCart": "Ajouté au panier !",
+    "reviewAnonymous": "Anonyme"
   },
   "customOrder": {
     "title": "Appareil Électronique Personnalisé",

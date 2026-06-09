@@ -104,7 +104,9 @@
       "submitting": "Enviando…",
       "failed": "No se pudo enviar."
     },
-    "imageComing": "Imagen próximamente"
+    "imageComing": "Imagen próximamente",
+    "addedToCart": "¡Añadido al carrito!",
+    "reviewAnonymous": "Anónimo"
   },
   "customOrder": {
     "title": "Dispositivo Electrónico Personalizado",
