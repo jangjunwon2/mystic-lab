@@ -7,7 +7,8 @@
     "account": "Mi Cuenta",
     "signIn": "Iniciar Sesión",
     "signOut": "Cerrar Sesión",
-    "admin": "Admin"
+    "admin": "Admin",
+    "searchPlaceholder": "Buscar productos..."
   },
   "home": {
     "hero": {
@@ -102,7 +103,8 @@
       "submit": "Enviar reseña",
       "submitting": "Enviando…",
       "failed": "No se pudo enviar."
-    }
+    },
+    "imageComing": "Imagen próximamente"
   },
   "customOrder": {
     "title": "Dispositivo Electrónico Personalizado",
@@ -127,7 +129,9 @@
       "namePlaceholder": "Tu nombre completo",
       "selectRange": "Selecciona un rango",
       "optional": "opcional"
-    }
+    },
+    "sentTitle": "¡Consulta enviada!",
+    "backHome": "Volver al inicio"
   },
   "checkout": {
     "title": "Finalizar Compra",
@@ -270,7 +274,16 @@
     "submit": "Desbloquear",
     "success": "¡Tutorial desbloqueado! Disfrútalo.",
     "error": "Código inválido. Por favor, compruébalo de nuevo.",
-    "alreadyUnlocked": "¡Ya desbloqueado!"
+    "alreadyUnlocked": "¡Ya desbloqueado!",
+    "deviceCodeLabel": "Código del dispositivo",
+    "deviceCodeHint": "Impreso en la tarjeta dentro del embalaje de tu dispositivo · Formato: XXXX-XXXX-XXXX",
+    "checking": "Verificando…",
+    "haveAccount": "¿Ya tienes una cuenta?",
+    "signInLink": "Inicia sesión para acceder a tus tutoriales",
+    "unlockedBadge": "Desbloqueado con éxito",
+    "codeValidBody": "¡Tu código es válido! El vídeo del tutorial aparecerá aquí cuando se suba.",
+    "enterAnotherCode": "Introducir otro código",
+    "browseProducts": "Ver productos"
   },
   "footer": {
     "tagline": "El arte de lo imposible, diseñado.",
@@ -287,7 +300,9 @@
     },
     "sectionExplore": "Explorar",
     "sectionLegal": "Legal",
-    "copyright": "© {year} Mystic Lab. Todos los derechos reservados."
+    "copyright": "© {year} Mystic Lab. Todos los derechos reservados.",
+    "subscribedSuccess": "¡Suscrito, gracias!",
+    "subscribedError": "Algo salió mal. Inténtalo de nuevo."
   },
   "common": {
     "loading": "Cargando...",

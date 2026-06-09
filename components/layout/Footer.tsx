@@ -67,7 +67,7 @@ export default function Footer() {
             {subStatus === "done" ? (
               <div className="flex items-center gap-2 text-sm text-emerald-400">
                 <Check className="w-4 h-4" />
-                Subscribed — thank you!
+                {t("subscribedSuccess")}
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="flex gap-2 max-w-xs">
@@ -91,7 +91,7 @@ export default function Footer() {
               </form>
             )}
             {subStatus === "error" && (
-              <p className="text-xs text-red-400 mt-1">Something went wrong. Try again.</p>
+              <p className="text-xs text-red-400 mt-1">{t("subscribedError")}</p>
             )}
           </div>
 

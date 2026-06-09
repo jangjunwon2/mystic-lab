@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     .select("id")
     .single();
 
-  if (orderErr) return NextResponse.json({ error: orderErr.message }, { status: 500 });
+  if (orderErr) return NextResponse.json({ error: "Server error" }, { status: 500 });
 
   // 주문 아이템 생성
   const itemRows = body.items.map((i) => ({
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   }));
 
   const { error: itemsErr } = await supabase.from("order_items").insert(itemRows);
-  if (itemsErr) return NextResponse.json({ error: itemsErr.message }, { status: 500 });
+  if (itemsErr) return NextResponse.json({ error: "Server error" }, { status: 500 });
 
   return NextResponse.json({ order_id: order.id });
 }

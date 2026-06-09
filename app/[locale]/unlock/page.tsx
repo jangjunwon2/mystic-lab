@@ -19,6 +19,7 @@ interface UnlockResult {
 
 export default function UnlockPage({ params }: Props) {
   const t = useTranslations("unlock");
+  const tTutorial = useTranslations("tutorial");
   const [locale, setLocale] = useState("en");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -123,7 +124,7 @@ export default function UnlockPage({ params }: Props) {
                     className="block text-xs font-medium mb-1.5 uppercase tracking-wide"
                     style={{ color: "#9CA3AF" }}
                   >
-                    Device Code
+                    {t("deviceCodeLabel")}
                   </label>
                   <input
                     type="text"
@@ -142,7 +143,7 @@ export default function UnlockPage({ params }: Props) {
                     onBlur={(e) => (e.currentTarget.style.borderColor = "#2D2D4E")}
                   />
                   <p className="text-center mt-2 text-xs" style={{ color: "#6B7280" }}>
-                    Printed on the card inside your device packaging · Format: XXXX-XXXX-XXXX
+                    {t("deviceCodeHint")}
                   </p>
                 </div>
 
@@ -157,20 +158,20 @@ export default function UnlockPage({ params }: Props) {
                   ) : (
                     <Unlock className="w-4 h-4" />
                   )}
-                  {loading ? "Checking…" : t("submit")}
+                  {loading ? t("checking") : t("submit")}
                 </button>
               </form>
 
               <div className="mt-6 pt-5 text-center" style={{ borderTop: "1px solid #2D2D4E" }}>
                 <p className="text-xs mb-2" style={{ color: "#6B7280" }}>
-                  Already have an account?
+                  {t("haveAccount")}
                 </p>
                 <Link
                   href={`/${locale}/sign-in`}
                   className="text-sm transition-colors hover:opacity-80"
                   style={{ color: "#A855F7" }}
                 >
-                  Sign in to access your tutorials
+                  {t("signInLink")}
                 </Link>
               </div>
             </motion.div>
@@ -194,7 +195,7 @@ export default function UnlockPage({ params }: Props) {
                   style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}
                 >
                   <span className="w-2 h-2 rounded-full bg-current" />
-                  Unlocked Successfully
+                  {t("unlockedBadge")}
                 </div>
                 {result.videoTitle && (
                   <p className="text-sm" style={{ color: "#9CA3AF" }}>{result.videoTitle}</p>
@@ -205,7 +206,7 @@ export default function UnlockPage({ params }: Props) {
               {result.signedUrl ? (
                 <CloudflarePlayer
                   src={result.signedUrl}
-                  title={result.videoTitle ?? "Solution Tutorial"}
+                  title={result.videoTitle ?? tTutorial("solutionTutorial")}
                 />
               ) : (
                 <div
@@ -213,10 +214,10 @@ export default function UnlockPage({ params }: Props) {
                   style={{ background: "#13131F", border: "1px solid #2D2D4E" }}
                 >
                   <p className="font-medium mb-2" style={{ color: "#F0E6FF" }}>
-                    Tutorial Coming Soon
+                    {tTutorial("comingSoonTitle")}
                   </p>
                   <p className="text-sm" style={{ color: "#9CA3AF" }}>
-                    Your code is valid! The tutorial video will appear here once it&apos;s uploaded.
+                    {t("codeValidBody")}
                   </p>
                 </div>
               )}
@@ -228,7 +229,7 @@ export default function UnlockPage({ params }: Props) {
                   className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-80"
                   style={{ background: "#2D2D4E", color: "#9CA3AF" }}
                 >
-                  Enter another code
+                  {t("enterAnotherCode")}
                 </button>
                 <Link
                   href={`/${locale}/products`}
@@ -236,7 +237,7 @@ export default function UnlockPage({ params }: Props) {
                   style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7", border: "1px solid rgba(124,58,237,0.3)" }}
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Browse Products
+                  {t("browseProducts")}
                 </Link>
               </div>
             </motion.div>

@@ -18,13 +18,12 @@ export async function GET(req: NextRequest) {
     .limit(1)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Server error" }, { status: 500 });
   if (!data) return NextResponse.json({ error: "No firmware found" }, { status: 404 });
 
   return NextResponse.json({
     version: data.version,
     url: data.download_url,
-    notes: data.notes,
     file_size: data.file_size,
     released_at: data.created_at,
   });

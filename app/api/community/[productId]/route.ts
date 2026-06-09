@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { userOwnsProduct } from "@/lib/product-access";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 const MAX_BODY = 5000;
 const MAX_TITLE = 200;
@@ -102,6 +103,11 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
 
 // POST — 글 작성(kind:"post") 또는 댓글 작성(kind:"comment")
 export async function POST(request: NextRequest, ctx: RouteContext) {
+  const ip = getClientIP(request);
+  if (!(await checkRateLimit(`community-post:${ip}`, 20, 60_000))) {
+    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
+  }
+
   const { productId } = await ctx.params;
   const { user, isAdmin, canAccess, admin } = await resolveAccess(productId);
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
@@ -170,6 +176,11 @@ export async function POST(request: NextRequest, ctx: RouteContext) {
 
 // PATCH — 본인 글/댓글 수정 또는 어드민 수정. body { kind:"post"|"comment", id, body, title? }
 export async function PATCH(request: NextRequest, ctx: RouteContext) {
+  const ip = getClientIP(request);
+  if (!(await checkRateLimit(`community-patch:${ip}`, 20, 60_000))) {
+    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
+  }
+
   const { productId } = await ctx.params;
   const { user, isAdmin, admin } = await resolveAccess(productId);
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
@@ -202,6 +213,11 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
 
 // DELETE — 본인 글/댓글 또는 어드민 삭제. body { kind:"post"|"comment", id }
 export async function DELETE(request: NextRequest, ctx: RouteContext) {
+  const ip = getClientIP(request);
+  if (!(await checkRateLimit(`community-delete:${ip}`, 20, 60_000))) {
+    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
+  }
+
   const { productId } = await ctx.params;
   const { user, isAdmin, admin } = await resolveAccess(productId);
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });

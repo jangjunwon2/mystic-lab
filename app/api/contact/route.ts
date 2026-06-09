@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendContactInquiry } from "@/lib/resend";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIP(request);
+  if (!(await checkRateLimit(`contact:${ip}`, 5, 3_600_000))) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
+
   try {
     const { name, email, type, message, locale } = (await request.json()) as {
       name: string;

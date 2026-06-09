@@ -126,7 +126,7 @@ export default function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") submitSearch(); if (e.key === "Escape") setSearchOpen(false); }}
                     onBlur={() => { if (!searchQuery.trim()) setSearchOpen(false); }}
-                    placeholder="Search..."
+                    placeholder={t("searchPlaceholder")}
                     className="w-40 bg-transparent text-xs text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none"
                   />
                 </div>
@@ -247,7 +247,7 @@ export default function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") submitSearch(); }}
-                placeholder="Search products..."
+                placeholder={t("searchPlaceholder")}
                 className="flex-1 bg-transparent text-xs text-[#F0E6FF] placeholder-[#4B5563] focus:outline-none"
               />
             </div>

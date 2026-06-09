@@ -87,14 +87,14 @@ export default function CustomOrderPage({ params }: Props) {
               className="text-xl font-bold text-[#F0E6FF] mb-3"
               style={{ fontFamily: "var(--font-cinzel), serif" }}
             >
-              Inquiry Sent!
+              {t("sentTitle")}
             </h2>
             <p className="text-sm text-[#9CA3AF] mb-6">{t("form.success")}</p>
             <Link
               href={`/${locale}`}
               className="inline-flex items-center gap-2 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
             >
-              Back to Home
+              {t("backHome")}
             </Link>
           </div>
         </motion.div>

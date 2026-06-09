@@ -7,7 +7,8 @@
     "account": "我的账户",
     "signIn": "登录",
     "signOut": "退出登录",
-    "admin": "管理"
+    "admin": "管理",
+    "searchPlaceholder": "搜索商品..."
   },
   "home": {
     "hero": {
@@ -102,7 +103,8 @@
       "submit": "提交评价",
       "submitting": "提交中…",
       "failed": "提交失败。"
-    }
+    },
+    "imageComing": "图片即将上线"
   },
   "customOrder": {
     "title": "定制电子设备",
@@ -127,7 +129,9 @@
       "namePlaceholder": "请输入您的姓名",
       "selectRange": "选择范围",
       "optional": "可选"
-    }
+    },
+    "sentTitle": "询盘已发送！",
+    "backHome": "返回首页"
   },
   "checkout": {
     "title": "结账",
@@ -270,7 +274,16 @@
     "submit": "解锁",
     "success": "教程已解锁！尽情享受吧。",
     "error": "密码无效，请重新检查。",
-    "alreadyUnlocked": "已解锁！"
+    "alreadyUnlocked": "已解锁！",
+    "deviceCodeLabel": "设备密码",
+    "deviceCodeHint": "印在设备包装内的卡片上 · 格式: XXXX-XXXX-XXXX",
+    "checking": "验证中…",
+    "haveAccount": "已有账户？",
+    "signInLink": "登录以访问您的教程",
+    "unlockedBadge": "已成功解锁",
+    "codeValidBody": "您的密码有效！教程视频上传后将显示在此处。",
+    "enterAnotherCode": "输入其他密码",
+    "browseProducts": "浏览商品"
   },
   "footer": {
     "tagline": "不可能的艺术，工程化实现。",
@@ -287,7 +300,9 @@
     },
     "sectionExplore": "探索",
     "sectionLegal": "法律信息",
-    "copyright": "© {year} Mystic Lab. 版权所有。"
+    "copyright": "© {year} Mystic Lab. 版权所有。",
+    "subscribedSuccess": "订阅成功，感谢您！",
+    "subscribedError": "出现错误，请重试。"
   },
   "common": {
     "loading": "加载中...",

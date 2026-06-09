@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Server error" }, { status: 500 });
   return NextResponse.json(data ?? []);
 }
 
@@ -53,7 +53,7 @@ export async function DELETE(req: NextRequest) {
     .delete()
     .in("id", ids);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Server error" }, { status: 500 });
   return NextResponse.json({ ok: true, deleted: ids.length });
 }
 

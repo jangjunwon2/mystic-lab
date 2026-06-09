@@ -7,7 +7,8 @@
     "account": "Mein Konto",
     "signIn": "Anmelden",
     "signOut": "Abmelden",
-    "admin": "Admin"
+    "admin": "Admin",
+    "searchPlaceholder": "Produkte suchen..."
   },
   "home": {
     "hero": {
@@ -102,7 +103,8 @@
       "submit": "Bewertung absenden",
       "submitting": "Wird gesendet…",
       "failed": "Senden fehlgeschlagen."
-    }
+    },
+    "imageComing": "Bild demnächst verfügbar"
   },
   "customOrder": {
     "title": "Individuelles Elektronisches Gerät",
@@ -127,7 +129,9 @@
       "namePlaceholder": "Ihr vollständiger Name",
       "selectRange": "Bereich auswählen",
       "optional": "optional"
-    }
+    },
+    "sentTitle": "Anfrage gesendet!",
+    "backHome": "Zur Startseite"
   },
   "checkout": {
     "title": "Kasse",
@@ -270,7 +274,16 @@
     "submit": "Freischalten",
     "success": "Tutorial freigeschaltet! Viel Spaß.",
     "error": "Ungültiger Code. Bitte erneut prüfen.",
-    "alreadyUnlocked": "Bereits freigeschaltet!"
+    "alreadyUnlocked": "Bereits freigeschaltet!",
+    "deviceCodeLabel": "Gerätecode",
+    "deviceCodeHint": "Aufgedruckt auf der Karte in der Geräteverpackung · Format: XXXX-XXXX-XXXX",
+    "checking": "Prüfen…",
+    "haveAccount": "Haben Sie bereits ein Konto?",
+    "signInLink": "Anmelden, um auf Ihre Tutorials zuzugreifen",
+    "unlockedBadge": "Erfolgreich entsperrt",
+    "codeValidBody": "Ihr Code ist gültig! Das Tutorial-Video erscheint hier, sobald es hochgeladen wurde.",
+    "enterAnotherCode": "Weiteren Code eingeben",
+    "browseProducts": "Produkte ansehen"
   },
   "footer": {
     "tagline": "Die Kunst des Unmöglichen, technisch realisiert.",
@@ -287,7 +300,9 @@
     },
     "sectionExplore": "Entdecken",
     "sectionLegal": "Rechtliches",
-    "copyright": "© {year} Mystic Lab. Alle Rechte vorbehalten."
+    "copyright": "© {year} Mystic Lab. Alle Rechte vorbehalten.",
+    "subscribedSuccess": "Abonniert — danke!",
+    "subscribedError": "Ein Fehler ist aufgetreten. Bitte erneut versuchen."
   },
   "common": {
     "loading": "Laden...",

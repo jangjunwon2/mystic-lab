@@ -120,7 +120,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     .eq("id", id);
 
   if (updateErr) {
-    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 
   // 환불 완료 이메일 자동 발송

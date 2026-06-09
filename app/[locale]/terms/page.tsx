@@ -1,7 +1,22 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 interface Props {
   params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const titles: Record<string, string> = {
+    en: "Terms of Service",
+    ko: "이용약관",
+    ja: "利用規約",
+    "zh-CN": "服务条款",
+    es: "Términos de servicio",
+    fr: "Conditions d'utilisation",
+    de: "Nutzungsbedingungen",
+  };
+  return { title: titles[locale] ?? titles.en };
 }
 
 type Section = { heading: string; content: string };

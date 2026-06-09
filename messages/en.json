@@ -7,7 +7,8 @@
     "account": "Account",
     "signIn": "Sign In",
     "signOut": "Sign Out",
-    "admin": "Admin"
+    "admin": "Admin",
+    "searchPlaceholder": "Search products..."
   },
   "home": {
     "hero": {
@@ -102,7 +103,8 @@
       "submit": "Submit Review",
       "submitting": "Submitting…",
       "failed": "Failed to submit."
-    }
+    },
+    "imageComing": "Image Coming Soon"
   },
   "customOrder": {
     "title": "Custom Electronic Device",
@@ -127,7 +129,9 @@
       "namePlaceholder": "Your full name",
       "selectRange": "Select range",
       "optional": "optional"
-    }
+    },
+    "sentTitle": "Inquiry Sent!",
+    "backHome": "Back to Home"
   },
   "checkout": {
     "title": "Checkout",
@@ -270,7 +274,16 @@
     "submit": "Unlock",
     "success": "Tutorial unlocked! Enjoy.",
     "error": "Invalid code. Please check again.",
-    "alreadyUnlocked": "Already unlocked!"
+    "alreadyUnlocked": "Already unlocked!",
+    "deviceCodeLabel": "Device Code",
+    "deviceCodeHint": "Printed on the card inside your device packaging · Format: XXXX-XXXX-XXXX",
+    "checking": "Checking…",
+    "haveAccount": "Already have an account?",
+    "signInLink": "Sign in to access your tutorials",
+    "unlockedBadge": "Unlocked Successfully",
+    "codeValidBody": "Your code is valid! The tutorial video will appear here once it's uploaded.",
+    "enterAnotherCode": "Enter another code",
+    "browseProducts": "Browse Products"
   },
   "footer": {
     "tagline": "The art of impossible, engineered.",
@@ -287,7 +300,9 @@
     },
     "sectionExplore": "Explore",
     "sectionLegal": "Legal",
-    "copyright": "© {year} Mystic Lab. All rights reserved."
+    "copyright": "© {year} Mystic Lab. All rights reserved.",
+    "subscribedSuccess": "Subscribed — thank you!",
+    "subscribedError": "Something went wrong. Try again."
   },
   "common": {
     "loading": "Loading...",

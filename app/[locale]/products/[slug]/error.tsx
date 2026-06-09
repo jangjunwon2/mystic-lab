@@ -6,16 +6,16 @@ import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import Link from "next/link";
 
 const content: Record<string, { title: string; body: string; retry: string; home: string }> = {
-  en: { title: "Something went wrong", body: "An unexpected error occurred. Please try again.", retry: "Try again", home: "Go home" },
-  ko: { title: "오류가 발생했습니다", body: "예기치 않은 오류가 발생했습니다. 다시 시도해 주세요.", retry: "다시 시도", home: "홈으로" },
-  ja: { title: "エラーが発生しました", body: "予期しないエラーが発生しました。もう一度お試しください。", retry: "再試行", home: "ホームへ" },
-  "zh-CN": { title: "出现错误", body: "发生了意外错误，请重试。", retry: "重试", home: "返回首页" },
-  es: { title: "Algo salió mal", body: "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.", retry: "Reintentar", home: "Ir a inicio" },
-  fr: { title: "Une erreur s'est produite", body: "Une erreur inattendue s'est produite. Veuillez réessayer.", retry: "Réessayer", home: "Accueil" },
-  de: { title: "Ein Fehler ist aufgetreten", body: "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.", retry: "Erneut versuchen", home: "Zur Startseite" },
+  en: { title: "Failed to load product", body: "An error occurred while loading this page.", retry: "Try again", home: "Go home" },
+  ko: { title: "상품을 불러오지 못했습니다", body: "페이지를 로드하는 중 오류가 발생했습니다.", retry: "다시 시도", home: "홈으로" },
+  ja: { title: "商品を読み込めませんでした", body: "このページの読み込み中にエラーが発生しました。", retry: "再試行", home: "ホームへ" },
+  "zh-CN": { title: "商品加载失败", body: "加载此页面时发生了错误。", retry: "重试", home: "返回首页" },
+  es: { title: "Error al cargar el producto", body: "Se produjo un error al cargar esta página.", retry: "Reintentar", home: "Ir a inicio" },
+  fr: { title: "Impossible de charger le produit", body: "Une erreur s'est produite lors du chargement de cette page.", retry: "Réessayer", home: "Accueil" },
+  de: { title: "Produkt konnte nicht geladen werden", body: "Beim Laden dieser Seite ist ein Fehler aufgetreten.", retry: "Erneut versuchen", home: "Zur Startseite" },
 };
 
-export default function LocaleError({
+export default function ProductError({
   error,
   reset,
 }: {

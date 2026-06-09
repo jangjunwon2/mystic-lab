@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 // GET — 로그인 회원의 서버 장바구니 항목 반환.
 export async function GET() {
@@ -19,6 +20,10 @@ export async function GET() {
 // POST — localStorage 장바구니를 서버에 full-replace로 동기화.
 // body: StoredCartItem[] — 현재 localStorage 전체 내용을 그대로 받는다.
 export async function POST(request: NextRequest) {
+  if (!(await checkRateLimit(`cart-sync:${getClientIP(request)}`, 30, 60_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

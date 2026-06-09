@@ -7,7 +7,8 @@
     "account": "Mon Compte",
     "signIn": "Se Connecter",
     "signOut": "Se Déconnecter",
-    "admin": "Admin"
+    "admin": "Admin",
+    "searchPlaceholder": "Rechercher des produits..."
   },
   "home": {
     "hero": {
@@ -102,7 +103,8 @@
       "submit": "Soumettre l'avis",
       "submitting": "Envoi en cours…",
       "failed": "La soumission a échoué."
-    }
+    },
+    "imageComing": "Image bientôt disponible"
   },
   "customOrder": {
     "title": "Appareil Électronique Personnalisé",
@@ -127,7 +129,9 @@
       "namePlaceholder": "Votre nom complet",
       "selectRange": "Sélectionner une fourchette",
       "optional": "facultatif"
-    }
+    },
+    "sentTitle": "Demande envoyée !",
+    "backHome": "Retour à l'accueil"
   },
   "checkout": {
     "title": "Paiement",
@@ -270,7 +274,16 @@
     "submit": "Déverrouiller",
     "success": "Tutoriel déverrouillé ! Profitez-en.",
     "error": "Code invalide. Veuillez vérifier à nouveau.",
-    "alreadyUnlocked": "Déjà déverrouillé !"
+    "alreadyUnlocked": "Déjà déverrouillé !",
+    "deviceCodeLabel": "Code du dispositif",
+    "deviceCodeHint": "Imprimé sur la carte à l'intérieur de l'emballage de votre appareil · Format : XXXX-XXXX-XXXX",
+    "checking": "Vérification…",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "signInLink": "Connectez-vous pour accéder à vos tutoriels",
+    "unlockedBadge": "Déverrouillé avec succès",
+    "codeValidBody": "Votre code est valide ! La vidéo du tutoriel apparaîtra ici une fois téléchargée.",
+    "enterAnotherCode": "Entrer un autre code",
+    "browseProducts": "Parcourir les produits"
   },
   "footer": {
     "tagline": "L'art de l'impossible, ingénieusement conçu.",
@@ -287,7 +300,9 @@
     },
     "sectionExplore": "Explorer",
     "sectionLegal": "Légal",
-    "copyright": "© {year} Mystic Lab. Tous droits réservés."
+    "copyright": "© {year} Mystic Lab. Tous droits réservés.",
+    "subscribedSuccess": "Abonné — merci !",
+    "subscribedError": "Une erreur s'est produite. Réessayez."
   },
   "common": {
     "loading": "Chargement...",

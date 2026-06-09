@@ -7,8 +7,18 @@ interface Props {
   params: Promise<{ locale: string }>;
 }
 
-export async function generateMetadata() {
-  return { title: "My Account" };
+export async function generateMetadata({ params }: Props) {
+  const { locale } = await params;
+  const titles: Record<string, string> = {
+    en: "My Account",
+    ko: "내 계정",
+    ja: "マイアカウント",
+    "zh-CN": "我的账户",
+    es: "Mi cuenta",
+    fr: "Mon compte",
+    de: "Mein Konto",
+  };
+  return { title: titles[locale] ?? titles.en, robots: "noindex" };
 }
 
 export default async function AccountPage({ params }: Props) {
