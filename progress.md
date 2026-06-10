@@ -143,6 +143,7 @@
 - ✅ **API error.message 노출** — admin/products/route.ts `productError.message` → 제네릭 메시지 (2026-06-09)
 - ✅ **펌웨어 PATCH 입력 검증** — `/api/admin/firmware/[id]` 허용 필드 화이트리스트 적용 (2026-06-09)
 - ✅ **SEO noindex** — forgot-password·reset-password·orders/[id]·calc·insta + tutorials/[slug] generateMetadata 추가 (2026-06-09)
+- ✅ **SEO 강화** — Organization/WebSite JSON-LD(홈) · BreadcrumbList JSON-LD(상품 상세) · x-default hreflang 전체 페이지 · sitemap에서 noindex 페이지(sign-in/sign-up/unlock) 제거 · 상품목록/about/contact/custom-order/shipping/법적 페이지 alternates + OG 추가 (2026-06-10)
 
 ### 쇼핑몰/앱
 - **인스타 앱 마술 기믹 잔여** — 남은 것: 관객 *단어* 예언, 인스타 자체 입력 peek, 검색 탭 위장
