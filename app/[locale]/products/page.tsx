@@ -113,5 +113,23 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  return <ProductsClient locale={locale} filters={filters} products={products} allCategories={allCategories} isLoggedIn={!!user} />;
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Magic Products — Mystic Lab",
+    url: `${SITE_URL}/${locale}/products`,
+    itemListElement: products.map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${SITE_URL}/${locale}/products/${p.slug}`,
+      name: p.name,
+    })),
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
+      <ProductsClient locale={locale} filters={filters} products={products} allCategories={allCategories} isLoggedIn={!!user} />
+    </>
+  );
 }

@@ -147,7 +147,11 @@ export async function generateMetadata({ params }: Props) {
       .single();
     if (data) {
       product = data as unknown as ProductWithTranslations;
-      translation = product.product_translations.find((tr) => tr.language === "en") ?? product.product_translations[0] ?? null;
+      translation =
+        product.product_translations.find((tr) => tr.language === locale) ??
+        product.product_translations.find((tr) => tr.language === "en") ??
+        product.product_translations[0] ??
+        null;
     }
   } catch {
     // fallback to sample
