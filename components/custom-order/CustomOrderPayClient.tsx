@@ -21,6 +21,7 @@ export default function CustomOrderPayClient({
   token,
   locale,
   customerEmail,
+  customerName,
   quotedPriceUsd,
   quotedPriceKrw,
   description,
@@ -74,7 +75,7 @@ export default function CustomOrderPayClient({
         successUrl: `${window.location.origin}/${locale}/custom-order/pay/${token}`,
         failUrl: `${window.location.origin}/${locale}/custom-order/pay/${token}?toss_fail=1`,
         customerEmail,
-        customerName: "Mystic Lab Customer",
+        customerName: customerName || customerEmail,
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "결제 중 오류가 발생했습니다.";

@@ -31,7 +31,12 @@ export async function DELETE(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { ids } = await req.json() as { ids: string[] };
+  let ids: string[] | undefined;
+  try {
+    ({ ids } = await req.json() as { ids: string[] });
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   if (!Array.isArray(ids) || ids.length === 0) {
     return NextResponse.json({ error: "ids 필수" }, { status: 400 });
   }
@@ -64,7 +69,13 @@ export async function POST(req: NextRequest) {
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { device_type, version, notes, storage_path, download_url, file_size } = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  const { device_type, version, notes, storage_path, download_url, file_size } = body as { device_type?: string; version?: string; notes?: string; storage_path?: string; download_url?: string; file_size?: number };
   if (!device_type?.trim() || !version?.trim() || !storage_path || !download_url) {
     return NextResponse.json({ error: "필수 필드 누락" }, { status: 400 });
   }

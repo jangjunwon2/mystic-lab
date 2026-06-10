@@ -103,7 +103,7 @@ export default function TossPaymentWidget({ amountKrw, locale, email, items, tot
         successUrl: `${window.location.origin}/${locale}/checkout/success?gateway=toss`,
         failUrl: `${window.location.origin}/${locale}/checkout/fail`,
         customerEmail: email,
-        customerName: "Mystic Lab Customer",
+        customerName: shippingAddress?.name || email,
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "결제 중 오류가 발생했습니다.";

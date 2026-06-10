@@ -39,11 +39,11 @@ export async function POST(request: NextRequest) {
       const headers = { Authorization: `Bearer ${lsKey}`, Accept: "application/vnd.api+json" };
       let paid = false;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let order: any = null;
+        interface LsOrder { id: string; attributes: { status: string; user_email: string } }
+        let order: LsOrder | null = null;
         if (lsOrderId) {
           const r = await fetch(`https://api.lemonsqueezy.com/v1/orders/${encodeURIComponent(lsOrderId)}`, { headers });
-          if (r.ok) order = (await r.json()).data;
+          if (r.ok) order = ((await r.json()).data as LsOrder) ?? null;
         } else {
           const r = await fetch(
             `https://api.lemonsqueezy.com/v1/orders?filter[store_id]=${storeId}&filter[user_email]=${encodeURIComponent(customerEmail)}&sort=-created_at&page[size]=1`,
@@ -51,12 +51,12 @@ export async function POST(request: NextRequest) {
           );
           if (r.ok) {
             const j = await r.json();
-            order = j.data?.[0];
-            lsOrderId = order?.id as string | undefined;
+            order = (j.data?.[0] as LsOrder) ?? null;
+            lsOrderId = order?.id;
           }
         }
-        const status = order?.attributes?.status as string | undefined;
-        const orderEmail = (order?.attributes?.user_email as string | undefined)?.toLowerCase();
+        const status = order?.attributes?.status;
+        const orderEmail = order?.attributes?.user_email?.toLowerCase();
         if (status === "paid" && (!orderEmail || orderEmail === customerEmail.toLowerCase())) {
           paid = true;
         }
