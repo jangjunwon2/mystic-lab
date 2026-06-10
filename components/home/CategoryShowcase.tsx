@@ -65,22 +65,15 @@ export default function CategoryShowcase({ categories, locale }: Props) {
               >
                 <Link
                   href={`/${locale}/products?category=${cat}`}
-                  className="group flex flex-col items-center gap-3 p-6 rounded-xl border text-center transition-all duration-300 hover:-translate-y-1"
-                  style={{
-                    background: "#1A1A2E",
-                    borderColor: "#2D2D4E",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(124,58,237,0.6)";
-                    (e.currentTarget as HTMLAnchorElement).style.boxShadow = "0 0 20px rgba(124,58,237,0.2)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLAnchorElement).style.borderColor = "#2D2D4E";
-                    (e.currentTarget as HTMLAnchorElement).style.boxShadow = "none";
-                  }}
+                  className="group relative flex flex-col items-center gap-4 p-7 rounded-2xl border border-[#2D2D4E] text-center transition-all duration-300 hover:-translate-y-1.5 hover:border-[#7C3AED]/60 hover:shadow-[0_0_28px_rgba(124,58,237,0.22)] overflow-hidden"
+                  style={{ background: "linear-gradient(145deg, #1A1A2E 0%, #13131F 100%)" }}
                 >
-                  <span className="text-4xl">{icon}</span>
-                  <p className="font-semibold text-sm transition-colors group-hover:text-purple-400" style={{ color: "#F0E6FF" }}>
+                  {/* inner glow on hover */}
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(124,58,237,0.10)_0%,_transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  {/* accent top line */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-px bg-gradient-to-r from-transparent via-[#7C3AED] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <span className="text-3xl relative z-10 group-hover:scale-110 transition-transform duration-300">{icon}</span>
+                  <p className="font-semibold text-sm tracking-wide relative z-10 transition-colors group-hover:text-[#A855F7]" style={{ color: "#F0E6FF" }}>
                     {label}
                   </p>
                 </Link>

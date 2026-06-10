@@ -6,7 +6,14 @@ import { addPoints, spendPoints } from "@/lib/points";
 export async function reverseOrderEffects(admin: any, orderId: string): Promise<void> {
   if (!orderId) return;
 
-  // 멱등성: 이미 이 주문에 refund 포인트 트랜잭션이 있으면 재처리하지 않음
+  // 멱등성: 주문 상태가 이미 "refunded"이거나 refund 포인트 트랜잭션이 있으면 재처리하지 않음
+  const { data: orderRow } = await admin
+    .from("orders")
+    .select("status")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (orderRow?.status === "refunded") return;
+
   const { data: existingRefund } = await admin
     .from("point_transactions")
     .select("id")
@@ -25,7 +32,11 @@ export async function reverseOrderEffects(admin: any, orderId: string): Promise<
     if (!it.product_id) continue;
     const { data: p } = await admin.from("products").select("stock").eq("id", it.product_id).maybeSingle();
     if (p && typeof p.stock === "number") {
-      await admin.from("products").update({ stock: p.stock + it.quantity }).eq("id", it.product_id);
+      // CAS: stock이 조회 시점과 다르면(동시 환불) 업데이트 skip — save-order.ts와 동일 패턴
+      await admin.from("products")
+        .update({ stock: p.stock + it.quantity })
+        .eq("id", it.product_id)
+        .eq("stock", p.stock);
     }
   }
 

@@ -119,14 +119,25 @@ export default function HeroSection() {
           </Link>
         </motion.div>
 
+        {/* Decorative divider below CTAs */}
+        <motion.div
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{ opacity: 1, scaleX: 1 }}
+          transition={{ duration: 1, delay: 1.0, ease: "easeOut" }}
+          className="flex items-center justify-center gap-4 mt-14"
+        >
+          <div className="h-px w-24 bg-gradient-to-r from-transparent to-[#7C3AED]/60" />
+          <div className="w-1.5 h-1.5 rounded-full bg-[#7C3AED] shadow-[0_0_8px_rgba(124,58,237,0.8)]" />
+          <div className="h-px w-24 bg-gradient-to-l from-transparent to-[#7C3AED]/60" />
+        </motion.div>
+
         {/* Scroll indicator */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1.5 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2"
         >
-          <div className="w-px h-16 bg-gradient-to-b from-[#7C3AED] to-transparent mx-auto animate-pulse" />
+          <div className="w-px h-14 bg-gradient-to-b from-[#7C3AED] to-transparent mx-auto" />
         </motion.div>
       </div>
     </section>

@@ -84,7 +84,7 @@ export default function Header({ isAdmin = false }: { isAdmin?: boolean }) {
       className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
           ? "bg-[#0D0D1A]/95 backdrop-blur-md border-b border-[#2D2D4E] shadow-lg shadow-purple-900/10"
-          : "bg-transparent"
+          : "bg-transparent border-b border-[#7C3AED]/10"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

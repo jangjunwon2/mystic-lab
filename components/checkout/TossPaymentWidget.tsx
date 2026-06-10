@@ -86,7 +86,15 @@ export default function TossPaymentWidget({ amountKrw, locale, email, items, tot
     }
     setError("");
     setLoading(true);
-    if (onBeforePay) await onBeforePay().catch(() => {});
+    if (onBeforePay) {
+      try {
+        await onBeforePay();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "결제 준비 중 오류가 발생했습니다.");
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       const orderId = `ML-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;

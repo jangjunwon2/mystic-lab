@@ -83,7 +83,7 @@ export default function FeaturedProducts({ products, locale }: Props) {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <ProductCard product={product} locale={locale} t={tProducts} getCategoryLabel={getCategoryLabel} />
+                <ProductCard product={product} locale={locale} t={tProducts} getCategoryLabel={getCategoryLabel} featured={index === 0} />
               </motion.div>
             ))}
           </div>
@@ -113,17 +113,21 @@ function ProductCard({
   locale,
   t,
   getCategoryLabel,
+  featured = false,
 }: {
   product: FeaturedProduct;
   locale: string;
   t: ReturnType<typeof useTranslations>;
   getCategoryLabel: (cat: string) => string;
+  featured?: boolean;
 }) {
   return (
     <Link href={`/${locale}/products/${product.slug}`}>
-      <div className="group relative bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] overflow-hidden transition-all duration-300 hover:border-[#7C3AED]/70 hover:shadow-[0_0_20px_rgba(124,58,237,0.25)] hover:-translate-y-1 cursor-pointer">
+      <div className="group relative bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] overflow-hidden transition-all duration-300 hover:border-[#7C3AED]/70 hover:shadow-[0_0_28px_rgba(124,58,237,0.30)] hover:-translate-y-1.5 cursor-pointer">
+        {/* shimmer overlay on hover */}
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,_transparent_40%,_rgba(168,85,247,0.06)_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
         {/* Thumbnail */}
-        <div className="relative aspect-[4/3] bg-[#13131F] overflow-hidden">
+        <div className={`relative bg-[#13131F] overflow-hidden ${featured ? "aspect-[16/9]" : "aspect-[4/3]"}`}>
           {product.thumbnail ? (
             <Image
               src={product.thumbnail}

@@ -78,12 +78,11 @@ export default function ProductsClient({ locale, filters, products, allCategorie
                 p.delete("category");
                 router.push(`?${p.toString()}`);
               }}
-              className="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
-              style={{
-                background: !filters.category ? "#7C3AED" : "rgba(124,58,237,0.1)",
-                color: !filters.category ? "#fff" : "#A855F7",
-                border: `1px solid ${!filters.category ? "#7C3AED" : "#4C1D95"}`,
-              }}
+              className={`px-4 py-1.5 rounded-full text-xs font-medium border tracking-wide transition-all duration-200 ${
+                !filters.category
+                  ? "bg-[#7C3AED] text-white border-[#7C3AED] shadow-[0_0_14px_rgba(124,58,237,0.45)]"
+                  : "bg-transparent text-[#9CA3AF] border-[#2D2D4E] hover:border-[#7C3AED]/50 hover:text-[#F0E6FF] hover:shadow-[0_0_10px_rgba(124,58,237,0.15)]"
+              }`}
             >
               {t("all")}
             </button>
@@ -95,12 +94,11 @@ export default function ProductsClient({ locale, filters, products, allCategorie
                   p.set("category", cat);
                   router.push(`?${p.toString()}`);
                 }}
-                className="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
-                style={{
-                  background: filters.category === cat ? "#7C3AED" : "rgba(124,58,237,0.1)",
-                  color: filters.category === cat ? "#fff" : "#A855F7",
-                  border: `1px solid ${filters.category === cat ? "#7C3AED" : "#4C1D95"}`,
-                }}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium border tracking-wide transition-all duration-200 ${
+                  filters.category === cat
+                    ? "bg-[#7C3AED] text-white border-[#7C3AED] shadow-[0_0_14px_rgba(124,58,237,0.45)]"
+                    : "bg-transparent text-[#9CA3AF] border-[#2D2D4E] hover:border-[#7C3AED]/50 hover:text-[#F0E6FF] hover:shadow-[0_0_10px_rgba(124,58,237,0.15)]"
+                }`}
               >
                 {catLabel(cat)}
               </button>

@@ -11,8 +11,14 @@ import type { CartItem } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const { paymentKey, orderId, amount, items, customerEmail, totalUsd, shippingAddress, pointsUsed, shippingUsd, referralCode, discountCode, couponCode } =
-      await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
+    const { paymentKey, orderId, amount, items, customerEmail, totalUsd, shippingAddress, pointsUsed, shippingUsd, referralCode, discountCode, couponCode } = body as {
+      paymentKey?: string; orderId?: string; amount?: number;
+      items?: CartItem[]; customerEmail?: string; totalUsd?: number;
+      shippingAddress?: Record<string, string>; pointsUsed?: number; shippingUsd?: number;
+      referralCode?: string | null; discountCode?: string | null; couponCode?: string | null;
+    };
 
     if (!paymentKey || !orderId || !amount) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
