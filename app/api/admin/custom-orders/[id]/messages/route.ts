@@ -30,7 +30,8 @@ export async function POST(
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { message } = await req.json();
+  const body = await req.json().catch(() => null);
+  const { message } = (body ?? {}) as { message?: string };
   if (!message?.trim()) return NextResponse.json({ error: "메시지를 입력해주세요." }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

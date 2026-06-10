@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { product_id } = await req.json();
+  const body = await req.json().catch(() => null);
+  const product_id = body?.product_id;
   if (!product_id) return NextResponse.json({ error: "Missing product_id" }, { status: 400 });
 
   const { error } = await (supabase as any)
@@ -46,7 +47,8 @@ export async function DELETE(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { product_id } = await req.json();
+  const body = await req.json().catch(() => null);
+  const product_id = body?.product_id;
   if (!product_id) return NextResponse.json({ error: "Missing product_id" }, { status: 400 });
 
   await (supabase as any)

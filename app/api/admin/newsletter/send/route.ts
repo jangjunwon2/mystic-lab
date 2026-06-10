@@ -7,7 +7,9 @@ export async function POST(request: NextRequest) {
   const adminUser = await requireAdmin();
   if (!adminUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { subject, html, segment, product_id } = (await request.json()) as {
+  const rawBody = await request.json().catch(() => null);
+  if (!rawBody) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  const { subject, html, segment, product_id } = rawBody as {
     subject: string;
     html: string;
     segment: "all" | "buyers" | "product_buyers" | "wishlist_product";

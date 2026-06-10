@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ShoppingCart, Play, Package } from "lucide-react";
 
@@ -124,11 +125,12 @@ function ProductCard({
         {/* Thumbnail */}
         <div className="relative aspect-[4/3] bg-[#13131F] overflow-hidden">
           {product.thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={product.thumbnail}
               alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">

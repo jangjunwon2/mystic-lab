@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { device_type, version, filename } = await req.json();
+  const body = await req.json().catch(() => null);
+  const { device_type, version, filename } = (body ?? {}) as { device_type?: string; version?: string; filename?: string };
   if (!device_type?.trim() || !version?.trim() || !filename?.trim()) {
     return NextResponse.json({ error: "device_type, version, filename 필수" }, { status: 400 });
   }

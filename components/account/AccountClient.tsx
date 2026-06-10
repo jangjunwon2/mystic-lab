@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -437,10 +438,9 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
                   return (
                     <div key={item.id} className="bg-[#1A1A2E] rounded-xl border border-[#2D2D4E] overflow-hidden hover:border-[#7C3AED]/60 transition-colors">
                       <Link href={`/${locale}/products/${prod.slug}`}>
-                        <div className="aspect-[4/3] bg-[#13131F]">
+                        <div className="relative aspect-[4/3] bg-[#13131F]">
                           {prod.thumbnail_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={prod.thumbnail_url} alt={name} className="w-full h-full object-cover" />
+                            <Image src={prod.thumbnail_url} alt={name} fill sizes="(max-width: 640px) 50vw, 25vw" className="object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <div className="w-12 h-12 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/40" />
@@ -1063,8 +1063,7 @@ function TutorialRow({
       {/* 썸네일 */}
       <div className="w-20 h-12 shrink-0 bg-[#13131F] rounded-md overflow-hidden flex items-center justify-center relative">
         {product.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={product.thumbnail_url} alt={name} className="w-full h-full object-cover" />
+          <Image src={product.thumbnail_url} alt={name} fill sizes="80px" className="object-cover" />
         ) : (
           <Play className="w-4 h-4 text-[#A855F7]" />
         )}

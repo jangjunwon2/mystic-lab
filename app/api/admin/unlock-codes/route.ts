@@ -17,7 +17,8 @@ export async function DELETE(request: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await request.json();
+  const body = await request.json().catch(() => null);
+  const { id } = (body ?? {}) as { id?: string };
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,7 +36,8 @@ export async function PATCH(request: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id, action, product_id, max_activations } = await request.json();
+  const body = await request.json().catch(() => null);
+  const { id, action, product_id, max_activations } = (body ?? {}) as { id?: string; action?: string; product_id?: string; max_activations?: number };
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,7 +103,8 @@ export async function POST(request: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { product_id } = await request.json();
+  const body = await request.json().catch(() => null);
+  const { product_id } = (body ?? {}) as { product_id?: string };
   if (!product_id) return NextResponse.json({ error: "product_id required" }, { status: 400 });
 
   const plainCode = generatePlainCode();

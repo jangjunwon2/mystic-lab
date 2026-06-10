@@ -12,11 +12,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await context.params;
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
-  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations, options, point_earn_rate } = body;
+  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations, options, point_earn_rate } = body as Record<string, unknown>;
 
   if (slug !== undefined && (typeof slug !== "string" || !/^[a-z0-9-]+$/.test(slug) || slug.length > 100)) {
     return NextResponse.json({ error: "Invalid slug format." }, { status: 400 });

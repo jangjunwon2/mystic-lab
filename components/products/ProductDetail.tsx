@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
@@ -178,10 +179,9 @@ export default function ProductDetail({
                 {product.image_urls.slice(0, 4).map((url, i) => (
                   <div
                     key={i}
-                    className="w-16 h-16 rounded-lg border border-[#2D2D4E] overflow-hidden bg-[#13131F]"
+                    className="relative w-16 h-16 rounded-lg border border-[#2D2D4E] overflow-hidden bg-[#13131F]"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <Image src={url} alt="" fill sizes="64px" className="object-cover" />
                   </div>
                 ))}
               </div>

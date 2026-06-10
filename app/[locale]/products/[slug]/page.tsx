@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
 import ProductDetail from "@/components/products/ProductDetail";
@@ -126,6 +127,18 @@ const SAMPLE: Record<string, ProductWithTranslations> = {
   },
 };
 
+// cache() deduplicates the DB query within the same request (shared by generateMetadata + page body)
+const fetchProduct = cache(async (slug: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("products")
+    .select("*, product_translations(*)")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .single();
+  return data ? (data as unknown as ProductWithTranslations) : null;
+});
+
 interface Props {
   params: Promise<{ locale: string; slug: string }>;
 }
@@ -138,15 +151,8 @@ export async function generateMetadata({ params }: Props) {
   let product: ProductWithTranslations | null = null;
   let translation: ProductTranslation | null = null;
   try {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("products")
-      .select("*, product_translations(*)")
-      .eq("slug", slug)
-      .eq("is_active", true)
-      .single();
-    if (data) {
-      product = data as unknown as ProductWithTranslations;
+    product = await fetchProduct(slug);
+    if (product) {
       translation =
         product.product_translations.find((tr) => tr.language === locale) ??
         product.product_translations.find((tr) => tr.language === "en") ??
@@ -204,17 +210,8 @@ export default async function ProductPage({ params }: Props) {
   let relatedProducts: { id: string; slug: string; name: string; thumbnail: string | null; price: number }[] = [];
 
   try {
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-      .from("products")
-      .select("*, product_translations(*)")
-      .eq("slug", slug)
-      .eq("is_active", true)
-      .single();
-
-    if (error) throw error;
-    product = data as unknown as ProductWithTranslations;
+    product = await fetchProduct(slug);
+    if (!product) notFound();
 
     // 구매 옵션 조회 — 함께 구매 가능한 애드온 상품 + 할인
     const { data: optionData } = await supabase

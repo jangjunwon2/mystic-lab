@@ -11,8 +11,8 @@ export async function PATCH(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { display_name } = (await request.json()) as { display_name: string };
-  const name = display_name?.trim();
+  const body = await request.json().catch(() => null);
+  const name = (body?.display_name as string | undefined)?.trim();
   if (!name || name.length > 50) {
     return NextResponse.json({ error: "Name must be 1–50 characters." }, { status: 400 });
   }

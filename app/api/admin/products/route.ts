@@ -7,8 +7,8 @@ export async function POST(request: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json();
-  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations, options } = body;
+  const body = await request.json().catch(() => null);
+  const { slug, category, price_usd, stock, is_active, is_featured, is_digital, thumbnail_url, demo_video_cloudflare_id, image_urls, translations, options } = (body ?? {}) as Record<string, unknown>;
 
   if (!slug || !category || price_usd == null) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });

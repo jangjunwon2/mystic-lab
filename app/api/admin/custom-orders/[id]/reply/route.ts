@@ -12,7 +12,8 @@ export async function POST(
   if (!adminUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { subject, message } = (await request.json()) as { subject: string; message: string };
+  const rawBody = await request.json().catch(() => null);
+  const { subject, message } = (rawBody ?? {}) as { subject?: string; message?: string };
 
   if (!subject?.trim() || !message?.trim()) {
     return NextResponse.json({ error: "Subject and message are required." }, { status: 400 });
