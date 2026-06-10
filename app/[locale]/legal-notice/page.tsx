@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
+const LOCALES = ["en", "ko", "ja", "zh-CN", "es", "fr", "de"] as const;
+
 interface Props {
   params: Promise<{ locale: string }>;
 }
@@ -8,15 +11,24 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const titles: Record<string, string> = {
-    en: "Legal Notice",
-    ko: "법적 고지",
-    ja: "法的通知",
-    "zh-CN": "法律声明",
-    es: "Aviso legal",
-    fr: "Mentions légales",
-    de: "Impressum",
+    en: "Legal Notice | Mystic Lab",
+    ko: "법적 고지 | 미스틱 랩",
+    ja: "法的通知 | ミスティック・ラボ",
+    "zh-CN": "法律声明 | 神秘实验室",
+    es: "Aviso legal | Mystic Lab",
+    fr: "Mentions légales | Mystic Lab",
+    de: "Impressum | Mystic Lab",
   };
-  return { title: titles[locale] ?? titles.en };
+  return {
+    title: titles[locale] ?? titles.en,
+    alternates: {
+      canonical: `${SITE_URL}/${locale}/legal-notice`,
+      languages: {
+        ...Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}/legal-notice`])),
+        "x-default": `${SITE_URL}/en/legal-notice`,
+      },
+    },
+  };
 }
 
 type Section = { heading: string; content: string };

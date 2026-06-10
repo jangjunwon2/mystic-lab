@@ -10,14 +10,34 @@ interface ProductsPageProps {
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
 const LOCALES = ["en", "ko", "ja", "zh-CN", "es", "fr", "de"] as const;
 
+const PRODUCTS_DESC: Record<string, string> = {
+  en: "Browse premium magic props and custom electronic devices for professional magicians.",
+  ko: "프로 마술사를 위한 프리미엄 마술 도구와 맞춤 전자 기기를 둘러보세요.",
+  ja: "プロマジシャン向けのプレミアムマジック用品とカスタム電子機器を探す。",
+  "zh-CN": "浏览为专业魔术师准备的优质魔术道具和定制电子设备。",
+  es: "Explora accesorios de magia premium y dispositivos electrónicos para magos profesionales.",
+  fr: "Découvrez des accessoires de magie premium et des appareils électroniques pour les magiciens professionnels.",
+  de: "Premium-Zauberzubehör und maßgeschneiderte elektronische Geräte für professionelle Zauberer.",
+};
+
 export async function generateMetadata({ params }: ProductsPageProps) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "products" });
+  const description = PRODUCTS_DESC[locale] ?? PRODUCTS_DESC.en;
   return {
     title: t("title"),
+    description,
     alternates: {
       canonical: `${SITE_URL}/${locale}/products`,
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}/products`])),
+      languages: {
+        ...Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}/products`])),
+        "x-default": `${SITE_URL}/en/products`,
+      },
+    },
+    openGraph: {
+      title: `${t("title")} | Mystic Lab`,
+      description,
+      url: `${SITE_URL}/${locale}/products`,
     },
   };
 }

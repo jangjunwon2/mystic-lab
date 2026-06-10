@@ -165,7 +165,10 @@ export async function generateMetadata({ params }: Props) {
     description,
     alternates: {
       canonical: `${siteUrl}/${locale}/products/${slug}`,
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `${siteUrl}/${l}/products/${slug}`])),
+      languages: {
+        ...Object.fromEntries(LOCALES.map((l) => [l, `${siteUrl}/${l}/products/${slug}`])),
+        "x-default": `${siteUrl}/en/products/${slug}`,
+      },
     },
     openGraph: {
       title: `${name} | Mystic Lab`,
@@ -385,11 +388,25 @@ export default async function ProductPage({ params }: Props) {
       : undefined,
   };
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${siteUrl}/${locale}` },
+      { "@type": "ListItem", position: 2, name: "Products", item: `${siteUrl}/${locale}/products` },
+      { "@type": "ListItem", position: 3, name: translation.name, item: `${siteUrl}/${locale}/products/${product.slug}` },
+    ],
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <TrackProductView
         productId={product.id}

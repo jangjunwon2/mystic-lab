@@ -32,7 +32,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: meta.description,
     alternates: {
       canonical: `${SITE_URL}/${locale}`,
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}`])),
+      languages: {
+        ...Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}`])),
+        "x-default": `${SITE_URL}/en`,
+      },
     },
     openGraph: {
       title: meta.title,
@@ -89,14 +92,38 @@ export default async function HomePage({ params }: Props) {
     new Set(((categoryData ?? []) as { category: string }[]).map((p) => p.category))
   );
 
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Mystic Lab",
+    url: SITE_URL,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/${locale}/products?search={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
+  };
+
+  const orgJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Mystic Lab",
+    url: SITE_URL,
+    logo: `${SITE_URL}/opengraph-image`,
+  };
+
   return (
-    <div className="flex flex-col">
-      <HeroSection />
-      <CategoryShowcase categories={activeCategories} locale={locale} />
-      <FeaturedProducts products={featured} locale={locale} />
-      <AboutBanner locale={locale} />
-      <CustomOrderBanner />
-      <UnlockBanner />
-    </div>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
+      <div className="flex flex-col">
+        <HeroSection />
+        <CategoryShowcase categories={activeCategories} locale={locale} />
+        <FeaturedProducts products={featured} locale={locale} />
+        <AboutBanner locale={locale} />
+        <CustomOrderBanner />
+        <UnlockBanner />
+      </div>
+    </>
   );
 }

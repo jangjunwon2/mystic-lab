@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
+const LOCALES = ["en", "ko", "ja", "zh-CN", "es", "fr", "de"] as const;
+
 interface Props {
   params: Promise<{ locale: string }>;
 }
@@ -7,15 +10,34 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const titles: Record<string, string> = {
-    en: "Shipping Policy",
-    ko: "배송 안내",
-    ja: "配送ポリシー",
-    "zh-CN": "配送政策",
-    es: "Política de envío",
-    fr: "Politique d'expédition",
-    de: "Versandrichtlinie",
+    en: "Shipping Policy | Mystic Lab",
+    ko: "배송 안내 | 미스틱 랩",
+    ja: "配送ポリシー | ミスティック・ラボ",
+    "zh-CN": "配送政策 | 神秘实验室",
+    es: "Política de envío | Mystic Lab",
+    fr: "Politique d'expédition | Mystic Lab",
+    de: "Versandrichtlinie | Mystic Lab",
   };
-  return { title: titles[locale] ?? titles.en };
+  const descriptions: Record<string, string> = {
+    en: "Mystic Lab ships worldwide. Learn about our processing times, shipping carriers, and international delivery options.",
+    ko: "미스틱 랩은 전 세계로 배송합니다. 처리 시간, 배송사, 국제 배송 옵션에 대해 알아보세요.",
+    ja: "ミスティック・ラボは世界中に発送します。処理時間、配送業者、国際配送オプションについてご確認ください。",
+    "zh-CN": "神秘实验室全球发货。了解我们的处理时间、快递公司和国际配送选项。",
+    es: "Mystic Lab envía a todo el mundo. Conoce nuestros tiempos de procesamiento, transportistas y opciones de envío internacional.",
+    fr: "Mystic Lab expédie dans le monde entier. Découvrez nos délais de traitement, transporteurs et options de livraison internationale.",
+    de: "Mystic Lab versendet weltweit. Erfahren Sie mehr über unsere Bearbeitungszeiten, Spediteure und internationale Versandoptionen.",
+  };
+  return {
+    title: titles[locale] ?? titles.en,
+    description: descriptions[locale] ?? descriptions.en,
+    alternates: {
+      canonical: `${SITE_URL}/${locale}/shipping`,
+      languages: {
+        ...Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}/shipping`])),
+        "x-default": `${SITE_URL}/en/shipping`,
+      },
+    },
+  };
 }
 
 const CONTENT: Record<string, {

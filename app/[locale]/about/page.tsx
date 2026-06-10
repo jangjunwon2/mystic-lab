@@ -28,12 +28,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mystic-lab.vercel.app";
   const LOCALES = ["en", "ko", "ja", "zh-CN", "es", "fr", "de"] as const;
+  const title = titles[locale] ?? titles.en;
+  const description = descriptions[locale] ?? descriptions.en;
   return {
-    title: titles[locale] ?? titles.en,
-    description: descriptions[locale] ?? descriptions.en,
+    title,
+    description,
     alternates: {
       canonical: `${SITE_URL}/${locale}/about`,
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}/about`])),
+      languages: {
+        ...Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}/about`])),
+        "x-default": `${SITE_URL}/en/about`,
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${SITE_URL}/${locale}/about`,
     },
   };
 }
