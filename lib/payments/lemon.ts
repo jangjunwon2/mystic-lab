@@ -102,7 +102,7 @@ export async function createLemonCheckout(
 
   if (!res.ok) {
     const err = await res.text();
-    console.error("Lemon Squeezy checkout creation failed:", err);
+    console.error("Lemon Squeezy checkout creation failed:", res.status);
     // Parse API error for more actionable message
     let detail = "";
     try {
@@ -128,7 +128,10 @@ export async function verifyLemonWebhook(
   const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
   if (!secret) return false;
 
-  const { createHmac } = await import("crypto");
+  const { createHmac, timingSafeEqual } = await import("crypto");
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-  return expected === signature;
+  const expectedBuf = Buffer.from(expected, "hex");
+  const actualBuf = Buffer.from(signature, "hex");
+  if (expectedBuf.length !== actualBuf.length) return false;
+  return timingSafeEqual(expectedBuf, actualBuf);
 }

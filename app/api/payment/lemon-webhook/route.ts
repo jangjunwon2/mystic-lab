@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         .eq("stripe_payment_intent_id", `lemon_${lsOrderId}`)
         .maybeSingle();
 
-      if (orderRow) {
+      if (orderRow && orderRow.status !== "refunded") {
         const { reverseOrderEffects } = await import("@/lib/payments/refund-order");
         await reverseOrderEffects(supabase, orderRow.id); // 재고·마일리지 복원
         await supabase.from("orders").update({ status: "refunded" }).eq("id", orderRow.id);
