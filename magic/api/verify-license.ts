@@ -6,7 +6,7 @@ import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   // 인증 시도는 IP당 분당 10회로 제한
-  if (!checkRateLimit(`verify-license:${ip}`, 10, 60_000)) {
+  if (!(await checkRateLimit(`verify-license:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: "Too many attempts. Please wait." }, { status: 429 });
   }
 

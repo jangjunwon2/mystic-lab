@@ -30,6 +30,15 @@ export async function POST(request: Request) {
   if (!body.name?.trim()) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
+  if (body.name.length > 200) {
+    return NextResponse.json({ error: "name must be 200 characters or less." }, { status: 400 });
+  }
+  if ((body.short_description ?? "").length > 500) {
+    return NextResponse.json({ error: "short_description must be 500 characters or less." }, { status: 400 });
+  }
+  if ((body.description ?? "").length > 10000) {
+    return NextResponse.json({ error: "description must be 10,000 characters or less." }, { status: 400 });
+  }
 
   const client = new Anthropic({ apiKey });
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 import { createLemonCheckout } from "@/lib/payments/lemon";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -9,6 +10,9 @@ import { randomUUID } from "crypto";
 import type { OrderPayload } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
+  if (!(await checkRateLimit(`lemon-checkout:${getClientIP(request)}`, 30, 3_600_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
   try {
     const body = await request.json();
     const { items, customerEmail, locale, discountCodeId, discountCode, referralCode, couponCode, shippingMethod, shippingAddress, pointsUsed } = body as OrderPayload & {

@@ -53,6 +53,12 @@ export async function DELETE(req: NextRequest) {
 
   const supabase = await createClient();
 
+  // 로그인 상태이면 본인 이메일인지 검증
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user && user.email && user.email.toLowerCase() !== email) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 403 });
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
     .from("restock_alerts")

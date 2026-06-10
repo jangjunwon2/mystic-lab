@@ -22,6 +22,17 @@ export async function POST(request: Request) {
   if (!body.user_id || !body.customer_email || !body.items?.length) {
     return NextResponse.json({ error: "user_id, customer_email, items required" }, { status: 400 });
   }
+  for (const item of body.items) {
+    if (!item.product_id || typeof item.product_id !== "string") {
+      return NextResponse.json({ error: "Invalid product_id." }, { status: 400 });
+    }
+    if (!Number.isFinite(item.price_usd) || item.price_usd < 0) {
+      return NextResponse.json({ error: "price_usd must be >= 0." }, { status: 400 });
+    }
+    if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+      return NextResponse.json({ error: "quantity must be a positive integer." }, { status: 400 });
+    }
+  }
 
   const total = body.items.reduce((s, i) => s + i.price_usd * i.quantity, 0);
 

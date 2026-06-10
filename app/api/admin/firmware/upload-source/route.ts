@@ -89,6 +89,9 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get("zip") as File | null;
   if (!file) return NextResponse.json({ error: "zip 파일 필수" }, { status: 400 });
+  if (file.size > 50 * 1024 * 1024) {
+    return NextResponse.json({ error: "ZIP 파일은 50MB 이하여야 합니다." }, { status: 400 });
+  }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   let unzipped: ReturnType<typeof unzipSync>;

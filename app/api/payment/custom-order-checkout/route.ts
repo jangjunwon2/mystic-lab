@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
+  if (!(await checkRateLimit(`custom-order-checkout:${getClientIP(req)}`, 10, 60_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
   const token = req.nextUrl.searchParams.get("token");
   if (!token) return NextResponse.json({ error: "Missing token." }, { status: 400 });
 

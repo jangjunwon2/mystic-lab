@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
+
+const ALLOWED_DEVICES = /^[a-z0-9_-]{1,50}$/;
 
 // 공개 엔드포인트 — ESP32 기기가 최신 펌웨어 버전 확인
 // GET /api/firmware/latest?device=my-device-type
 export async function GET(req: NextRequest) {
-  const device = req.nextUrl.searchParams.get("device") ?? "default";
+  if (!(await checkRateLimit(`firmware-latest:${getClientIP(req)}`, 30, 60_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+  const device = req.nextUrl.searchParams.get("device") ?? "";
+  if (!device || !ALLOWED_DEVICES.test(device)) {
+    return NextResponse.json({ error: "Invalid device parameter." }, { status: 400 });
+  }
 
   const supabase = createAdminClient();
   // download_url이 빈 문자열인 pending(빌드 대기) 행은 기기에 반환하지 않음

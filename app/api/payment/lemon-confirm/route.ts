@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { saveOrderToSupabase } from "@/lib/payments/save-order";
 import { sendOrderConfirmation } from "@/lib/resend";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { computeServerLineTotals } from "@/lib/payments/order-pricing";
+import { resolveOrderDiscountUsd } from "@/lib/coupons";
+import { pointsToUsd } from "@/lib/points";
 import type { CartItem } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
@@ -75,13 +78,36 @@ export async function POST(request: NextRequest) {
       authUserId = user?.id ?? null;
     } catch { /* 비로그인 */ }
 
+    // 서버 가격 재계산 — 클라이언트 totalUsd를 신뢰하지 않고 DB 가격 기반으로 재산출
+    let serverTotalUsd = totalUsd;
+    if (items.length > 0) {
+      try {
+        const { subtotal: serverSubtotal, byProduct } = await computeServerLineTotals(items);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const adminForDiscount = (await createAdminClient()) as any;
+        const discountUsd = await resolveOrderDiscountUsd(adminForDiscount, {
+          couponCode: body.couponCode ?? null,
+          referralCode: body.referralCode ?? null,
+          userId: authUserId,
+          email: customerEmail,
+          subtotalUsd: serverSubtotal,
+          lineTotalsByProduct: byProduct,
+        });
+        const couponDiscount = Math.max(0, Math.min(discountUsd, serverSubtotal));
+        const shippingUsdServer = (shippingMethod === "express" || shippingMethod === "ems") ? 15 : 0;
+        serverTotalUsd = Math.max(0, serverSubtotal - couponDiscount - pointsToUsd(pointsSpent ?? 0) + shippingUsdServer);
+      } catch {
+        // 재계산 실패 시 클라이언트 값 유지 — 웹훅이 정상 처리
+      }
+    }
+
     const dbOrderId = await saveOrderToSupabase({
       gateway: "lemon",
       gatewayRef: lsOrderId ?? `lemon-success-${Date.now()}`,
       items,
       customerEmail,
       userId: authUserId,
-      totalUsd,
+      totalUsd: serverTotalUsd,
       appliedDiscountCode: discountCode ?? undefined,
       appliedReferralCode: referralCode ?? undefined,
       appliedCouponCode: couponCode ?? undefined,

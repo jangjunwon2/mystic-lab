@@ -17,6 +17,12 @@ export async function POST(request: NextRequest) {
   if (!subject?.trim() || !html?.trim()) {
     return NextResponse.json({ error: "Subject and HTML are required." }, { status: 400 });
   }
+  if (subject.length > 200) {
+    return NextResponse.json({ error: "Subject must be 200 characters or less." }, { status: 400 });
+  }
+  if (Buffer.byteLength(html, "utf8") > 100 * 1024) {
+    return NextResponse.json({ error: "HTML must be 100KB or less." }, { status: 400 });
+  }
   if ((segment === "product_buyers" || segment === "wishlist_product") && !product_id) {
     return NextResponse.json({ error: "product_id is required for this segment." }, { status: 400 });
   }

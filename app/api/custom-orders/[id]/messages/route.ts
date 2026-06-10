@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 // 고객 메시지 API — 로그인 회원이 본인 커스텀 주문에 메시지 발송
 
@@ -48,8 +49,13 @@ export async function POST(
   const order = await getAuthedOrder(id);
   if (!order) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  if (!(await checkRateLimit(`custom-order-msg:${getClientIP(req)}`, 10, 60_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   const { message } = await req.json();
   if (!message?.trim()) return NextResponse.json({ error: "메시지를 입력해주세요." }, { status: 400 });
+  if (message.trim().length > 5000) return NextResponse.json({ error: "메시지는 5000자 이하로 입력해주세요." }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = (await createAdminClient()) as any;
