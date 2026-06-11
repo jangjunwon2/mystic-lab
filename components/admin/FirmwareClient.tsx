@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Upload, FolderArchive, X, RefreshCw } from "lucide-react";
+import { Upload, FolderArchive, X, RefreshCw, Zap } from "lucide-react";
 import type { FirmwareDevice } from "@/app/api/admin/firmware/devices/route";
 import FirmwareDeviceList from "./FirmwareDeviceList";
 import FirmwareDeviceManager from "./FirmwareDeviceManager";
@@ -55,6 +55,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ msg: string; type: "idle" | "ok" | "err" | "info" }>({ msg: "", type: "idle" });
   const [rebuilding, setRebuilding] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
   const [stagedDevices, setStagedDevices] = useState<StagedDevice[]>([]);
   const [polling, setPolling] = useState(false);
   const [newReleaseAlert, setNewReleaseAlert] = useState<string | null>(null);
@@ -173,6 +174,29 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
     setStagedDevices((prev) => prev.filter((s) => s.id !== id));
   }
 
+  async function handleOptimizeWorkflow() {
+    setOptimizing(true);
+    try {
+      const res = await fetch("/api/admin/firmware/fix-workflow", { method: "POST" });
+      const d = await res.json();
+      if (res.ok) {
+        if (d.skipped) {
+          setUploadStatus({ msg: "✅ 워크플로우가 이미 최적화되어 있습니다.", type: "ok" });
+        } else {
+          setUploadStatus({
+            msg: `✅ 워크플로우 최적화 완료 (커밋 ${d.commit}): ${(d.changes as string[]).join(", ")}. 다음 빌드부터 적용됩니다.`,
+            type: "ok",
+          });
+        }
+      } else {
+        setUploadStatus({ msg: `최적화 실패: ${d.error}`, type: "err" });
+      }
+    } catch {
+      setUploadStatus({ msg: "네트워크 오류가 발생했습니다.", type: "err" });
+    }
+    setOptimizing(false);
+  }
+
   async function handleRebuildAll() {
     if (!confirm("모든 장치를 강제 재빌드합니다. GitHub Actions가 실행되며 5~10분 소요됩니다.")) return;
     setRebuilding(true);
@@ -275,6 +299,16 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
           >
             <RefreshCw className={`w-4 h-4 ${rebuilding ? "animate-spin" : ""}`} />
             {rebuilding ? "요청 중…" : "전체 재빌드"}
+          </button>
+          <button
+            onClick={handleOptimizeWorkflow}
+            disabled={optimizing}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+            style={{ background: "rgba(234,179,8,0.12)", color: "#EAB308", border: "1px solid rgba(234,179,8,0.3)" }}
+            title="빌드 타임아웃 오류 발생 시: 캐시 추가 + 60분 타임아웃 설정"
+          >
+            <Zap className={`w-4 h-4 ${optimizing ? "animate-pulse" : ""}`} />
+            {optimizing ? "적용 중…" : "워크플로우 최적화"}
           </button>
           {uploadStatus.msg && (
             <span
