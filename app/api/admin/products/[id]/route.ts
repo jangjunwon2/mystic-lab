@@ -48,7 +48,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
   }
 
-  if (translations?.length > 0) {
+  if (Array.isArray(translations) && translations.length > 0) {
     await supabase.from("product_translations").upsert(
       (translations as { language: string; name: string; description: string; short_description?: string }[]).map((t) => ({
         product_id: id,

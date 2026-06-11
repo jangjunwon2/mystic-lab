@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
 
-  if (translations?.length > 0) {
+  if (Array.isArray(translations) && translations.length > 0) {
     const rows = translations.map((t: { language: string; name: string; description: string; short_description?: string }) => ({
       product_id: (product as { id: string }).id,
       language: t.language,
