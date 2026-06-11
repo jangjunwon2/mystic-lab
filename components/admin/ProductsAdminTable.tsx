@@ -129,7 +129,7 @@ export default function ProductsAdminTable({ products }: Props) {
                         disabled={idx === 0 || orderSaving}
                         className="p-0.5 rounded text-xs disabled:opacity-20 hover:opacity-60 transition-opacity"
                         style={{ color: "#9CA3AF" }}
-                        title="Move up"
+                        aria-label="Move up"
                       >
                         ▲
                       </button>
@@ -138,7 +138,7 @@ export default function ProductsAdminTable({ products }: Props) {
                         disabled={idx === rows.length - 1 || orderSaving}
                         className="p-0.5 rounded text-xs disabled:opacity-20 hover:opacity-60 transition-opacity"
                         style={{ color: "#9CA3AF" }}
-                        title="Move down"
+                        aria-label="Move down"
                       >
                         ▼
                       </button>

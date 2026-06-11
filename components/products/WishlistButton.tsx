@@ -58,7 +58,7 @@ export default function WishlistButton({ productId, isLoggedIn, locale, initialW
     <button
       onClick={toggle}
       disabled={loading}
-      title={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+      aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
       className={`transition-all duration-200 disabled:opacity-50 ${className}`}
     >
       <Heart

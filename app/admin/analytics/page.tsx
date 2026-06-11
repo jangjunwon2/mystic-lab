@@ -64,13 +64,14 @@ export default async function AdminAnalyticsPage() {
       .from("orders")
       .select("total_usd, status, created_at, customer_email")
       .gte("created_at", sixtyDaysAgo.toISOString())
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(5000),
     supabase
       .from("order_items")
       .select("product_id, quantity, price_usd, products(slug, product_translations(name, language))")
       .limit(2000),
     // 이번 달 신규 회원만 로드 (전체 후 JS 필터 제거)
-    supabase.from("profiles").select("id").gte("created_at", thisMonthStart.toISOString()),
+    supabase.from("profiles").select("id").gte("created_at", thisMonthStart.toISOString()).limit(10000),
     supabase
       .from("orders")
       .select("total_usd, status, customer_email, user_id, stripe_payment_intent_id, shipping_address")
