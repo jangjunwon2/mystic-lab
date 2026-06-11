@@ -130,7 +130,9 @@
       "error": "エラーが発生しました。もう一度お試しください。",
       "namePlaceholder": "お名前を入力してください",
       "selectRange": "範囲を選択",
-      "optional": "任意"
+      "optional": "任意",
+      "sending": "送信中...",
+      "responseTime": "通常、メールにて24〜48時間以内にご返答いたします。"
     },
     "sentTitle": "お問い合わせを送信しました！",
     "backHome": "ホームに戻る"

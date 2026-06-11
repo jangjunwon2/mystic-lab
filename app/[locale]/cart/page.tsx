@@ -17,6 +17,7 @@ interface CartItem {
   quantity: number;
   option_id?: string;
   option_name?: string;
+  thumbnail_url?: string;
 }
 
 interface Props {
@@ -181,9 +182,13 @@ export default function CartPage({ params }: Props) {
                       aria-label={item.name}
                     />
 
-                    {/* Thumbnail placeholder */}
-                    <div className="w-16 h-16 rounded-lg bg-[#13131F] border border-[#2D2D4E] flex items-center justify-center shrink-0">
-                      <div className="w-6 h-6 rounded-full bg-[#7C3AED]/40 animate-pulse" />
+                    {/* Thumbnail */}
+                    <div className="w-16 h-16 rounded-lg bg-[#13131F] border border-[#2D2D4E] flex items-center justify-center shrink-0 overflow-hidden">
+                      {item.thumbnail_url ? (
+                        <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-[#7C3AED]/40" />
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">

@@ -23,14 +23,14 @@ import type {
   SolutionVideo,
 } from "@/app/[locale]/products/[slug]/page";
 
-const SHARE_LABELS: Record<string, { share: string; shareBtn: string; copyAria: string; shareAria: string; copied: string; hint: string; more: string; igHint: string }> = {
-  en: { share: "Share", shareBtn: "Share", copyAria: "Copy link", shareAria: "Share", copied: "Copied!", hint: "Instagram, KakaoTalk, WeChat, Messenger and more are available via the Share button (mobile).", more: "More", igHint: "Link copied — paste it into Instagram." },
-  ko: { share: "공유", shareBtn: "공유하기", copyAria: "링크 복사", shareAria: "공유", copied: "복사됨!", hint: "인스타그램·카카오톡·위챗·메신저 등은 공유하기 버튼(모바일)에서 선택할 수 있어요.", more: "더보기", igHint: "링크를 복사했어요 — 인스타그램에 붙여넣어 공유하세요." },
-  ja: { share: "シェア", shareBtn: "共有", copyAria: "リンクをコピー", shareAria: "で共有", copied: "コピーしました!", hint: "Instagram・カカオトーク・WeChat・メッセンジャーなどは「共有」ボタン（モバイル）から選べます。", more: "その他", igHint: "リンクをコピーしました — Instagramに貼り付けて共有してください。" },
-  "zh-CN": { share: "分享", shareBtn: "分享", copyAria: "复制链接", shareAria: "分享", copied: "已复制!", hint: "Instagram、KakaoTalk、微信、Messenger 等可通过“分享”按钮（移动端）选择。", more: "更多", igHint: "已复制链接 — 粘贴到 Instagram 分享。" },
-  es: { share: "Compartir", shareBtn: "Compartir", copyAria: "Copiar enlace", shareAria: "Compartir en", copied: "¡Copiado!", hint: "Instagram, KakaoTalk, WeChat, Messenger y más están disponibles con el botón Compartir (móvil).", more: "Más", igHint: "Enlace copiado: pégalo en Instagram." },
-  fr: { share: "Partager", shareBtn: "Partager", copyAria: "Copier le lien", shareAria: "Partager sur", copied: "Copié !", hint: "Instagram, KakaoTalk, WeChat, Messenger, etc. sont disponibles via le bouton Partager (mobile).", more: "Plus", igHint: "Lien copié — collez-le dans Instagram." },
-  de: { share: "Teilen", shareBtn: "Teilen", copyAria: "Link kopieren", shareAria: "Teilen auf", copied: "Kopiert!", hint: "Instagram, KakaoTalk, WeChat, Messenger usw. sind über die Schaltfläche „Teilen“ (mobil) verfügbar.", more: "Mehr", igHint: "Link kopiert – füge ihn in Instagram ein." },
+const SHARE_LABELS: Record<string, { share: string; shareBtn: string; copyAria: string; shareAria: string; copied: string; hint: string; more: string; igHint: string; shareTextPrefix: string }> = {
+  en: { share: “Share”, shareBtn: “Share”, copyAria: “Copy link”, shareAria: “Share”, copied: “Copied!”, hint: “Instagram, KakaoTalk, WeChat, Messenger and more are available via the Share button (mobile).”, more: “More”, igHint: “Link copied — paste it into Instagram.”, shareTextPrefix: “Check out” },
+  ko: { share: “공유”, shareBtn: “공유하기”, copyAria: “링크 복사”, shareAria: “공유”, copied: “복사됨!”, hint: “인스타그램·카카오톡·위챗·메신저 등은 공유하기 버튼(모바일)에서 선택할 수 있어요.”, more: “더보기”, igHint: “링크를 복사했어요 — 인스타그램에 붙여넣어 공유하세요.”, shareTextPrefix: “Mystic Lab에서” },
+  ja: { share: “シェア”, shareBtn: “共有”, copyAria: “リンクをコピー”, shareAria: “で共有”, copied: “コピーしました!”, hint: “Instagram・カカオトーク・WeChat・メッセンジャーなどは「共有」ボタン（モバイル）から選べます。”, more: “その他”, igHint: “リンクをコピーしました — Instagramに貼り付けて共有してください。”, shareTextPrefix: “Mystic Lab の” },
+  “zh-CN”: { share: “分享”, shareBtn: “分享”, copyAria: “复制链接”, shareAria: “分享”, copied: “已复制!”, hint: “Instagram、KakaoTalk、微信、Messenger 等可通过”分享”按钮（移动端）选择。”, more: “更多”, igHint: “已复制链接 — 粘贴到 Instagram 分享。”, shareTextPrefix: “Mystic Lab 上的” },
+  es: { share: “Compartir”, shareBtn: “Compartir”, copyAria: “Copiar enlace”, shareAria: “Compartir en”, copied: “¡Copiado!”, hint: “Instagram, KakaoTalk, WeChat, Messenger y más están disponibles con el botón Compartir (móvil).”, more: “Más”, igHint: “Enlace copiado: pégalo en Instagram.”, shareTextPrefix: “Mira” },
+  fr: { share: “Partager”, shareBtn: “Partager”, copyAria: “Copier le lien”, shareAria: “Partager sur”, copied: “Copié !”, hint: “Instagram, KakaoTalk, WeChat, Messenger, etc. sont disponibles via le bouton Partager (mobile).”, more: “Plus”, igHint: “Lien copié — collez-le dans Instagram.”, shareTextPrefix: “Découvrez” },
+  de: { share: “Teilen”, shareBtn: “Teilen”, copyAria: “Link kopieren”, shareAria: “Teilen auf”, copied: “Kopiert!”, hint: “Instagram, KakaoTalk, WeChat, Messenger usw. sind über die Schaltfläche „Teilen” (mobil) verfügbar.”, more: “Mehr”, igHint: “Link kopiert – füge ihn in Instagram ein.”, shareTextPrefix: “Schau dir an:” },
 };
 
 const OPTION_LABELS: Record<string, { together: string; totalLabel: string }> = {
@@ -482,7 +482,13 @@ function ShareButtons({ name, productId, locale }: { name: string; productId: st
   const [copied, setCopied] = useState(false);
   const [igCopied, setIgCopied] = useState(false);
   const sl = SHARE_LABELS[locale] ?? SHARE_LABELS.en;
-  const shareText = `Check out "${name}" on Mystic Lab ✨`;
+  const shareText = locale === "ko"
+    ? `${sl.shareTextPrefix} "${name}"을(를) 확인해보세요 ✨`
+    : locale === "ja"
+    ? `${sl.shareTextPrefix} "${name}" をチェック ✨`
+    : locale === "zh-CN"
+    ? `${sl.shareTextPrefix} "${name}" ✨`
+    : `${sl.shareTextPrefix} "${name}" on Mystic Lab ✨`;
   const getUrl = () => (typeof window !== "undefined" ? window.location.href : "");
   const hasNativeShare = typeof navigator !== "undefined" && !!navigator.share;
 

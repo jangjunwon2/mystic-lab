@@ -13,9 +13,3 @@ export function getMissingEnv(): string[] {
   return REQUIRED_ENV.filter((k) => !process.env[k] || process.env[k]?.trim() === "");
 }
 
-// 값이 반드시 있어야 하는 곳에서 사용 — 없으면 명확한 에러
-export function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`[env] 필수 환경변수 누락: ${name}`);
-  return v;
-}

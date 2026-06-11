@@ -130,7 +130,9 @@
       "error": "出现错误，请重试。",
       "namePlaceholder": "请输入您的姓名",
       "selectRange": "选择范围",
-      "optional": "可选"
+      "optional": "可选",
+      "sending": "发送中...",
+      "responseTime": "我们通常会在24至48小时内通过邮件回复您。"
     },
     "sentTitle": "询盘已发送！",
     "backHome": "返回首页"

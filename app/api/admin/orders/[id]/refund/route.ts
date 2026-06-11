@@ -97,7 +97,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         if (!lsRes.ok) {
           const err = await lsRes.json().catch(() => ({})) as Record<string, unknown>;
           const detail = (err.errors as { detail?: string }[])?.[0]?.detail ?? "unknown";
-          return NextResponse.json({ error: `LemonSqueezy 환불 실패: ${detail}` }, { status: 400 });
+          console.error("[refund] LemonSqueezy failed:", detail);
+          return NextResponse.json({ error: "LemonSqueezy 환불에 실패했습니다. 게이트웨이를 확인하세요." }, { status: 400 });
         }
         gatewayMessage = "LemonSqueezy 환불 완료";
       }

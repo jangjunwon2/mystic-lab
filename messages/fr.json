@@ -130,7 +130,9 @@
       "error": "Une erreur s'est produite. Veuillez réessayer.",
       "namePlaceholder": "Votre nom complet",
       "selectRange": "Sélectionner une fourchette",
-      "optional": "facultatif"
+      "optional": "facultatif",
+      "sending": "Envoi en cours...",
+      "responseTime": "Nous répondons généralement dans les 24 à 48 heures par e-mail."
     },
     "sentTitle": "Demande envoyée !",
     "backHome": "Retour à l'accueil"

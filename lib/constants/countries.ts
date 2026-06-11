@@ -206,14 +206,3 @@ export const COUNTRIES: Country[] = [...TOP_COUNTRIES, ...OTHER_COUNTRIES];
 
 export const TOP_COUNTRY_CODES = new Set(TOP_COUNTRIES.map((c) => c.code));
 
-export function getCountry(code: string): Country | undefined {
-  return COUNTRIES.find((c) => c.code === code);
-}
-
-export function getCountryName(code: string): string {
-  return getCountry(code)?.name ?? code;
-}
-
-export function getPhoneCode(code: string): string {
-  return getCountry(code)?.phone ?? "";
-}

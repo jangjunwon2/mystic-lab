@@ -23,7 +23,7 @@ export default function LocaleError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    if (error.digest) console.error("[error]", error.digest);
   }, [error]);
 
   const pathname = usePathname();

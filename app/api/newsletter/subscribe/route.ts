@@ -10,7 +10,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many requests. Please try later." }, { status: 429 });
   }
 
-  const { email, locale, source } = (await request.json()) as {
+  const body = await request.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  const { email, locale, source } = body as {
     email: string;
     locale?: string;
     source?: string;

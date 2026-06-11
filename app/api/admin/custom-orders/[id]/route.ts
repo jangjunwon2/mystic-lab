@@ -11,7 +11,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await context.params;
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
   const VALID_STATUSES = ["received", "reviewing", "quoted", "in_progress", "completed", "rejected"];
   const update: Record<string, string> = {};

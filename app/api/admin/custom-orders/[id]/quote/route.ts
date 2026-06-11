@@ -11,7 +11,8 @@ export async function POST(
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   const quotedPriceUsd = Number(body.quoted_price_usd);
   const quotedPriceKrw = body.quoted_price_krw ? Number(body.quoted_price_krw) : null;
 

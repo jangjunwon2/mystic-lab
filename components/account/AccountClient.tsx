@@ -148,6 +148,7 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile?.display_name ?? "");
   const [savingName, setSavingName] = useState(false);
+  const [saveNameError, setSaveNameError] = useState<string | null>(null);
   const [currentName, setCurrentName] = useState(profile?.display_name ?? "");
 
   const typedOrders = orders as Order[];
@@ -184,6 +185,7 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
   async function saveName() {
     if (!nameInput.trim()) return;
     setSavingName(true);
+    setSaveNameError(null);
     const res = await fetch("/api/account/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -192,6 +194,8 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
     if (res.ok) {
       setCurrentName(nameInput.trim());
       setEditingName(false);
+    } else {
+      setSaveNameError("저장에 실패했습니다.");
     }
     setSavingName(false);
   }
@@ -219,32 +223,35 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
             </div>
             <div>
               {editingName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value)}
-                    className="bg-[#1A1A2E] border border-[#7C3AED]/50 rounded-lg px-3 py-1 text-[#F0E6FF] text-base font-bold focus:outline-none focus:border-[#7C3AED]"
-                    style={{ fontFamily: "var(--font-cinzel), serif" }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") saveName();
-                      if (e.key === "Escape") setEditingName(false);
-                    }}
-                    autoFocus
-                    maxLength={50}
-                  />
-                  <button
-                    onClick={saveName}
-                    disabled={savingName}
-                    className="p-1 text-[#10B981] hover:opacity-80 transition-opacity disabled:opacity-40"
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setEditingName(false)}
-                    className="p-1 text-[#6B7280] hover:opacity-80 transition-opacity"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={nameInput}
+                      onChange={(e) => { setNameInput(e.target.value); setSaveNameError(null); }}
+                      className="bg-[#1A1A2E] border border-[#7C3AED]/50 rounded-lg px-3 py-1 text-[#F0E6FF] text-base font-bold focus:outline-none focus:border-[#7C3AED]"
+                      style={{ fontFamily: "var(--font-cinzel), serif" }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveName();
+                        if (e.key === "Escape") setEditingName(false);
+                      }}
+                      autoFocus
+                      maxLength={50}
+                    />
+                    <button
+                      onClick={saveName}
+                      disabled={savingName}
+                      className="p-1 text-[#10B981] hover:opacity-80 transition-opacity disabled:opacity-40"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => { setEditingName(false); setSaveNameError(null); }}
+                      className="p-1 text-[#6B7280] hover:opacity-80 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {saveNameError && <p className="text-xs text-red-400 mt-1">{saveNameError}</p>}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
@@ -711,6 +718,7 @@ function WithdrawSection({ locale }: { locale: string }) {
   const [open, setOpen] = useState(false);
   const [emailInput, setEmailInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const supabase = createClient();
 
   // 현재 로그인 이메일 조회
@@ -731,13 +739,14 @@ function WithdrawSection({ locale }: { locale: string }) {
   async function withdraw() {
     if (emailInput.trim() !== myEmail) return;
     setBusy(true);
+    setWithdrawError(null);
     const res = await fetch("/api/account/me", { method: "DELETE" });
     if (res.ok) {
       await supabase.auth.signOut();
       router.push(`/${locale}`);
     } else {
-      const d = await res.json();
-      alert(d.error ?? "탈퇴에 실패했습니다.");
+      const d = await res.json().catch(() => ({}));
+      setWithdrawError((d as Record<string, string>).error ?? "탈퇴에 실패했습니다.");
       setBusy(false);
     }
   }
@@ -758,11 +767,12 @@ function WithdrawSection({ locale }: { locale: string }) {
           <p className="text-xs mb-4" style={{ color: "#9CA3AF" }}>{l.warn}</p>
           <input
             value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
+            onChange={(e) => { setEmailInput(e.target.value); setWithdrawError(null); }}
             placeholder={l.placeholder}
             className="w-full rounded-lg px-3 py-2 text-sm outline-none focus:border-red-500 mb-3"
             style={{ background: "#13131F", border: "1px solid #2D2D4E", color: "#F0E6FF" }}
           />
+          {withdrawError && <p className="text-xs text-red-400 mb-2">{withdrawError}</p>}
           <div className="flex gap-2">
             <button
               onClick={withdraw}

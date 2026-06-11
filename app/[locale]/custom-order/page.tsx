@@ -224,13 +224,13 @@ export default function CustomOrderPage({ params }: Props) {
               ) : (
                 <Send className="w-4 h-4" />
               )}
-              {loading ? "Sending..." : t("form.submit")}
+              {loading ? t("form.sending") : t("form.submit")}
             </button>
           </form>
         </motion.div>
 
         <p className="text-center text-xs text-[#4B5563] mt-6">
-          We typically respond within 24–48 hours via email.
+          {t("form.responseTime")}
         </p>
       </div>
     </div>

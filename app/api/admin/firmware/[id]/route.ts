@@ -7,7 +7,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   const supabase = createAdminClient();
 
   const ALLOWED_FIELDS = ["notes", "download_url", "device_type", "version"] as const;

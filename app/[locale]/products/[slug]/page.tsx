@@ -196,6 +196,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductPage({ params }: Props) {
   const { locale, slug } = await params;
+  const supabase = await createClient();
 
   let product: ProductWithTranslations | null = null;
   let options: ProductOption[] = [];

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { createHash, randomBytes } from "crypto";
 import { encryptCode, decryptCode } from "@/lib/crypto/unlock-code";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // 회원에게 노출되는 정품 인증 코드 형식: MC-XXXX-XXXX (대문자/숫자, 혼동 문자 제외)
 function generateMemberCode(): string {
@@ -19,7 +20,13 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
 
-  const { productId } = (await request.json()) as { productId?: string };
+  if (!(await checkRateLimit(`my-code:${user.id}`, 20, 60_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
+  const body = await request.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  const { productId } = body as { productId?: string };
   if (!productId) return NextResponse.json({ error: "상품 ID가 필요합니다." }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

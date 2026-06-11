@@ -10,8 +10,14 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  if (!from || !to) {
-    return NextResponse.json({ error: "from and to are required" }, { status: 400 });
+  const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+  if (!from || !to || !ISO_DATE.test(from) || !ISO_DATE.test(to)) {
+    return NextResponse.json({ error: "from and to must be YYYY-MM-DD" }, { status: 400 });
+  }
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+  if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime()) || fromDate > toDate) {
+    return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +26,7 @@ export async function GET(request: NextRequest) {
   const { data: orders, error } = await supabase
     .from("orders")
     .select("id, created_at, customer_email, status, total_usd, order_items(quantity, price_usd, products(slug, product_translations(name, language)))")
-    .gte("created_at", new Date(from).toISOString())
+    .gte("created_at", fromDate.toISOString())
     .lte("created_at", new Date(to + "T23:59:59").toISOString())
     .order("created_at", { ascending: false });
 

@@ -22,10 +22,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (slug !== undefined && (typeof slug !== "string" || !/^[a-z0-9-]+$/.test(slug) || slug.length > 100)) {
     return NextResponse.json({ error: "Invalid slug format." }, { status: 400 });
   }
-  if (price_usd !== undefined && (!Number.isFinite(price_usd) || price_usd <= 0)) {
+  if (price_usd !== undefined && (!Number.isFinite(price_usd as number) || (price_usd as number) <= 0)) {
     return NextResponse.json({ error: "price_usd must be > 0." }, { status: 400 });
   }
-  if (stock !== undefined && (!Number.isInteger(stock) || stock < 0)) {
+  if (stock !== undefined && (!Number.isInteger(stock as number) || (stock as number) < 0)) {
     return NextResponse.json({ error: "stock must be >= 0." }, { status: 400 });
   }
 

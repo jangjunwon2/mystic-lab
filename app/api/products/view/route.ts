@@ -6,7 +6,9 @@ export async function POST(request: NextRequest) {
   if (!(await checkRateLimit(`product-view:${getClientIP(request)}`, 60, 60_000))) {
     return NextResponse.json({ ok: false }, { status: 429 });
   }
-  const { product_id, locale } = (await request.json()) as {
+  const body = await request.json().catch(() => null);
+  if (!body) return NextResponse.json({ ok: false }, { status: 400 });
+  const { product_id, locale } = body as {
     product_id: string;
     locale?: string;
   };

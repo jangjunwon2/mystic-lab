@@ -30,7 +30,8 @@ export async function POST(req: Request) {
 
   if (!res.ok) {
     const text = await res.text();
-    return NextResponse.json({ error: text }, { status: res.status });
+    console.error("[firmware/rebuild] GitHub dispatch failed:", text);
+    return NextResponse.json({ error: "GitHub 워크플로 트리거에 실패했습니다." }, { status: res.status });
   }
   return NextResponse.json({ ok: true, device: device ?? "all" });
 }

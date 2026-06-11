@@ -130,7 +130,9 @@
       "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
       "namePlaceholder": "Ihr vollständiger Name",
       "selectRange": "Bereich auswählen",
-      "optional": "optional"
+      "optional": "optional",
+      "sending": "Wird gesendet...",
+      "responseTime": "Wir antworten in der Regel innerhalb von 24–48 Stunden per E-Mail."
     },
     "sentTitle": "Anfrage gesendet!",
     "backHome": "Zur Startseite"

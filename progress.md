@@ -104,6 +104,7 @@
 > **애널리틱스 쿼리 최적화** (2026-06-11): `site_visits` 50K행 → DB 집계 함수(`analytics_daily_visitors`) 최대 30행 · `product_views` 중복 쿼리 제거(2→1) · `profiles` 전체 → 이번 달만 필터링 · 마이그레이션 054 적용 완료
 > **성능 최적화** (2026-06-11): 홈·상품목록 ISR `revalidate=60` 추가 · 홈 페이지 카테고리 쿼리 제거(featured 결과에서 파생) · `products/[slug]` React `cache()` dedup · `next/image` 전환(FeaturedProducts·ProductsClient·ProductDetail·AccountClient) · Toss `res.json()` unknown 타입 + 안전 내로잉
 > **UI/UX 업그레이드** (2026-06-11): CategoryShowcase 글라스모피즘 · FeaturedProducts 첫카드 16:9+shimmer · HeroSection 스크롤 인디케이터 장식 divider · Header 미스크롤 시 보더 · ProductsClient 필터칩 glow 효과 · 홈 loading 스켈레톤 추가
+> **API·보안·i18n·UX 추가 개선** (2026-06-11): TS 빌드 에러 수정(price_usd/stock `unknown` 타입 캐스트, ProductPage supabase 누락) · JSON 파싱 crash guard — firmware/[id]·custom-orders/[id]·quote·magic/my-code·newsletter·products/view · LS·GitHub 에러 메시지 마스킹(서버 로깅만) · analytics export 날짜 검증 YYYY-MM-DD 패턴 추가 · magic/my-code·account/coupons·account/points rate limit 추가 · Cart 썸네일 실 이미지 표시 · AccountClient 이름 저장 실패 인라인 에러 + 탈퇴 `alert()` 제거 · 공유 shareText 7개 언어화 · custom-order "Sending…"·응답시간 i18n · 데드코드 제거(getCountry/getCountryName/getPhoneCode·requireEnv) · error.tsx console.error → digest만 출력 · 06/11 세션 이전부터의 cron·checkout·admin UX·PWA 개선 반영
 
 ---
 
@@ -151,6 +152,16 @@
 - ✅ **펌웨어 PATCH 입력 검증** — `/api/admin/firmware/[id]` 허용 필드 화이트리스트 적용 (2026-06-09)
 - ✅ **SEO noindex** — forgot-password·reset-password·orders/[id]·calc·insta + tutorials/[slug] generateMetadata 추가 (2026-06-09)
 - ✅ **SEO 강화** — Organization/WebSite JSON-LD(홈) · BreadcrumbList JSON-LD(상품 상세) · x-default hreflang 전체 페이지 · sitemap에서 noindex 페이지(sign-in/sign-up/unlock) 제거 · 상품목록/about/contact/custom-order/shipping/법적 페이지 alternates + OG 추가 (2026-06-10)
+- ✅ **API crash guard** — JSON 파싱 실패 400 반환 (firmware/[id]·custom-orders/[id]·quote·magic/my-code·newsletter·products/view) (2026-06-11)
+- ✅ **Rate limit 추가 2차** — magic/my-code(user당 20회/분)·account/coupons·account/points(user당 30회/분) (2026-06-11)
+- ✅ **보안 마스킹** — LS 환불 에러·GitHub dispatch 에러 → 서버 로깅 전환 (2026-06-11)
+- ✅ **analytics export 날짜 검증** — YYYY-MM-DD 패턴 + 범위 유효성 체크 (2026-06-11)
+- ✅ **Cart 썸네일** — `thumbnail_url` 필드 추가 및 실 이미지 표시 (2026-06-11)
+- ✅ **AccountClient UX** — 이름 저장 실패 인라인 에러 · 탈퇴 `alert()` → 인라인 에러 (2026-06-11)
+- ✅ **공유 shareText i18n** — 7개 언어 자연스러운 문구 (2026-06-11)
+- ✅ **custom-order i18n** — "Sending…" · 응답시간 문구 7개 언어 번역 추가 (2026-06-11)
+- ✅ **데드코드 제거** — getCountry/getCountryName/getPhoneCode·requireEnv 삭제 (2026-06-11)
+- ✅ **error.tsx** — `console.error(error)` → `error.digest`만 출력 (2026-06-11)
 
 ### 쇼핑몰/앱
 - **인스타 앱 마술 기믹 잔여** — 남은 것: 관객 *단어* 예언, 인스타 자체 입력 peek, 검색 탭 위장

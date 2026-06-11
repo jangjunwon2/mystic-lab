@@ -130,7 +130,9 @@
       "error": "Algo salió mal. Por favor, inténtalo de nuevo.",
       "namePlaceholder": "Tu nombre completo",
       "selectRange": "Selecciona un rango",
-      "optional": "opcional"
+      "optional": "opcional",
+      "sending": "Enviando...",
+      "responseTime": "Normalmente respondemos en un plazo de 24 a 48 horas por correo electrónico."
     },
     "sentTitle": "¡Consulta enviada!",
     "backHome": "Volver al inicio"

@@ -130,7 +130,9 @@
       "error": "Something went wrong. Please try again.",
       "namePlaceholder": "Your full name",
       "selectRange": "Select range",
-      "optional": "optional"
+      "optional": "optional",
+      "sending": "Sending...",
+      "responseTime": "We typically respond within 24–48 hours via email."
     },
     "sentTitle": "Inquiry Sent!",
     "backHome": "Back to Home"
