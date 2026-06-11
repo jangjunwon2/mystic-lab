@@ -4,7 +4,7 @@ import { sendRestockNotification } from "@/lib/resend";
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (secret !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || !secret || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -40,8 +40,11 @@ export async function GET(req: NextRequest) {
     const product = alert.products;
     if (!product || product.stock <= 0) continue;
 
+    const translations = product.product_translations ?? [];
     const name =
-      product.product_translations?.find((t) => t.language === "en")?.name ??
+      translations.find((t) => t.language === "en")?.name ??
+      translations.find((t) => t.language === "ko")?.name ??
+      translations[0]?.name ??
       product.slug;
 
     const ok = await sendRestockNotification({
@@ -50,10 +53,9 @@ export async function GET(req: NextRequest) {
       productSlug: product.slug,
     }).then(() => true).catch((e) => { console.error("[restock-notify] send failed:", e); return false; });
 
-    if (ok) {
-      toMark.push(alert.id);
-      sent++;
-    }
+    // Mark regardless of email success to prevent infinite retry spam on persistent failure.
+    toMark.push(alert.id);
+    if (ok) sent++;
   }
 
   if (toMark.length > 0) {

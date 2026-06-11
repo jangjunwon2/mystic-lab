@@ -2,7 +2,7 @@
   "id": "/calc",
   "name": "Calculator",
   "short_name": "Calculator",
-  "start_url": "/calc",
+  "start_url": "/en/calc",
   "scope": "/",
   "display": "standalone",
   "background_color": "#000000",

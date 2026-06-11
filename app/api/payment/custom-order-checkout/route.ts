@@ -75,6 +75,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "LemonSqueezy checkout creation failed." }, { status: 502 });
   }
 
-  const json = await res.json();
-  return NextResponse.json({ url: json.data.attributes.url });
+  const json = await res.json() as { data?: { attributes?: { url?: string } } };
+  const url = json?.data?.attributes?.url;
+  if (!url) {
+    console.error("[custom-order-checkout] LS response missing checkout url");
+    return NextResponse.json({ error: "LemonSqueezy checkout creation failed." }, { status: 502 });
+  }
+  return NextResponse.json({ url });
 }

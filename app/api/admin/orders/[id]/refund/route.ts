@@ -60,10 +60,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
       if (!tossRes.ok) {
         const err = await tossRes.json().catch(() => ({}));
-        return NextResponse.json(
-          { error: `Toss cancel failed: ${(err as Record<string,string>).message ?? "unknown"}` },
-          { status: 400 }
-        );
+        console.error("[refund] Toss cancel failed:", (err as Record<string, unknown>).code);
+        return NextResponse.json({ error: "결제 취소에 실패했습니다. 게이트웨이를 확인하세요." }, { status: 400 });
       }
       gatewayMessage = "Toss 환불 완료";
     }

@@ -2,6 +2,7 @@
   "crons": [
     { "path": "/api/cron/expire-points", "schedule": "0 18 * * *" },
     { "path": "/api/cron/wishlist-coupons", "schedule": "0 19 * * *" },
-    { "path": "/api/cron/cart-coupons", "schedule": "0 20 * * *" }
+    { "path": "/api/cron/cart-coupons", "schedule": "0 20 * * *" },
+    { "path": "/api/cron/restock-notify", "schedule": "0 21 * * *" }
   ]
 }

@@ -53,8 +53,13 @@ export default async function AdminAnalyticsPage() {
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
+  // profiles 이번 달 필터에도 쓰이므로 쿼리 전에 선언
+  const thisMonthStart = new Date();
+  thisMonthStart.setDate(1);
+  thisMonthStart.setHours(0, 0, 0, 0);
+
   const [ordersRes, orderItemsRes, profilesRes, allOrdersRes,
-    productsRes, viewsRes, wishlistsRes, sharesRes, visitsRes, productViewsDailyRes] = await Promise.all([
+    productsRes, viewsRes, wishlistsRes, sharesRes, visitsRes] = await Promise.all([
     supabase
       .from("orders")
       .select("total_usd, status, created_at, customer_email")
@@ -64,23 +69,22 @@ export default async function AdminAnalyticsPage() {
       .from("order_items")
       .select("product_id, quantity, price_usd, products(slug, product_translations(name, language))")
       .limit(2000),
-    supabase.from("profiles").select("id, created_at", { count: "exact" }),
+    // 이번 달 신규 회원만 로드 (전체 후 JS 필터 제거)
+    supabase.from("profiles").select("id").gte("created_at", thisMonthStart.toISOString()),
     supabase
       .from("orders")
       .select("total_usd, status, customer_email, user_id, stripe_payment_intent_id, shipping_address")
       .limit(2000),
-    // 상품 마스터 (상품별 상세 통계 행 구성)
+    // 상품 마스터
     supabase.from("products").select("id, slug, product_translations(name, language)").eq("is_active", true),
-    // 상품 조회수 (최근 30일)
-    supabase.from("product_views").select("product_id").gte("viewed_at", thirtyDaysAgo.toISOString()).limit(20000),
+    // 상품 조회수 + 일별 집계 통합 (product_views 중복 쿼리 제거)
+    supabase.from("product_views").select("product_id, viewed_at").gte("viewed_at", thirtyDaysAgo.toISOString()).limit(20000),
     // 위시리스트 (전체)
     supabase.from("wishlists").select("user_id, product_id").limit(20000),
     // 공유 이벤트 (최근 30일)
     supabase.from("share_events").select("product_id, channel").gte("created_at", thirtyDaysAgo.toISOString()).limit(20000),
-    // 일일 방문자 (최근 30일)
-    supabase.from("site_visits").select("date, session_id").gte("date", thirtyDaysAgo.toISOString().slice(0, 10)).limit(50000),
-    // 일일 상품 조회수 집계
-    supabase.from("product_views").select("product_id, viewed_at").gte("viewed_at", thirtyDaysAgo.toISOString()).limit(20000),
+    // 일별 방문자 집계 — DB 함수로 50K 행 전송 대체 (최대 30행 반환)
+    supabase.rpc("analytics_daily_visitors", { days_back: 30 }),
   ]);
 
   const allOrders: OrderRow[] = ordersRes.data ?? [];
@@ -144,11 +148,7 @@ export default async function AdminAnalyticsPage() {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
 
-  // New members this month
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const newMembersThisMonth = ((profilesRes.data ?? []) as { created_at: string }[]).filter(
-    (p) => new Date(p.created_at) >= thisMonthStart
-  ).length;
+  const newMembersThisMonth = (profilesRes.data ?? []).length;
 
   // ───── 마케팅 지표 (신규) ─────
   const pickName = (translations: { name: string; language: string }[] | undefined, slug: string) =>
@@ -158,7 +158,7 @@ export default async function AdminAnalyticsPage() {
   const productList = ((productsRes.data ?? []) as { id: string; slug: string; product_translations: { name: string; language: string }[] }[])
     .map((p) => ({ id: p.id, name: pickName(p.product_translations, p.slug) }));
 
-  const views = (viewsRes.data ?? []) as { product_id: string }[];
+  const views = (viewsRes.data ?? []) as { product_id: string; viewed_at: string }[];
   const wishlists = (wishlistsRes.data ?? []) as { user_id: string; product_id: string }[];
   const shares = (sharesRes.data ?? []) as { product_id: string | null; channel: string }[];
   const allOrdersFull = (allOrdersRes.data ?? []) as { status: string; user_id: string | null }[];
@@ -207,24 +207,26 @@ export default async function AdminAnalyticsPage() {
     cvr: (viewsByProduct[p.id] ?? 0) > 0 ? Math.round(((salesByProduct[p.id]?.qty ?? 0) / (viewsByProduct[p.id] ?? 1)) * 100) : 0,
   })).sort((a, b) => b.revenue - a.revenue || b.views - a.views);
 
-  // ───── 일일 방문자 ─────
-  const visitRows = (visitsRes.data ?? []) as { date: string; session_id: string }[];
+  // ───── 일일 방문자 (DB 집계 결과 — 최대 30행) ─────
+  type DailyVisitorRow = { visit_date: string; visitors: number };
+  const dailyVisitorRows = (visitsRes.data ?? []) as DailyVisitorRow[];
   const dailyVisitorMap: Record<string, number> = {};
   const now2 = new Date();
   for (let i = 29; i >= 0; i--) {
     const d = new Date(now2); d.setDate(d.getDate() - i);
     dailyVisitorMap[d.toISOString().slice(0, 10)] = 0;
   }
-  for (const v of visitRows) { if (v.date in dailyVisitorMap) dailyVisitorMap[v.date] = (dailyVisitorMap[v.date] ?? 0) + 1; }
+  for (const v of dailyVisitorRows) {
+    if (v.visit_date in dailyVisitorMap) dailyVisitorMap[v.visit_date] = Number(v.visitors);
+  }
   const dailyVisitors = Object.entries(dailyVisitorMap).map(([date, visitors]) => ({ date, visitors }));
-  const totalVisitors30d = visitRows.length;
+  const totalVisitors30d = dailyVisitorRows.reduce((s, r) => s + Number(r.visitors), 0);
   const todayVisitors = dailyVisitorMap[new Date().toISOString().slice(0, 10)] ?? 0;
 
-  // 일일 조회수
-  const pvRows = (productViewsDailyRes.data ?? []) as { product_id: string; viewed_at: string }[];
+  // 일일 조회수 — viewsRes에서 파생 (product_views 중복 쿼리 제거)
   const dailyViewMap: Record<string, number> = {};
   for (const k of Object.keys(dailyVisitorMap)) dailyViewMap[k] = 0;
-  for (const pv of pvRows) { const d = pv.viewed_at.slice(0, 10); if (d in dailyViewMap) dailyViewMap[d]++; }
+  for (const pv of views) { const d = pv.viewed_at.slice(0, 10); if (d in dailyViewMap) dailyViewMap[d]++; }
   const dailyViewsData = Object.entries(dailyViewMap).map(([date, views]) => ({ date, views }));
 
   // 공유 채널별 집계

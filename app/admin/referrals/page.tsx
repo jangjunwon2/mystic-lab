@@ -10,7 +10,8 @@ export default async function AdminReferralsPage() {
   const { data: codes } = await (admin as any)
     .from("referral_codes")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   return (
     <div className="p-8">

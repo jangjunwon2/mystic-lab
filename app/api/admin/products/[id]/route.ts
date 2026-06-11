@@ -49,18 +49,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   if (translations?.length > 0) {
-    for (const t of translations as { language: string; name: string; description: string; short_description?: string }[]) {
-      await supabase.from("product_translations").upsert(
-        {
-          product_id: id,
-          language: t.language,
-          name: t.name,
-          description: t.description,
-          short_description: t.short_description ?? null,
-        },
-        { onConflict: "product_id,language" }
-      );
-    }
+    await supabase.from("product_translations").upsert(
+      (translations as { language: string; name: string; description: string; short_description?: string }[]).map((t) => ({
+        product_id: id,
+        language: t.language,
+        name: t.name,
+        description: t.description,
+        short_description: t.short_description ?? null,
+      })),
+      { onConflict: "product_id,language" }
+    );
   }
 
   // 옵션은 전달 시 전체 교체(삭제 후 재삽입 — product_option_items는 CASCADE). undefined면 건드리지 않음.

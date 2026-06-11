@@ -12,13 +12,18 @@ export default function AnalyticsExportButton() {
   const [from, setFrom] = useState(firstOfMonth);
   const [to, setTo] = useState(today);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleExport() {
     if (!from || !to) return;
     setLoading(true);
+    setError("");
     try {
       const res = await fetch(`/api/admin/analytics/export?from=${from}&to=${to}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        setError("내보내기에 실패했습니다. 다시 시도해주세요.");
+        return;
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -42,7 +47,8 @@ export default function AnalyticsExportButton() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3 flex-col sm:flex-row">
+      {error && <p className="text-xs text-red-400 w-full">{error}</p>}
       <div className="flex items-center gap-2">
         <label className="text-xs" style={{ color: "#9CA3AF" }}>기간</label>
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={inputStyle} />

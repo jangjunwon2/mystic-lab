@@ -278,7 +278,7 @@ export default function UsersAdminTable({ users: initial }: Props) {
                               )}
                               {(user.status === "suspended" || user.status === "banned" || user.status === "dormant") && (
                                 <button
-                                  onClick={() => updateStatus(user.id, "active", "")}
+                                  onClick={() => { if (confirm(`${user.email ?? "이 계정"}을(를) 활성화하시겠습니까?`)) updateStatus(user.id, "active", ""); }}
                                   disabled={isLoading}
                                   title="활성화"
                                   className="p-1.5 rounded transition-colors hover:opacity-80"

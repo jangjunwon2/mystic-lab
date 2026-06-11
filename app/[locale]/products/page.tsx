@@ -42,6 +42,8 @@ export async function generateMetadata({ params }: ProductsPageProps) {
   };
 }
 
+export const revalidate = 60;
+
 export interface ProductItem {
   id: string;
   slug: string;

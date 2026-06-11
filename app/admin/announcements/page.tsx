@@ -9,7 +9,8 @@ export default async function AdminAnnouncementsPage() {
   const { data: announcements } = await supabase
     .from("announcements")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   return (
     <div className="p-8">

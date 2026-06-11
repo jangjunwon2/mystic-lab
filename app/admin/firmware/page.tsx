@@ -15,7 +15,8 @@ export default async function FirmwarePage() {
   const { data: releases } = await (supabase as any)
     .from("firmware_releases")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(200);
 
   const devices = await getDevices(supabase);
 

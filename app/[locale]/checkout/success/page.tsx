@@ -75,7 +75,7 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
         if (pending?.customerEmail && pending?.items?.length) {
           analyticsValue = pending.totalUsd ?? 0;
           paidItems = pending.items;
-          await fetch("/api/payment/lemon-confirm", {
+          const lemonRes = await fetch("/api/payment/lemon-confirm", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -90,7 +90,14 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
               pointsSpent: pending.pointsSpent,
               pointsHoldRef: pending.pointsHoldRef,
             }),
-          }).catch((err) => console.error("[success/lemon]", err));
+          }).catch(() => null);
+
+          if (!lemonRes || !lemonRes.ok) {
+            const errData = lemonRes ? await lemonRes.json().catch(() => ({})) : {};
+            setStatus("error");
+            setErrorMsg((errData as Record<string, string>).error ?? t("errConfirmFailed"));
+            return;
+          }
 
           sessionStorage.removeItem("lemon_pending");
         }

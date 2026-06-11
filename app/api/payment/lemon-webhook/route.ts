@@ -3,9 +3,13 @@ import { verifyLemonWebhook } from "@/lib/payments/lemon";
 import { saveOrderToSupabase } from "@/lib/payments/save-order";
 import { sendOrderConfirmation, sendRefundConfirmation } from "@/lib/resend";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 import type { CartItem } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
+  if (!(await checkRateLimit(`lemon-webhook:${getClientIP(request)}`, 300, 60_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
   const rawBody = await request.text();
   const signature = request.headers.get("x-signature") ?? "";
 

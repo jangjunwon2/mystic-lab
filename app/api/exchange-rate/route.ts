@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 const FALLBACK_RATE = 1380;
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -6,7 +7,10 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 let cachedRate = FALLBACK_RATE;
 let cacheExpiry = 0;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await checkRateLimit(`exchange-rate:${getClientIP(request)}`, 60, 60_000))) {
+    return NextResponse.json({ usd_to_krw: cachedRate }, { status: 429 });
+  }
   if (Date.now() < cacheExpiry) {
     return NextResponse.json({ usd_to_krw: cachedRate });
   }

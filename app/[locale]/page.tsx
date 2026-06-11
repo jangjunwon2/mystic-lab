@@ -45,25 +45,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+export const revalidate = 60;
+
 export default async function HomePage({ params }: Props) {
   const { locale } = await params;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createClient() as any;
 
-  const [{ data }, { data: categoryData }] = await Promise.all([
-    supabase
-      .from("products")
-      .select("id, slug, price_usd, thumbnail_url, category, product_translations(name, short_description, language)")
-      .eq("is_active", true)
-      .eq("is_featured", true)
-      .order("display_order", { ascending: true })
-      .limit(6),
-    supabase
-      .from("products")
-      .select("category")
-      .eq("is_active", true),
-  ]);
+  const { data } = await supabase
+    .from("products")
+    .select("id, slug, price_usd, thumbnail_url, category, product_translations(name, short_description, language)")
+    .eq("is_active", true)
+    .eq("is_featured", true)
+    .order("display_order", { ascending: true })
+    .limit(6);
 
   const featured = ((data ?? []) as {
     id: string;
@@ -88,9 +84,8 @@ export default async function HomePage({ params }: Props) {
     };
   });
 
-  const activeCategories = Array.from(
-    new Set(((categoryData ?? []) as { category: string }[]).map((p) => p.category))
-  );
+  // featured 쿼리 결과에서 카테고리 파생 — 별도 full-scan 쿼리 제거
+  const activeCategories = Array.from(new Set(featured.map((p) => p.category)));
 
   const websiteJsonLd = {
     "@context": "https://schema.org",

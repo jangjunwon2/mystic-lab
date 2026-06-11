@@ -36,11 +36,12 @@ export async function confirmTossPayment(
     body: JSON.stringify({ paymentKey, orderId, amount }),
   });
 
-  const data = await res.json();
+  const data: unknown = await res.json();
 
   if (!res.ok) {
-    console.error("Toss confirm failed:", { code: (data as Record<string, unknown>).code, message: (data as Record<string, unknown>).message });
-    return { success: false, error: data.message ?? "Payment confirmation failed." };
+    const err = data as Record<string, unknown>;
+    console.error("Toss confirm failed:", { code: err.code, message: err.message });
+    return { success: false, error: (typeof err.message === "string" ? err.message : null) ?? "Payment confirmation failed." };
   }
 
   return { success: true, data: data as TossConfirmResponse };

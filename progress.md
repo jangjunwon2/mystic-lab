@@ -99,6 +99,11 @@
 > 어드민 판별 이메일 기준 통일 · 결제 위조 차단 · Rate limit 확대 · 입력검증 · DB error.message 노출 제거(18곳) · XSS 방지 · 데드코드 제거. (2026-06-05)
 > `/api/unlock` rate limit 추가(IP당 10회/15분). (2026-06-08)
 > `error.message` 직접 반환 9곳 추가 수정(firmware·orders 라우트). (2026-06-08)
+> **보안 강화 추가** (2026-06-11): LemonSqueezy HMAC 서명 검증 `timingSafeEqual` 전환 · LemonSqueezy/Toss 안전 로깅(민감정보 제거) · 환불 멱등성 가드 강화(`orders.status` 체크) · 재고 복원 CAS 추가 · JSON 파싱 실패 400 반환(admin firmware·wishlist·profile·toss-confirm 등) · Toss 고객명 하드코딩 제거 · `onBeforePay` 에러 UI 노출 · `toss-confirm` body 타입 인터페이스 적용
+> **보안·타입·성능 추가** (2026-06-11): toss-confirm·lemon-confirm·lemon-webhook·account-delete·exchange-rate rate limit 추가 · Toss 환불 에러 메시지 마스킹(게이트웨이 세부 노출 제거) · custom-order-checkout LS JSON 타입 검증 + url 누락 방어 · 번역 upsert N+1 → 단일 배치 쿼리 · AnalyticsExportButton 에러 UI 추가
+> **애널리틱스 쿼리 최적화** (2026-06-11): `site_visits` 50K행 → DB 집계 함수(`analytics_daily_visitors`) 최대 30행 · `product_views` 중복 쿼리 제거(2→1) · `profiles` 전체 → 이번 달만 필터링 · 마이그레이션 054 적용 완료
+> **성능 최적화** (2026-06-11): 홈·상품목록 ISR `revalidate=60` 추가 · 홈 페이지 카테고리 쿼리 제거(featured 결과에서 파생) · `products/[slug]` React `cache()` dedup · `next/image` 전환(FeaturedProducts·ProductsClient·ProductDetail·AccountClient) · Toss `res.json()` unknown 타입 + 안전 내로잉
+> **UI/UX 업그레이드** (2026-06-11): CategoryShowcase 글라스모피즘 · FeaturedProducts 첫카드 16:9+shimmer · HeroSection 스크롤 인디케이터 장식 divider · Header 미스크롤 시 보더 · ProductsClient 필터칩 glow 효과 · 홈 loading 스켈레톤 추가
 
 ---
 
@@ -121,7 +126,9 @@
 - [ ] **공지 배너** X 닫힘 + **공유 팝업/인스타그램** 동작 확인
 - [x] **Nexus OTA — nexus_pot**: CDCOnBoot=cdc OTA 후 USB 시리얼 정상 ✅ (2026-06-08)
 - [x] **Nexus OTA — nexus_smoke**: v1.0→v1.1 OTA 정상 ✅ (2026-06-09)
-- [ ] **Nexus OTA — 나머지 3종**: flux_case · receiver · transmitter — 실기기 OTA + 시리얼 확인 필요
+- [x] **Nexus OTA — flux_case**: OTA 정상 ✅ (2026-06-11)
+- [x] **Nexus OTA — receiver**: OTA 정상 ✅ (2026-06-11)
+- [x] **Nexus OTA — transmitter**: OTA 정상 ✅ (2026-06-11)
 - [x] **Nexus WiFi 자동 재연결**: 해결 완료 ✅ (2026-06-09)
 
 ---

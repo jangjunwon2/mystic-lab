@@ -7,9 +7,13 @@ import { holdPoints, releaseHold, pointsToUsd, getPointsBalance, MIN_REDEEM_POIN
 import { computeServerLineTotals } from "@/lib/payments/order-pricing";
 import { resolveOrderDiscountUsd } from "@/lib/coupons";
 import { getUsdToKrw } from "@/lib/payments/exchange-rate";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 import type { CartItem } from "@/lib/payments/types";
 
 export async function POST(request: NextRequest) {
+  if (!(await checkRateLimit(`toss-confirm:${getClientIP(request)}`, 10, 60_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
   try {
     const body = await request.json().catch(() => null);
     if (!body) return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });

@@ -1,7 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  if (!(await checkRateLimit(`account-delete:${getClientIP(request)}`, 5, 3_600_000))) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });

@@ -2,7 +2,7 @@
   "id": "/insta",
   "name": "Instagram",
   "short_name": "Instagram",
-  "start_url": "/insta",
+  "start_url": "/en/insta",
   "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
