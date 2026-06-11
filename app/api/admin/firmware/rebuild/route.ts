@@ -1,9 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // IP당 3회/5분 — 빌드는 비용이 크므로 연속 클릭 방지
+  const ip = getClientIP(req);
+  const allowed = await checkRateLimit(`firmware:rebuild:${ip}`, 3, 5 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json({ error: "잠시 후 다시 시도해주세요 (5분에 3회 제한)" }, { status: 429 });
+  }
 
   if (!process.env.GITHUB_PAT) {
     return NextResponse.json({ error: "GITHUB_PAT 환경변수 미설정" }, { status: 500 });
