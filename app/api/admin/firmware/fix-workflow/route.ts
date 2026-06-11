@@ -23,6 +23,7 @@ async function gh(path: string, options?: RequestInit) {
   return res.json();
 }
 
+
 // actions/checkout 다음에 캐시 스텝 삽입 (없을 경우에만)
 function addCachingIfMissing(content: string): { patched: string; added: boolean } {
   if (content.includes("actions/cache@")) {
@@ -149,43 +150,28 @@ export async function POST() {
   }
 
   try {
-    const refData    = await gh(`/repos/${OWNER}/${REPO}/git/ref/heads/${BRANCH}`);
-    const latestSha  = refData.object.sha;
-    const commitData = await gh(`/repos/${OWNER}/${REPO}/git/commits/${latestSha}`);
-    const baseTree   = commitData.tree.sha;
+    // 현재 파일의 SHA 조회 (Contents API PUT에 필요)
+    const fileInfo = await gh(`/repos/${OWNER}/${REPO}/contents/${WORKFLOW_PATH}`);
 
-    const blob = await gh(`/repos/${OWNER}/${REPO}/git/blobs`, {
-      method: "POST",
-      body: JSON.stringify({
-        content: Buffer.from(patched).toString("base64"),
-        encoding: "base64",
-      }),
-    });
-
-    const newTree = await gh(`/repos/${OWNER}/${REPO}/git/trees`, {
-      method: "POST",
-      body: JSON.stringify({
-        base_tree: baseTree,
-        tree: [{ path: WORKFLOW_PATH, mode: "100644", type: "blob", sha: blob.sha }],
-      }),
-    });
-
-    const newCommit = await gh(`/repos/${OWNER}/${REPO}/git/commits`, {
-      method: "POST",
+    // Contents API PUT — workflow 스코프 필요
+    await gh(`/repos/${OWNER}/${REPO}/contents/${WORKFLOW_PATH}`, {
+      method: "PUT",
       body: JSON.stringify({
         message: `[admin] workflow: 빌드 최적화 — ${changes.join(", ")}`,
-        tree: newTree.sha,
-        parents: [latestSha],
+        content: Buffer.from(patched).toString("base64"),
+        sha: fileInfo.sha,
+        branch: BRANCH,
       }),
     });
 
-    await gh(`/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`, {
-      method: "PATCH",
-      body: JSON.stringify({ sha: newCommit.sha }),
-    });
-
-    return NextResponse.json({ ok: true, commit: newCommit.sha.slice(0, 8), changes });
+    return NextResponse.json({ ok: true, changes });
   } catch (e) {
+    const msg = String(e);
+    if (msg.includes("403") || msg.includes("Resource not accessible")) {
+      return NextResponse.json({
+        error: "GITHUB_PAT에 `workflow` 스코프가 필요합니다. GitHub Settings → Developer settings → Personal access tokens에서 해당 토큰에 workflow 권한을 추가한 뒤 Vercel 환경변수를 업데이트하세요.",
+      }, { status: 403 });
+    }
     return NextResponse.json({ error: `워크플로우 업데이트 실패: ${e}` }, { status: 500 });
   }
 }
