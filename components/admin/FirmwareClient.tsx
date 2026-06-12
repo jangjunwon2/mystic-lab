@@ -55,6 +55,8 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ msg: string; type: "idle" | "ok" | "err" | "info" }>({ msg: "", type: "idle" });
   const [rebuilding, setRebuilding] = useState(false);
+  const [rebuildCooldown, setRebuildCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [optimizing, setOptimizing] = useState(false);
   const [stagedDevices, setStagedDevices] = useState<StagedDevice[]>([]);
   const [polling, setPolling] = useState(false);
@@ -110,6 +112,19 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   }, [stopPolling]);
 
   useEffect(() => () => stopPolling(), [stopPolling]);
+
+  function startRebuildCooldown(seconds = 60) {
+    setRebuildCooldown(seconds);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setRebuildCooldown((prev) => {
+        if (prev <= 1) { clearInterval(cooldownRef.current!); cooldownRef.current = null; return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
 
   function handleUpload() {
     if (!zipFile) {
@@ -205,6 +220,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
       if (res.ok) {
         setUploadStatus({ msg: "✅ 전체 재빌드 요청 완료 — GitHub Actions에서 빌드 중입니다. 완료되면 자동으로 업데이트됩니다.", type: "ok" });
         startPolling(devices.length);
+        startRebuildCooldown(60);
       } else {
         const d = await res.json();
         setUploadStatus({ msg: `재빌드 요청 실패: ${d.error}`, type: "err" });
@@ -292,13 +308,13 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
           </button>
           <button
             onClick={handleRebuildAll}
-            disabled={rebuilding || uploading}
+            disabled={rebuilding || uploading || rebuildCooldown > 0}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
             style={{ background: "rgba(124,58,237,0.15)", color: "#A855F7", border: "1px solid rgba(124,58,237,0.3)" }}
             title="파일 변경 없이 모든 장치를 강제 재빌드합니다"
           >
             <RefreshCw className={`w-4 h-4 ${rebuilding ? "animate-spin" : ""}`} />
-            {rebuilding ? "요청 중…" : "전체 재빌드"}
+            {rebuilding ? "요청 중…" : rebuildCooldown > 0 ? `재빌드 (${rebuildCooldown}초)` : "전체 재빌드"}
           </button>
           <button
             onClick={handleOptimizeWorkflow}
