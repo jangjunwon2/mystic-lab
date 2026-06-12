@@ -61,9 +61,11 @@
 - **어드민 업로드 안정성** (2026-06-09 완성):
   - **INSERT-FIRST**: pending 행을 먼저 삽입 → 다른 행 삭제 → UI 즉시 반영
   - **UPDATE 기반 stale guard**: Actions POST 시 `PATCH WHERE device+version+download_url=''` — 버전 불일치(다른 버전이 이미 업로드됨) 시 자동 skip
-  - **concurrency**: `cancel-in-progress: true` — 새 push 시 이전 Actions 자동 취소
+  - **concurrency**: `cancel-in-progress: false` (job 레벨 per-device) — 새 push 시 같은 기기만 대기, 다른 기기 빌드 취소 안 됨 (2026-06-13 수정)
   - **구 릴리스 보호**: "Delete old releases" 스텝이 pending 행(download_url='') 보호
   - **`.ino.bin`**: OTA 애플리케이션 바이너리만 선택(bootloader·partitions.bin 제외)
+  - **pending 행 없으면 Actions exit 1** — 소스 없이 재빌드 시 명시적 실패 (2026-06-13)
+  - **빌드 검증 강화** — `.ino` 파일 0개·다수 경고 · 바이너리 존재 체크 · 구 릴리스 삭제 HTTP 상태 검증 (2026-06-13)
 - **실기기 OTA 확인**: nexus_pot ✅ (2026-06-08) · nexus_smoke ✅ (2026-06-09, v1.0→v1.1)
 - **펌웨어 notes 기기 전송 제거** (2026-06-09): `/api/firmware/latest` 응답에서 `notes` 필드 제거 — 한글 등 비ASCII 문자가 송신기 화면에서 깨지는 문제 방지. notes는 어드민 릴리스 이력에서만 확인.
 - ⚠️ **업로드 주의**: 어드민 ZIP 업로드 시 반드시 로컬 수정본(`도구 개발 - 복사본`)을 압축할 것 — 원본 파일로 덮어쓰면 패치가 초기화됨
@@ -105,6 +107,8 @@
 > **성능 최적화** (2026-06-11): 홈·상품목록 ISR `revalidate=60` 추가 · 홈 페이지 카테고리 쿼리 제거(featured 결과에서 파생) · `products/[slug]` React `cache()` dedup · `next/image` 전환(FeaturedProducts·ProductsClient·ProductDetail·AccountClient) · Toss `res.json()` unknown 타입 + 안전 내로잉
 > **UI/UX 업그레이드** (2026-06-11): CategoryShowcase 글라스모피즘 · FeaturedProducts 첫카드 16:9+shimmer · HeroSection 스크롤 인디케이터 장식 divider · Header 미스크롤 시 보더 · ProductsClient 필터칩 glow 효과 · 홈 loading 스켈레톤 추가
 > **API·보안·i18n·UX 추가 개선** (2026-06-11): TS 빌드 에러 수정(price_usd/stock `unknown` 타입 캐스트, ProductPage supabase 누락) · JSON 파싱 crash guard — firmware/[id]·custom-orders/[id]·quote·magic/my-code·newsletter·products/view · LS·GitHub 에러 메시지 마스킹(서버 로깅만) · analytics export 날짜 검증 YYYY-MM-DD 패턴 추가 · magic/my-code·account/coupons·account/points rate limit 추가 · Cart 썸네일 실 이미지 표시 · AccountClient 이름 저장 실패 인라인 에러 + 탈퇴 `alert()` 제거 · 공유 shareText 7개 언어화 · custom-order "Sending…"·응답시간 i18n · 데드코드 제거(getCountry/getCountryName/getPhoneCode·requireEnv) · error.tsx console.error → digest만 출력 · 06/11 세션 이전부터의 cron·checkout·admin UX·PWA 개선 반영
+> **종합 코드 리뷰 1차** (2026-06-12): 뉴스레터 `listUsers` 1000명 절단 → 페이지네이션 · Toss 결제 허용 오차 5%→2% · lemon-confirm fetch timeout 5s + 가격 재계산 실패 시 `pending` 반환(클라이언트 값 신뢰 제거) · lemon-webhook/admin orders 환불 순서 swap(status 먼저 업데이트 → 분산 락) · save-order `listUsers` 폴백 제거(RPC 전용) + CAS 재고 백오프 · admin products 번역 insert 에러 로그 · cart selectAll i18n 7개 언어
+> **종합 코드 리뷰 2차** (2026-06-13): admin users `[id]` 자기삭제 방어 로직 수정(`createAdminClient`→`requireAdmin()` 비교) · promotions `runTriggerCoupons` N+1 `getUserById`→배치 `listUsers` · coupons `genCode` `Math.random`→`crypto.randomBytes` · admin users `listUsers` 페이지네이션 추가 · reviews 비정수 rating 차단 · unlock `secure:true` 쿠키 플래그 추가 · cron `CRON_SECRET` 미설정 시 500→401 반환
 
 ---
 
@@ -162,6 +166,19 @@
 - ✅ **custom-order i18n** — "Sending…" · 응답시간 문구 7개 언어 번역 추가 (2026-06-11)
 - ✅ **데드코드 제거** — getCountry/getCountryName/getPhoneCode·requireEnv 삭제 (2026-06-11)
 - ✅ **error.tsx** — `console.error(error)` → `error.digest`만 출력 (2026-06-11)
+- ✅ **뉴스레터 1000명 절단** — 4개 `listUsers` 호출 → 페이지네이션 루프 (2026-06-12)
+- ✅ **Toss 허용 오차 5%→2%** — 환율 반올림 오차 범위로 축소 (2026-06-12)
+- ✅ **lemon-confirm 보안** — LS fetch timeout 5s · 가격 재계산 실패 시 `pending` 반환 (2026-06-12)
+- ✅ **환불 분산 락** — lemon-webhook·admin orders 환불 status 먼저 업데이트 후 effects 역순 실행 (2026-06-12)
+- ✅ **save-order 안정성** — `listUsers` 폴백 제거(RPC 전용) · CAS 재시도 지수 백오프 (2026-06-12)
+- ✅ **admin products** — 번역 insert 실패 시 에러 로그 기록 (2026-06-12)
+- ✅ **admin users 자기삭제 방어** — `createAdminClient` getUser 항상 null 버그 수정 → `requireAdmin()` 비교 (2026-06-13)
+- ✅ **promotions N+1 제거** — `runTriggerCoupons` 루프 내 `getUserById` → 배치 `listUsers` (2026-06-13)
+- ✅ **coupons genCode** — `Math.random()` → `crypto.randomBytes` (2026-06-13)
+- ✅ **admin users 페이지네이션** — `listUsers` 1000명 상한 → 루프로 전체 조회 (2026-06-13)
+- ✅ **reviews 입력 검증** — 비정수 rating 차단 (`Number.isInteger`) (2026-06-13)
+- ✅ **unlock 쿠키 보안** — `secure: true` (production) 플래그 추가 (2026-06-13)
+- ✅ **cron 인증 노출 방지** — `CRON_SECRET` 미설정 시 500→401 반환 (expire-points·wishlist-coupons) (2026-06-13)
 
 ### 쇼핑몰/앱
 - **인스타 앱 마술 기믹 잔여** — 남은 것: 관객 *단어* 예언, 인스타 자체 입력 peek, 검색 탭 위장
