@@ -46,12 +46,12 @@ export async function POST(request: NextRequest) {
         interface LsOrder { id: string; attributes: { status: string; user_email: string } }
         let order: LsOrder | null = null;
         if (lsOrderId) {
-          const r = await fetch(`https://api.lemonsqueezy.com/v1/orders/${encodeURIComponent(lsOrderId)}`, { headers });
+          const r = await fetch(`https://api.lemonsqueezy.com/v1/orders/${encodeURIComponent(lsOrderId)}`, { headers, signal: AbortSignal.timeout(5000) });
           if (r.ok) order = ((await r.json()).data as LsOrder) ?? null;
         } else {
           const r = await fetch(
             `https://api.lemonsqueezy.com/v1/orders?filter[store_id]=${storeId}&filter[user_email]=${encodeURIComponent(customerEmail)}&sort=-created_at&page[size]=1`,
-            { headers }
+            { headers, signal: AbortSignal.timeout(5000) }
           );
           if (r.ok) {
             const j = await r.json();
@@ -101,7 +101,8 @@ export async function POST(request: NextRequest) {
         const shippingUsdServer = (shippingMethod === "express" || shippingMethod === "ems") ? 15 : 0;
         serverTotalUsd = Math.max(0, serverSubtotal - couponDiscount - pointsToUsd(pointsSpent ?? 0) + shippingUsdServer);
       } catch {
-        // 재계산 실패 시 클라이언트 값 유지 — 웹훅이 정상 처리
+        // 재계산 실패 — 클라이언트 값을 신뢰하지 않음. 웹훅이 정상 처리하도록 위임.
+        return NextResponse.json({ pending: true });
       }
     }
 

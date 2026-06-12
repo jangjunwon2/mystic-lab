@@ -9,22 +9,18 @@ const LOW_STOCK_THRESHOLD = 3;
 const SHIPPING_USD: Record<string, number> = { standard: 0, express: 15 };
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-// email → auth.users.id 조회. RPC(017) 우선, 미배포 시 레거시 스캔으로 폴백.
+// email → auth.users.id 조회. get_user_id_by_email RPC(마이그레이션 017) 사용.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function resolveUserId(supabase: any, email: string): Promise<string | null> {
   if (!email) return null;
   try {
     const { data, error } = await supabase.rpc("get_user_id_by_email", { p_email: email });
+    if (error) console.warn("[resolveUserId] RPC 실패 — 마이그레이션 017 배포 여부 확인:", error.message);
     if (!error && data) return data as string;
-  } catch {
-    // RPC 미배포 — 폴백
+  } catch (e) {
+    console.warn("[resolveUserId] RPC 호출 오류:", e);
   }
-  try {
-    const { data: listRes } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    return listRes?.users?.find((u: { email?: string; id: string }) => u.email === email)?.id ?? null;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string | null> {
@@ -241,7 +237,8 @@ export async function saveOrderToSupabase(input: SaveOrderInput): Promise<string
         finalStock = newStock; // 성공
         break;
       }
-      // 0행 — 경합 발생, 재시도
+      // 0행 — 경합 발생, 재시도 (지수 백오프)
+      if (attempt < 4) await new Promise((r) => setTimeout(r, 30 * (attempt + 1)));
     }
 
     if (finalStock != null && finalStock <= LOW_STOCK_THRESHOLD) {

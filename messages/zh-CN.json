@@ -404,7 +404,8 @@
     "continueShopping": "继续购物",
     "calculatedAtCheckout": "结账时计算",
     "proceedToCheckout": "去结算",
-    "secureCheckout": "安全结账"
+    "secureCheckout": "安全结账",
+    "selectAll": "全选"
   },
   "success": {
     "confirming": "正在确认支付...",

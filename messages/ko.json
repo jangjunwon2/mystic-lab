@@ -404,7 +404,8 @@
     "continueShopping": "쇼핑 계속하기",
     "calculatedAtCheckout": "결제 시 계산",
     "proceedToCheckout": "결제하기",
-    "secureCheckout": "안전한 결제"
+    "secureCheckout": "안전한 결제",
+    "selectAll": "전체 선택"
   },
   "success": {
     "confirming": "결제를 확인하는 중...",

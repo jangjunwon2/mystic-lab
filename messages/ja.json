@@ -404,7 +404,8 @@
     "continueShopping": "買い物を続ける",
     "calculatedAtCheckout": "購入手続き時に計算",
     "proceedToCheckout": "購入手続きへ",
-    "secureCheckout": "安全な決済"
+    "secureCheckout": "安全な決済",
+    "selectAll": "すべて選択"
   },
   "success": {
     "confirming": "決済を確認しています...",

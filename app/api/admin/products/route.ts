@@ -46,7 +46,8 @@ export async function POST(request: Request) {
       description: t.description,
       short_description: t.short_description ?? null,
     }));
-    await supabase.from("product_translations").insert(rows);
+    const { error: translationErr } = await supabase.from("product_translations").insert(rows);
+    if (translationErr) console.error("[admin/products] translation insert failed:", translationErr.message);
   }
 
   if (Array.isArray(options) && options.length > 0) {

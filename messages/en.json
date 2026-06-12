@@ -404,7 +404,8 @@
     "continueShopping": "Continue Shopping",
     "calculatedAtCheckout": "Calculated at checkout",
     "proceedToCheckout": "Proceed to Checkout",
-    "secureCheckout": "Secure checkout"
+    "secureCheckout": "Secure checkout",
+    "selectAll": "Select all"
   },
   "success": {
     "confirming": "Confirming your payment...",

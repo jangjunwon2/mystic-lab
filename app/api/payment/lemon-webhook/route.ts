@@ -47,9 +47,10 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (orderRow && orderRow.status !== "refunded") {
-        const { reverseOrderEffects } = await import("@/lib/payments/refund-order");
-        await reverseOrderEffects(supabase, orderRow.id); // 재고·마일리지 복원
+        // status 먼저 업데이트 → 분산 락 역할. webhook 재시도 시 중복 실행 방지.
         await supabase.from("orders").update({ status: "refunded" }).eq("id", orderRow.id);
+        const { reverseOrderEffects } = await import("@/lib/payments/refund-order");
+        await reverseOrderEffects(supabase, orderRow.id); // 재고·마일리지 복원 (내부도 idempotent)
         sendRefundConfirmation({
           to: orderRow.customer_email ?? email ?? "",
           orderId: orderRow.id,

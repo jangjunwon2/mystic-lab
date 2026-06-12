@@ -32,14 +32,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (body.status === "shipped") statusUpdate.shipped_at = nowIso;
     if (body.status === "completed") statusUpdate.completed_at = nowIso;
 
-    // 환불 전환 시 재고·마일리지 복원 (상태 변경 전 멱등 처리)
+    // 환불 전환 시: status 먼저 업데이트(분산 락) → 이중 클릭·재시도 방지 → 재고·마일리지 복원
     if (body.status === "refunded") {
-      const { reverseOrderEffects } = await import("@/lib/payments/refund-order");
-      await reverseOrderEffects(supabase, id);
+      const { data: cur } = await supabase.from("orders").select("status").eq("id", id).single();
+      if (cur?.status === "refunded") return NextResponse.json({ ok: true }); // 이미 환불됨
     }
 
     const { error } = await supabase.from("orders").update(statusUpdate).eq("id", id);
     if (error) return NextResponse.json({ error: "Request failed." }, { status: 500 });
+
+    if (body.status === "refunded") {
+      const { reverseOrderEffects } = await import("@/lib/payments/refund-order");
+      await reverseOrderEffects(supabase, id);
+    }
 
     // completed 전환 시 리뷰 요청 이메일 자동 발송
     if (body.status === "completed") {

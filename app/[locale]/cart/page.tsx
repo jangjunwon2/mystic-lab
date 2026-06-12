@@ -114,7 +114,6 @@ export default function CartPage({ params }: Props) {
   };
 
   const subtotal = selectedItems.reduce((s, i) => s + i.price_usd * i.quantity, 0);
-  const selectAllLabel = locale === "ko" ? "전체 선택" : "Select all";
 
   if (!mounted) return null;
 
@@ -160,7 +159,7 @@ export default function CartPage({ params }: Props) {
                   onChange={toggleSelectAll}
                   className="w-4 h-4 accent-[#7C3AED]"
                 />
-                <span className="text-sm text-[#9CA3AF]">{selectAllLabel} ({selected.size}/{items.length})</span>
+                <span className="text-sm text-[#9CA3AF]">{ca("selectAll")} ({selected.size}/{items.length})</span>
               </label>
 
               <AnimatePresence>
