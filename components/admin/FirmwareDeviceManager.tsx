@@ -19,21 +19,27 @@ export default function FirmwareDeviceManager({ devices, setDevices }: FirmwareD
   const [deviceSaving, setDeviceSaving] = useState(false);
   const [deviceError, setDeviceError] = useState("");
 
-  async function saveDevices(next: FirmwareDevice[]) {
+  async function saveDevices(next: FirmwareDevice[]): Promise<boolean> {
     setDeviceSaving(true);
     setDeviceError("");
-    const res = await fetch("/api/admin/firmware/devices", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
-    });
-    if (res.ok) {
-      setDevices(next);
-    } else {
-      const d = await res.json();
+    try {
+      const res = await fetch("/api/admin/firmware/devices", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      if (res.ok) {
+        setDevices(next);
+        setDeviceSaving(false);
+        return true;
+      }
+      const d = await res.json().catch(() => ({}));
       setDeviceError(d.error ?? "저장 실패");
+    } catch {
+      setDeviceError("네트워크 오류가 발생했습니다.");
     }
     setDeviceSaving(false);
+    return false;
   }
 
   function startEdit(idx: number) {
@@ -44,10 +50,13 @@ export default function FirmwareDeviceManager({ devices, setDevices }: FirmwareD
   }
 
   async function commitEdit(idx: number) {
-    if (!editName.trim() || !editLabel.trim()) return;
+    if (!editName.trim() || !editLabel.trim()) {
+      setDeviceError("이름과 표시명 모두 입력하세요.");
+      return;
+    }
     const next = devices.map((d, i) => i === idx ? { name: editName.trim(), label: editLabel.trim() } : d);
-    await saveDevices(next);
-    setEditingIdx(null);
+    const ok = await saveDevices(next);
+    if (ok) setEditingIdx(null);
   }
 
   async function deleteDevice(idx: number) {

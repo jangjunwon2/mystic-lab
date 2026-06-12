@@ -22,6 +22,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "device_type, version, filename 필수" }, { status: 400 });
   }
 
+  const SAFE = /^[a-z0-9_.-]{1,64}$/i;
+  if (!SAFE.test(device_type) || !SAFE.test(version) || !SAFE.test(filename)) {
+    return NextResponse.json({ error: "경로에 허용되지 않는 문자가 포함되어 있습니다." }, { status: 400 });
+  }
+
   const storagePath = `${device_type}/${version}/${filename}`;
   const supabase = createAdminClient();
 

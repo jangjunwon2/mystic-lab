@@ -50,7 +50,10 @@ export async function DELETE(req: NextRequest) {
 
   if (rows?.length) {
     const paths = rows.map((r: { storage_path: string }) => r.storage_path).filter(Boolean);
-    if (paths.length) await (supabase as any).storage.from("firmware").remove(paths);
+    if (paths.length) {
+      const { error: storageErr } = await (supabase as any).storage.from("firmware").remove(paths);
+      if (storageErr) console.error("[firmware/bulk-delete] storage removal failed:", storageErr.message);
+    }
   }
 
   const { error } = await (supabase as any)

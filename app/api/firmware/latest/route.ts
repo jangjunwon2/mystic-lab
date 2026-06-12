@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     .eq("device_type", device)
     .neq("download_url", "")
     .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(1)
     .maybeSingle();
 

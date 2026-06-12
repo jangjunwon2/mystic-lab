@@ -40,7 +40,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     .single();
 
   if (data?.storage_path) {
-    await (supabase as any).storage.from("firmware").remove([data.storage_path]);
+    const { error: storageErr } = await (supabase as any).storage.from("firmware").remove([data.storage_path]);
+    if (storageErr) console.error("[firmware/delete] storage removal failed:", data.storage_path, storageErr.message);
   }
 
   const { error } = await (supabase as any)

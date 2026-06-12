@@ -31,13 +31,17 @@ export default function FirmwareDeviceList({ releases, setReleases, polling, new
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function deleteRelease(id: string, version: string) {
     if (!confirm(`버전 ${version}을 삭제할까요? 파일도 함께 삭제됩니다.`)) return;
+    setDeleteError(null);
     const res = await fetch(`/api/admin/firmware/${id}`, { method: "DELETE" });
     if (res.ok) {
       setReleases((prev) => prev.filter((r) => r.id !== id));
       setSelectedIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
+    } else {
+      setDeleteError(`삭제 실패 (v${version}) — 잠시 후 다시 시도해주세요.`);
     }
   }
 
@@ -46,6 +50,7 @@ export default function FirmwareDeviceList({ releases, setReleases, polling, new
     if (ids.length === 0) return;
     if (!confirm(`선택한 ${ids.length}개 릴리스를 삭제할까요? 파일도 함께 삭제됩니다.`)) return;
     setBulkDeleting(true);
+    setDeleteError(null);
     const res = await fetch("/api/admin/firmware", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -54,6 +59,8 @@ export default function FirmwareDeviceList({ releases, setReleases, polling, new
     if (res.ok) {
       setReleases((prev) => prev.filter((r) => !selectedIds.has(r.id)));
       setSelectedIds(new Set());
+    } else {
+      setDeleteError(`일괄 삭제 실패 — 잠시 후 다시 시도해주세요.`);
     }
     setBulkDeleting(false);
   }
@@ -82,6 +89,14 @@ export default function FirmwareDeviceList({ releases, setReleases, polling, new
 
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: "#1A1A2E", border: "1px solid #2D2D4E" }}>
+      {deleteError && (
+        <div
+          className="px-6 py-3 text-xs font-medium"
+          style={{ background: "rgba(239,68,68,0.1)", borderBottom: "1px solid rgba(239,68,68,0.25)", color: "#EF4444" }}
+        >
+          {deleteError}
+        </div>
+      )}
       {newReleaseAlert && (
         <div
           className="px-6 py-3 text-sm font-medium flex items-center gap-2"
