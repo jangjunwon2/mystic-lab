@@ -31,6 +31,20 @@ export async function POST(request: NextRequest) {
 
   const admin = await createAdminClient();
 
+  // Supabase admin.listUsers 는 한 번에 최대 1000명만 반환 — 전체를 가져오려면 페이지네이션 필요
+  async function listAllAuthUsers() {
+    const all: { id: string; email?: string }[] = [];
+    let page = 1;
+    while (true) {
+      const { data } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+      if (!data?.users?.length) break;
+      all.push(...data.users);
+      if (data.users.length < 1000) break;
+      page++;
+    }
+    return all;
+  }
+
   let recipients: string[] = [];
 
   if (segment === "wishlist_product") {
@@ -47,8 +61,8 @@ export async function POST(request: NextRequest) {
       ),
     ];
 
-    const { data: authData } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    recipients = (authData?.users ?? [])
+    const allUsers = await listAllAuthUsers();
+    recipients = allUsers
       .filter((u) => uniqueUserIds.includes(u.id) && u.email)
       .map((u) => u.email as string);
   } else if (segment === "product_buyers") {
@@ -72,8 +86,8 @@ export async function POST(request: NextRequest) {
       ),
     ];
 
-    const { data: authData } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    recipients = (authData?.users ?? [])
+    const allUsers = await listAllAuthUsers();
+    recipients = allUsers
       .filter((u) => uniqueUserIds.includes(u.id) && u.email)
       .map((u) => u.email as string);
   } else if (segment === "buyers") {
@@ -90,13 +104,13 @@ export async function POST(request: NextRequest) {
       ),
     ];
 
-    const { data: authData } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    recipients = (authData?.users ?? [])
+    const allUsers = await listAllAuthUsers();
+    recipients = allUsers
       .filter((u) => uniqueUserIds.includes(u.id) && u.email)
       .map((u) => u.email as string);
   } else {
-    const { data: authData } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    recipients = (authData?.users ?? [])
+    const allUsers = await listAllAuthUsers();
+    recipients = allUsers
       .filter((u) => u.email)
       .map((u) => u.email as string);
   }

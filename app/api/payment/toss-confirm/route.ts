@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
       const expectedUsd = Math.max(0, serverSubtotal - coupon - pointsToUsd(pointsSpent) + ship);
       const krwRate = await getUsdToKrw();
       const expectedKrw = expectedUsd * krwRate;
-      // 5% 허용 오차(환율·반올림) — 그보다 적게 청구되면 가격 조작 또는 동시 결제로 예약 부족 → 예약 해제 후 거부
-      if (Number(amount) < Math.floor(expectedKrw * 0.95)) {
+      // 2% 허용 오차(환율·반올림) — 그보다 적게 청구되면 가격 조작 또는 동시 결제로 예약 부족 → 예약 해제 후 거부
+      if (Number(amount) < Math.floor(expectedKrw * 0.98)) {
         if (pointsHeld && adminP) await releaseHold(adminP, paymentKey);
         return NextResponse.json({ error: "결제 금액이 올바르지 않습니다." }, { status: 400 });
       }
