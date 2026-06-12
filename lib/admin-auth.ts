@@ -5,5 +5,5 @@ export async function requireAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const adminEmail = process.env.ADMIN_EMAIL;
-  return adminEmail && user.email === adminEmail ? user : null;
+  return adminEmail && user.email?.toLowerCase() === adminEmail.toLowerCase() ? user : null;
 }

@@ -723,7 +723,7 @@ function WithdrawSection({ locale }: { locale: string }) {
 
   // 현재 로그인 이메일 조회
   const [myEmail, setMyEmail] = useState<string | null>(null);
-  useState(() => { supabase.auth.getUser().then(({ data }) => setMyEmail(data.user?.email ?? null)); });
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setMyEmail(data.user?.email ?? null)); }, []);
 
   const LABELS: Record<string, { title: string; warn: string; confirm: string; placeholder: string; btn: string; cancel: string }> = {
     ko: { title: "계정 탈퇴", warn: "탈퇴 시 주문 내역, 포인트, 쿠폰 등 모든 데이터가 삭제되며 복구할 수 없습니다. 이메일 주소를 입력해 확인하세요.", confirm: "탈퇴하기", placeholder: "이메일 주소 입력", btn: "계정 탈퇴", cancel: "취소" },
@@ -881,7 +881,7 @@ function OrderCard({ order, locale }: { order: Order; locale: string }) {
         <div className="mb-3 bg-[#13131F] rounded-lg px-3 py-2 text-xs text-[#9CA3AF] space-y-0.5">
           {order.shipping_address.name && <p>{order.shipping_address.name}</p>}
           {order.shipping_address.phone && <p>{order.shipping_address.phone}</p>}
-          {order.shipping_address.line1 && <p>{order.shipping_address.line1} {order.shipping_address.line2}</p>}
+          {order.shipping_address.line1 && <p>{order.shipping_address.line1}{order.shipping_address.line2 ? ` ${order.shipping_address.line2}` : ""}</p>}
           {order.shipping_address.city && <p>{order.shipping_address.city} {order.shipping_address.postal} {order.shipping_address.country}</p>}
           {order.shipping_address.address && <p>{order.shipping_address.address}</p>}
         </div>

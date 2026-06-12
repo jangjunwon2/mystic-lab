@@ -155,9 +155,9 @@ export default function CheckoutSuccessPage({ params, searchParams }: Props) {
         });
 
         if (!res.ok) {
-          const data = await res.json();
+          const data = await res.json().catch(() => ({}));
           setStatus("error");
-          setErrorMsg(data.error ?? t("errConfirmFailed"));
+          setErrorMsg((data as Record<string, string>).error ?? t("errConfirmFailed"));
           return;
         }
 
