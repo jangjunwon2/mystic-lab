@@ -6,8 +6,9 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 // 혼동되는 글자(0/O, 1/I) 제외
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function genCode(prefix = "ML"): string {
+  const { randomBytes } = require("crypto") as typeof import("crypto");
   let s = "";
-  for (let i = 0; i < 8; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  for (let i = 0; i < 8; i++) s += CODE_CHARS[randomBytes(1)[0] % CODE_CHARS.length];
   return `${prefix}-${s}`;
 }
 

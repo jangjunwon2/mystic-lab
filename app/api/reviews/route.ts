@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     comment?: string;
   };
 
-  if (!product_id || !rating || rating < 1 || rating > 5) {
+  if (!product_id || !rating || !Number.isInteger(rating) || rating < 1 || rating > 5) {
     return NextResponse.json({ error: "Invalid rating." }, { status: 400 });
   }
 

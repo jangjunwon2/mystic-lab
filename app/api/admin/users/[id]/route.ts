@@ -53,14 +53,14 @@ export async function DELETE(_req: Request, ctx: RouteContext) {
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await ctx.params;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createAdminClient() as any;
 
-  // 자기 자신 삭제 불가
-  const { data: { user: me } } = await supabase.auth.getUser();
-  if (me?.id === id) {
+  // 자기 자신 삭제 불가 (requireAdmin()이 반환한 현재 어드민 유저와 비교)
+  if (admin.id === id) {
     return NextResponse.json({ error: "자기 자신은 삭제할 수 없습니다." }, { status: 400 });
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createAdminClient() as any;
 
   // 어드민 계정 삭제 불가
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", id).single();

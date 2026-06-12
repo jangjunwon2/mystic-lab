@@ -148,13 +148,28 @@ async function runTriggerCoupons(admin: any, cfg: TriggerCouponRunConfig, opts: 
     }
   }
 
+  // 루프 전에 고유 user_id 배치 조회 — 루프 내 getUserById N+1 방지
+  const uniqueUserIds = [...new Set(items.map((r) => r.user_id))];
+  const idToEmail = new Map<string, string>();
+  try {
+    let page = 1;
+    while (true) {
+      const { data: batch } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+      const users = (batch?.users ?? []) as { id: string; email?: string }[];
+      for (const u of users) {
+        if (uniqueUserIds.includes(u.id) && u.email) idToEmail.set(u.id, u.email);
+      }
+      if (users.length < 1000) break;
+      page++;
+    }
+  } catch { /* 이메일 조회 실패 시 발급은 계속 — email null로 진행 */ }
+
   let issued = 0;
   for (const r of items) {
     const key = `${r.user_id}:${r.product_id}`;
     if (covered.has(key)) continue;
     covered.add(key);
-    let email: string | null = null;
-    try { const { data: u } = await admin.auth.admin.getUserById(r.user_id); email = u?.user?.email ?? null; } catch { /* skip */ }
+    const email = idToEmail.get(r.user_id) ?? null;
     const code = await issueCoupon(admin, {
       userId: r.user_id, email, type: "percent", value: cfg.percent,
       source: opts.source, expiresMonths: cfg.months, productIds: [r.product_id], name: cfg.name,
