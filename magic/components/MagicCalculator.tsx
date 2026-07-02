@@ -352,6 +352,33 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const equalHoldFiredRef = useRef(false);
   const isPressingKeyRef = useRef<string | null>(null);
 
+  const [statusBarTime, setStatusBarTime] = useState("9:41");
+  const [isBatteryFlashing, setIsBatteryFlashing] = useState(false);
+
+  // 상단 상태바 실시간 시각 동기화
+  useEffect(() => {
+    const updateTime = () => {
+      const d = new Date();
+      const hh = d.getHours();
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      setStatusBarTime(`${hh}:${mm}`);
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // 삭제 모드 활성화(isEraseLeftActive가 false -> true로 변경) 시 배터리 점멸 3회 트리거
+  useEffect(() => {
+    if (isEraseLeftActive) {
+      setIsBatteryFlashing(true);
+      const timer = setTimeout(() => {
+        setIsBatteryFlashing(false);
+      }, 1500); // 0.5초당 1회씩 3회 = 1.5초
+      return () => clearTimeout(timer);
+    }
+  }, [isEraseLeftActive]);
+
   // OS 자동 감지 및 설정 세팅
   useEffect(() => {
     // 테마 설정
@@ -735,20 +762,15 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }
   };
 
-  // = 버튼 2초 홀드(로그 청소) 및 3초 홀드(영수증 출력)
+  // = 버튼 3초 홀드 시 로그 청소 및 영수증 출력
   const handleEqualStart = () => {
     equalHoldFiredRef.current = false;
     equalHoldTimerRef.current = setTimeout(() => {
-      // 2초 도달 시 로그 클리어 (홀드 동작 발동 표시)
       equalHoldFiredRef.current = true;
       setPeekLogs([]);
       triggerDimmingFeedback();
-
-      // 3초 도달용 2차 타이머 → 영수증 인쇄
-      equalHoldTimerRef.current = setTimeout(() => {
-        handlePrintReceipt();
-      }, 1000);
-    }, 2000);
+      handlePrintReceipt();
+    }, 3000);
   };
 
   const handleEqualEnd = () => {
@@ -1055,6 +1077,49 @@ export default function MagicCalculator({ locale, productId }: Props) {
         // 끄는 중엔 transition 없이 손가락 1:1 추종, 놓으면 스프링으로 복귀
         transition={peekDragging ? { duration: 0 } : { type: "spring", stiffness: 350, damping: 30 }}
       >
+        <style>{`
+          @keyframes battery-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.15; }
+          }
+          .battery-blink-3 {
+            animation: battery-blink 0.4s ease-in-out 3;
+          }
+        `}</style>
+
+        {/* ── 위장 상태바 (Camouflage Status Bar) ── */}
+        <div className="absolute top-0 left-0 w-full h-10 px-6 pt-3 flex items-center justify-between text-xs font-semibold text-white select-none z-40 bg-black/10">
+          <div>{statusBarTime}</div>
+          <div className="flex items-center gap-1.5">
+            {/* Cellular Signal Icons */}
+            {theme === "ios" ? (
+              <div className="flex items-end gap-[1.5px] h-2.5">
+                <div className="w-[3px] h-[3px] bg-white rounded-full" />
+                <div className="w-[3px] h-[5px] bg-white rounded-full" />
+                <div className="w-[3px] h-[7px] bg-white rounded-full" />
+                <div className="w-[3px] h-[9px] bg-white rounded-full" />
+              </div>
+            ) : (
+              <div className="flex items-end gap-[1px] h-2.5">
+                <div className="w-[2px] h-[2px] bg-white" />
+                <div className="w-[2px] h-[4px] bg-white" />
+                <div className="w-[2px] h-[6px] bg-white" />
+                <div className="w-[2px] h-[8px] bg-white" />
+              </div>
+            )}
+
+            {/* Wifi Icon */}
+            <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+              <path d="M12 21l-12-12c4.4-4.4 11.6-4.4 16 0l-4 4zm0-5c2.2-2.2 5.8-2.2 8 0l-8 8-8-8z"/>
+            </svg>
+
+            {/* Battery Icon */}
+            <div className={`relative w-[22px] h-[11px] border border-white/60 rounded-xs p-[1px] flex items-center ${isBatteryFlashing ? "battery-blink-3" : ""}`}>
+              <div className="h-full bg-white rounded-3xs" style={{ width: "80%" }} />
+              <div className="absolute -right-[3px] top-[3px] w-[2px] h-[3px] bg-white/60 rounded-r-3xs" />
+            </div>
+          </div>
+        </div>
         {/* Invisible 1/12 진입 영역 (3초 터치 시 세팅창) */}
         <div
           className="absolute top-0 left-0 w-[25vw] h-[15vh] z-50 cursor-pointer"
@@ -1160,9 +1225,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium transition-colors bg-[#A5A5A5] text-black active:bg-[#D9D9D9]"
               >
-                <span className={config.stealthIndicatorMode === "shift" && isEraseLeftActive ? "inline-block -translate-y-1 scale-95" : "inline-block"}>
-                  {config.stealthIndicatorMode === "label" && isEraseLeftActive ? "-/+" : "+/-"}
-                </span>
+                +/-
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "%")}
@@ -1283,9 +1346,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "." && handleKeyPress(".")}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
               >
-                <span className={config.stealthIndicatorMode === "shift" && isForceActive ? "inline-block translate-x-1 font-bold" : "inline-block"}>
-                  {config.stealthIndicatorMode === "label" && isForceActive ? "·" : "."}
-                </span>
+                {/* 포스 모드 ON이면 점이 가운데(·)로 올라와 동작 표시, 평소엔 일반 소수점(.) */}
+                {isForceActive ? "·" : "."}
               </button>
               <button
                 onTouchStart={handleEqualStart}
@@ -1424,9 +1486,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#2E2E30] text-[#E6E6E6] active:bg-[#3A3A3C] transition-colors"
               >
-                <span className={config.stealthIndicatorMode === "shift" && isEraseLeftActive ? "inline-block -translate-y-1 scale-95" : "inline-block"}>
-                  {config.stealthIndicatorMode === "label" && isEraseLeftActive ? "-/+" : "+/−"}
-                </span>
+                +/−
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "0")}
@@ -1440,9 +1500,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "." && handleKeyPress(".")}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
-                <span className={config.stealthIndicatorMode === "shift" && isForceActive ? "inline-block translate-x-1 font-bold" : "inline-block"}>
-                  {config.stealthIndicatorMode === "label" && isForceActive ? "·" : "."}
-                </span>
+                {/* 포스 모드 ON이면 점이 가운데(·)로 올라와 동작 표시, 평소엔 일반 소수점(.) */}
+                {isForceActive ? "·" : "."}
               </button>
               <button
                 onTouchStart={handleEqualStart}
@@ -1653,28 +1712,6 @@ export default function MagicCalculator({ locale, productId }: Props) {
                       ? "• 계산기 화면에서 이 숫자를 치고 '='을 누르면 인스타그램으로 전환됩니다."
                       : "• Enter this code and press '=' to transition to Instagram."}
                   </p>
-                </div>
-
-                {/* 비밀 상태 표시 방식 */}
-                <div className="space-y-1.5">
-                  <label className="text-xs text-[#9CA3AF]">
-                    {config.appLocale === "ko" ? "비밀 상태 표시 방식" : "Stealth Indicator Mode"}
-                  </label>
-                  <select
-                    value={config.stealthIndicatorMode || "label"}
-                    onChange={(e) => saveConfig({ ...config, stealthIndicatorMode: e.target.value as any })}
-                    className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-3 py-2 focus:outline-none"
-                  >
-                    <option value="label">
-                      {config.appLocale === "ko" ? "심볼 변경 ( . → · , +/- → -/+ )" : "Symbol Change"}
-                    </option>
-                    <option value="shift">
-                      {config.appLocale === "ko" ? "미세 위치 이동 (1px 시프트)" : "Micro Position Shift"}
-                    </option>
-                    <option value="none">
-                      {config.appLocale === "ko" ? "표시 안 함 (완전 비밀)" : "No Visual Indicator"}
-                    </option>
-                  </select>
                 </div>
               </div>
 
