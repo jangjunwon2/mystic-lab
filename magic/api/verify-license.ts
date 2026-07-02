@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // 1. 해당 코드 존재 여부 및 productId와 일치하는지 조회
     const { data: unlockCode, error: queryError } = await supabase
       .from("product_unlock_codes")
-      .select("id, product_id, user_id, is_locked, activation_count, max_activations")
+      .select("id, product_id, user_id, is_locked, activation_count, max_activations, last_activated_at")
       .eq("code_hash", codeHash)
       .eq("product_id", productId)
       .maybeSingle();
@@ -53,7 +53,12 @@ export async function POST(request: NextRequest) {
     }
     const maxActivations: number | null = unlockCode.max_activations;
     const activationCount: number = unlockCode.activation_count ?? 0;
-    if (maxActivations != null && activationCount >= maxActivations) {
+
+    // 24시간 이내 기기 재등록 시 횟수 차감 방지 (캐시/쿠키 삭제 등으로 인한 무분별한 횟수 소모 보호)
+    const lastActivated = unlockCode.last_activated_at ? new Date(unlockCode.last_activated_at) : null;
+    const isRecent = lastActivated && (Date.now() - lastActivated.getTime() < 24 * 60 * 60 * 1000);
+
+    if (maxActivations != null && activationCount >= maxActivations && !isRecent) {
       return NextResponse.json(
         { error: "이 코드의 기기 활성화 가능 횟수를 초과했습니다. 판매처에 문의해 주세요." },
         { status: 403 }
@@ -76,13 +81,15 @@ export async function POST(request: NextRequest) {
     const newDeviceToken = randomBytes(32).toString("hex");
     const newDeviceTokenHash = createHash("sha256").update(newDeviceToken).digest("hex");
 
-    // DB에 활성 토큰 해시·마지막 활성화 시각·활성화 횟수(+1) 업데이트 (+ 미할당 코드면 로그인 회원에 귀속)
+    const nextActivationCount = isRecent ? activationCount : activationCount + 1;
+
+    // DB에 활성 토큰 해시·마지막 활성화 시각·활성화 횟수 업데이트 (+ 미할당 코드면 로그인 회원에 귀속)
     const { error: updateError } = await supabase
       .from("product_unlock_codes")
       .update({
         active_token_hash: newDeviceTokenHash,
         last_activated_at: new Date().toISOString(),
-        activation_count: activationCount + 1,
+        activation_count: nextActivationCount,
         ...(assignUserId ? { user_id: assignUserId } : {}),
       })
       .eq("id", unlockCode.id);

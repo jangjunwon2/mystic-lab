@@ -15,11 +15,14 @@ interface UnlockResult {
   signedUrl: string | null;
   videoTitle: string | null;
   productId: string;
+  productSlug?: string | null;
+  isApp?: boolean;
 }
 
 export default function UnlockPage({ params }: Props) {
   const t = useTranslations("unlock");
   const tTutorial = useTranslations("tutorial");
+  const tCalc = useTranslations("calc");
   const [locale, setLocale] = useState("en");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -224,6 +227,15 @@ export default function UnlockPage({ params }: Props) {
 
               {/* Navigation links */}
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                {result.isApp && (
+                  <Link
+                    href={result.productSlug === "fake-instagram" ? `/${locale}/insta` : `/${locale}/calc`}
+                    className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:opacity-90 active:scale-95 transition-all duration-150"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {tCalc("maOpen")}
+                  </Link>
+                )}
                 <button
                   onClick={() => { setResult(null); setCode(""); setError(null); }}
                   className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-80"
