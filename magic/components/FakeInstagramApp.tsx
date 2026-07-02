@@ -148,6 +148,57 @@ export default function FakeInstagramApp({ locale, productId, slug }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [likes, setLikes] = useState<Record<string, boolean>>({});
   const [prediction, setPrediction] = useState<CalcPrediction | null>(null);
+  const [animatedFollowers, setAnimatedFollowers] = useState<number | null>(null);
+  const [isFollowerMorphing, setIsFollowerMorphing] = useState(false);
+  const lastFollowerTapRef = useRef<number>(0);
+
+  const triggerFollowerMorph = () => {
+    if (isFollowerMorphing) return;
+    if (!config) return;
+    if (!prediction || !prediction.result) return;
+
+    const rawVal = prediction.result.replace(/[^0-9.]/g, "");
+    const targetVal = parseFloat(rawVal);
+    if (isNaN(targetVal) || targetVal <= 0) return;
+
+    let finalTarget = targetVal;
+    if (targetVal < 1000) {
+      finalTarget = targetVal * 1000;
+    }
+
+    setIsFollowerMorphing(true);
+
+    const start = config.followers;
+    const duration = 1500;
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      const easeProgress = progress * (2 - progress);
+      const currentVal = Math.round(start + (finalTarget - start) * easeProgress);
+      
+      setAnimatedFollowers(currentVal);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setIsFollowerMorphing(false);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  };
+
+  const handleFollowerTouchEnd = () => {
+    const now = Date.now();
+    if (now - lastFollowerTapRef.current < 300) {
+      triggerFollowerMorph();
+    }
+    lastFollowerTapRef.current = now;
+  };
+
   const holdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -374,7 +425,15 @@ export default function FakeInstagramApp({ locale, productId, slug }: Props) {
           onOpenStory={(i) => setStoryStart(i)} onOpenDM={() => setView("dm")} prediction={prediction}
         />
       ) : (
-        <ProfileView config={config} ui={ui} onOpenSettings={() => setSettingsOpen(true)} onOpenPost={(id) => setOpenPostId(id)} />
+        <ProfileView
+          config={config}
+          ui={ui}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenPost={(id) => setOpenPostId(id)}
+          animatedFollowers={animatedFollowers}
+          triggerFollowerMorph={triggerFollowerMorph}
+          handleFollowerTouchEnd={handleFollowerTouchEnd}
+        />
       )}
 
       {/* 하단 탭 바 — 게시물 상세·DM·스토리 뷰어에서는 숨김 */}
@@ -576,7 +635,23 @@ function PostDetail({ post, config, ui, liked, likeCount, onBack, onLike, predic
 }
 
 // ─── 프로필 ───
-function ProfileView({ config, ui, onOpenSettings, onOpenPost }: { config: InstaConfig; ui: typeof UI["en"]; onOpenSettings: () => void; onOpenPost: (id: string) => void }) {
+function ProfileView({
+  config,
+  ui,
+  onOpenSettings,
+  onOpenPost,
+  animatedFollowers,
+  triggerFollowerMorph,
+  handleFollowerTouchEnd,
+}: {
+  config: InstaConfig;
+  ui: typeof UI["en"];
+  onOpenSettings: () => void;
+  onOpenPost: (id: string) => void;
+  animatedFollowers: number | null;
+  triggerFollowerMorph: () => void;
+  handleFollowerTouchEnd: () => void;
+}) {
   return (
     <>
       <div className="h-12 border-b border-[#262626] bg-black flex items-center justify-between px-4 shrink-0">
@@ -603,12 +678,22 @@ function ProfileView({ config, ui, onOpenSettings, onOpenPost }: { config: Insta
               </div>
             </div>
             <div className="flex-1 flex justify-around text-center">
-              {[[config.postsCount, ui.posts], [config.followers, ui.followers], [config.following, ui.following]].map(([n, label], i) => (
-                <div key={i}>
-                  <div className="text-base font-semibold text-white">{formatCount(n as number)}</div>
-                  <div className="text-xs text-gray-300">{label as string}</div>
-                </div>
-              ))}
+              {[[config.postsCount, ui.posts], [config.followers, ui.followers], [config.following, ui.following]].map(([n, label], idx) => {
+                const isFollowers = idx === 1;
+                return (
+                  <div
+                    key={idx}
+                    onDoubleClick={isFollowers ? triggerFollowerMorph : undefined}
+                    onTouchEnd={isFollowers ? handleFollowerTouchEnd : undefined}
+                    className={isFollowers ? "cursor-pointer select-none" : "select-none"}
+                  >
+                    <div className="text-base font-semibold text-white">
+                      {isFollowers && animatedFollowers !== null ? formatCount(animatedFollowers) : formatCount(n as number)}
+                    </div>
+                    <div className="text-xs text-gray-300">{label as string}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div className="mt-3">
