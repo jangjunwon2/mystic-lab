@@ -97,6 +97,44 @@ export default async function CalculatorPage({ params }: Props) {
     const tu = await getTranslations("unlock");
     return (
       <div className="min-h-screen bg-[#0D0D1A] flex items-center justify-center p-6 text-center select-text">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  if (sessionStorage.getItem("ml_calc_restore_attempted")) {
+                    return;
+                  }
+                  var calcToken = localStorage.getItem("ml_calc_device_token");
+                  var dtToken = null;
+                  var dtKey = null;
+                  
+                  for (var i = 0; i < localStorage.length; i++) {
+                    var key = localStorage.key(i);
+                    if (key && key.indexOf("ml_dt_") === 0) {
+                      dtKey = key;
+                      dtToken = localStorage.getItem(key);
+                      break;
+                    }
+                  }
+                  
+                  if (calcToken || dtToken) {
+                    sessionStorage.setItem("ml_calc_restore_attempted", "true");
+                    var secureSuffix = window.location.protocol === "https:" ? "; Secure" : "";
+                    
+                    if (calcToken) {
+                      document.cookie = "ml_calc_device_token=" + calcToken + "; path=/; max-age=2592000; SameSite=Lax" + secureSuffix;
+                    }
+                    if (dtKey && dtToken) {
+                      document.cookie = dtKey + "=" + dtToken + "; path=/; max-age=2592000; SameSite=Lax" + secureSuffix;
+                    }
+                    window.location.reload();
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         <div className="max-w-md w-full rounded-2xl border border-[#2D2D4E] bg-[#1A1A2E] p-8 space-y-6">
           <div className="w-16 h-16 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center justify-center mx-auto">
             <span className="text-2xl text-[#EF4444]">⚠</span>
