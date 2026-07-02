@@ -8,6 +8,7 @@ import {
   Settings, Wifi, Check, AlertTriangle, BookOpen, RefreshCw, X, ChevronRight,
   Clock, Ruler, Delete
 } from "lucide-react";
+import AppUnlockForm from "./AppUnlockForm";
 
 // Google Fonts 동적 로드용 링크 컴포넌트
 function GoogleFontsLink() {
@@ -224,6 +225,72 @@ const SETTINGS_TEXTS: Record<string, SettingsText> = {
   de: { panelTitle: "Geheime Einstellungen", language: "Sprache", forceTarget: "Forcier-Zielwert", staticNum: "Feste Zahl", timeBased: "Zeitbasiert", forcedNumber: "Zu forcierende Zahl", timeFormat: "Zeitformat", minutesOffset: "Minuten-Versatz", minUnit: "Min", forceBehavior: "Forcier-Modus", oneTime: "Einmalig", continuous: "Dauerhaft", camouflage: "Rechner-Tarnung", printerSettings: "Thermodrucker", scanPair: "Bluetooth-Drucker suchen & koppeln", receiptTemplate: "Beleg-Vorlage", variables: "Variablen", printFont: "Druckschrift", fontCursive: "Schreibschrift", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Druckt...", testPrint: "Testdruck", clearLogs: "Hintergrund-Logs löschen", btScanning: "Bluetooth wird gesucht...", btConnecting: "Verbindung wird hergestellt", btConnected: "✓ Drucker erfolgreich verbunden.", btNoChar: "Characteristic nicht gefunden.", btFailed: "Verbindung fehlgeschlagen", prNotConnected: "Drucker nicht verbunden. Bitte in den Einstellungen koppeln.", prBuilding: "Beleg-Bild wird erstellt...", prDone: "✓ Beleg erfolgreich gedruckt.", prFailed: "Druck fehlgeschlagen" },
 };
 
+const BLOCK_TEXTS: Record<string, {
+  blockTitle: string;
+  blockBody: string;
+  codePlaceholder: string;
+  maRegister: string;
+  maRegistering: string;
+  goToProduct: string;
+}> = {
+  ko: {
+    blockTitle: "인증 필요",
+    blockBody: "이 기기는 아직 활성화되지 않았거나 다른 기기에서 재활성화하여 인증이 만료되었습니다. 아래에 인증 코드를 입력하여 다시 활성화해주십시오.",
+    codePlaceholder: "인증 코드 입력",
+    maRegister: "인증하기",
+    maRegistering: "인증 중…",
+    goToProduct: "상품 구매 페이지로 이동",
+  },
+  en: {
+    blockTitle: "Authentication Required",
+    blockBody: "This device is not activated yet, or its activation has expired because it was reactivated on another device. Please enter your activation code below to reactivate.",
+    codePlaceholder: "Enter activation code",
+    maRegister: "Activate",
+    maRegistering: "Activating...",
+    goToProduct: "Go to Product Page",
+  },
+  ja: {
+    blockTitle: "認証が必要です",
+    blockBody: "このデバイスはまだ有効化されていないか、別のデバイスで再有効化されたため認証が期限切れです。以下に認証コードを入力して再有効化してください。",
+    codePlaceholder: "認証コードを入力",
+    maRegister: "認証する",
+    maRegistering: "認証中…",
+    goToProduct: "商品ページへ移動",
+  },
+  "zh-CN": {
+    blockTitle: "需要身份验证",
+    blockBody: "此设备尚未激活，或者由于在其他设备上重新激活导致激活已过期。请在下方输入激活码以重新激活。",
+    codePlaceholder: "输入激活码",
+    maRegister: "激活",
+    maRegistering: "正在激活…",
+    goToProduct: "前往商品页面",
+  },
+  es: {
+    blockTitle: "Autenticación Requerida",
+    blockBody: "Este dispositivo aún no está activado, o su activación ha expirado porque se reactivó en otro dispositivo. Introduzca su código de activación a continuación para reactivarlo.",
+    codePlaceholder: "Introducir código de activación",
+    maRegister: "Activar",
+    maRegistering: "Activando...",
+    goToProduct: "Ir a la página del producto",
+  },
+  fr: {
+    blockTitle: "Authentification Requise",
+    blockBody: "Cet appareil n'est pas encore activé, ou son activation a expiré car il a été réactivé sur un autre appareil. Veuillez saisir votre code d'activation ci-dessous pour réactiver.",
+    codePlaceholder: "Entrer le code d'activation",
+    maRegister: "Activer",
+    maRegistering: "Activation...",
+    goToProduct: "Aller à la page du produit",
+  },
+  de: {
+    blockTitle: "Authentifizierung Erforderlich",
+    blockBody: "Dieses Gerät ist noch nicht aktiviert oder die Aktivierung ist abgelaufen, da es auf einem anderen Gerät reaktiviert wurde. Bitte geben Sie unten Ihren Aktivierungscode ein, um es erneut zu aktivieren.",
+    codePlaceholder: "Aktivierungscode eingeben",
+    maRegister: "Aktivieren",
+    maRegistering: "Aktivierung...",
+    goToProduct: "Zur Produktseite",
+  }
+};
+
 interface Props {
   locale: string;
   productId: string;
@@ -247,6 +314,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
   // UI 관련 상태
   const [theme, setTheme] = useState<"ios" | "android">("ios");
   const [mounted, setMounted] = useState(false);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDimmed, setIsDimmed] = useState(false); // 햅틱 대체 미세 디밍 피드백
   
@@ -297,6 +365,56 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }
     setMounted(true);
   }, [config.osTheme]);
+
+  // 기기 인증 및 쿠키 복원 처리
+  useEffect(() => {
+    if (!productId) return;
+
+    // 1. localStorage에서 토큰 찾아 쿠키 유실 시 복원
+    let token = localStorage.getItem("ml_calc_device_token");
+    if (!token) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("ml_dt_")) {
+          token = localStorage.getItem(key);
+          break;
+        }
+      }
+    }
+    if (token) {
+      const secureSuffix = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `ml_calc_device_token=${token}; path=/; max-age=2592000; SameSite=Lax${secureSuffix}`;
+      document.cookie = `ml_dt_${productId}=${token}; path=/; max-age=2592000; SameSite=Lax${secureSuffix}`;
+    }
+
+    // 2. 로컬스토리지 플래그 기반 낙관적(즉시) 인증 처리
+    const localActive = localStorage.getItem("ml_app_activated_magic-calculator") === "1";
+    if (localActive) {
+      setAuthorized(true);
+    } else {
+      setAuthorized(false);
+    }
+
+    // 3. 백그라운드 라이선스 세션 검증 API 호출
+    fetch(`/api/magic/verify-session?slug=magic-calculator`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authorized) {
+          setAuthorized(true);
+          localStorage.setItem("ml_app_activated_magic-calculator", "1");
+          if (data.deviceToken) {
+            localStorage.setItem("ml_calc_device_token", data.deviceToken);
+            localStorage.setItem(`ml_dt_${productId}`, data.deviceToken);
+          }
+        } else {
+          setAuthorized(false);
+          localStorage.removeItem("ml_app_activated_magic-calculator");
+        }
+      })
+      .catch(() => {
+        // 네트워크 오프라인 상태일 때는 로컬스토리지 인증 성공 상태를 유지
+      });
+  }, [productId]);
 
   // 로컬 스토리지에서 마술 설정 복원 (기기별 저장 → 사용자마다 각자 설정 유지)
   // 기본값과 병합해 과거 저장본에 없던 새 필드도 안전하게 채운다
@@ -836,12 +954,47 @@ export default function MagicCalculator({ locale, productId }: Props) {
   // 다국어 매뉴얼 리소스 가져오기
   const manual = MANUAL_TEXTS[locale] ?? MANUAL_TEXTS.en;
 
-  if (!mounted) {
+  if (!mounted || authorized === null) {
     return (
       <div
         className="fixed inset-0 w-full h-full"
         style={{ background: "#000000" }}
       />
+    );
+  }
+
+  if (authorized === false) {
+    const bt = BLOCK_TEXTS[locale] ?? BLOCK_TEXTS.en;
+    return (
+      <div className="min-h-screen bg-[#0D0D1A] flex items-center justify-center p-6 text-center select-text">
+        <div className="max-w-md w-full rounded-2xl border border-[#2D2D4E] bg-[#1A1A2E] p-8 space-y-6">
+          <div className="w-16 h-16 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center justify-center mx-auto">
+            <span className="text-2xl text-[#EF4444]">⚠</span>
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold text-[#F0E6FF]" style={{ fontFamily: "var(--font-cinzel), serif" }}>
+              {bt.blockTitle}
+            </h1>
+            <p className="text-sm text-[#9CA3AF] leading-relaxed">
+              {bt.blockBody}
+            </p>
+          </div>
+
+          <AppUnlockForm
+            productId={productId}
+            locale={locale}
+            slug="magic-calculator"
+            productUrl={productId ? `/${locale}/products/magic-calculator` : `/${locale}/products`}
+            translations={{
+              placeholder: bt.codePlaceholder,
+              submit: bt.maRegister,
+              checking: bt.maRegistering,
+              goToProduct: bt.goToProduct,
+            }}
+          />
+        </div>
+      </div>
     );
   }
 
