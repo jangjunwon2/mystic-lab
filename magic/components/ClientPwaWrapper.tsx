@@ -136,6 +136,7 @@ export default function ClientPwaWrapper({ children, locale, appName }: Props) {
     const ua = navigator.userAgent.toLowerCase();
     const isIOS = ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod");
     if (isIOS) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOsType("ios");
     } else if (ua.includes("android")) {
       setOsType("android");
@@ -157,13 +158,23 @@ export default function ClientPwaWrapper({ children, locale, appName }: Props) {
       }
     }
 
+    // 5. HTML/Body 배경색을 순수 검은색으로 고정하여 안드로이드 제스처 네비게이션 영역 등의 흰색 여백 방지
+    const origHtmlBg = document.documentElement.style.backgroundColor;
+    const origBodyBg = document.body.style.backgroundColor;
+    document.documentElement.style.backgroundColor = "#000000";
+    document.body.style.backgroundColor = "#000000";
+
     // 4. 네이티브 설치 프롬프트 캡처 (Android Chrome 등)
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as InstallPromptEvent);
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
-    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      document.documentElement.style.backgroundColor = origHtmlBg;
+      document.body.style.backgroundColor = origBodyBg;
+    };
   }, []);
 
   // 네이티브 설치 프롬프트 실행
