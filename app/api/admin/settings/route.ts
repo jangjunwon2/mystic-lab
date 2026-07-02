@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/server";
-import { getPointEarnRate, setSetting } from "@/lib/settings";
+import { getPointEarnRate, setSetting, getSetting } from "@/lib/settings";
 import { getSignupCouponConfig, getWishlistCouponConfig, getCartCouponConfig } from "@/lib/promotions";
 
-// GET — 현재 설정값(포인트 적립률 + 가입 환영 쿠폰 + 위시리스트 트리거 쿠폰)
+// GET — 현재 설정값(포인트 적립률 + 가입 환영 쿠폰 + 위시리스트 트리거 쿠폰 + 사업자 고지 정보)
 export async function GET() {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,7 +14,32 @@ export async function GET() {
   const signupCoupon = await getSignupCouponConfig(supabase);
   const wishlistCoupon = await getWishlistCouponConfig(supabase);
   const cartCoupon = await getCartCouponConfig(supabase);
-  return NextResponse.json({ pointEarnRate, signupCoupon, wishlistCoupon, cartCoupon });
+
+  const biz_name = await getSetting(supabase, "biz_name", process.env.BIZ_NAME || "비에이블 (Beable)");
+  const biz_reg = await getSetting(supabase, "biz_reg", process.env.BIZ_REG || "742-10-02095");
+  const biz_representative = await getSetting(supabase, "biz_representative", process.env.BIZ_REPRESENTATIVE || "장준원");
+  const biz_address = await getSetting(supabase, "biz_address", process.env.BIZ_ADDRESS || "");
+  const biz_phone = await getSetting(supabase, "biz_phone", process.env.BIZ_PHONE || "");
+  const biz_email = await getSetting(supabase, "biz_email", process.env.BIZ_EMAIL || "jun923008@gmail.com");
+  const biz_communication_reg = await getSetting(supabase, "biz_communication_reg", process.env.BIZ_COMMUNICATION_REG || "");
+  const biz_privacy_officer = await getSetting(supabase, "biz_privacy_officer", process.env.BIZ_PRIVACY_OFFICER || "장준원 (jun923008@gmail.com)");
+
+  return NextResponse.json({
+    pointEarnRate,
+    signupCoupon,
+    wishlistCoupon,
+    cartCoupon,
+    bizDetails: {
+      biz_name,
+      biz_reg,
+      biz_representative,
+      biz_address,
+      biz_phone,
+      biz_email,
+      biz_communication_reg,
+      biz_privacy_officer,
+    },
+  });
 }
 
 // POST — 설정 저장. body { pointEarnRate? } 또는 { signupCoupon: { enabled, percent, months } }
@@ -86,6 +111,33 @@ export async function POST(request: NextRequest) {
       (await setSetting(supabase, "cart_coupon_percent", String(p))) &&
       (await setSetting(supabase, "cart_coupon_months", String(m))) &&
       (await setSetting(supabase, "cart_coupon_name", String(name ?? "").slice(0, 60) || "장바구니 특별 할인"));
+    if (!ok) return NextResponse.json({ error: "저장에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // 사업자 정보 설정 저장
+  if (body?.bizDetails) {
+    const {
+      biz_name,
+      biz_reg,
+      biz_representative,
+      biz_address,
+      biz_phone,
+      biz_email,
+      biz_communication_reg,
+      biz_privacy_officer,
+    } = body.bizDetails;
+
+    const ok =
+      (await setSetting(supabase, "biz_name", String(biz_name ?? "").trim())) &&
+      (await setSetting(supabase, "biz_reg", String(biz_reg ?? "").trim())) &&
+      (await setSetting(supabase, "biz_representative", String(biz_representative ?? "").trim())) &&
+      (await setSetting(supabase, "biz_address", String(biz_address ?? "").trim())) &&
+      (await setSetting(supabase, "biz_phone", String(biz_phone ?? "").trim())) &&
+      (await setSetting(supabase, "biz_email", String(biz_email ?? "").trim())) &&
+      (await setSetting(supabase, "biz_communication_reg", String(biz_communication_reg ?? "").trim())) &&
+      (await setSetting(supabase, "biz_privacy_officer", String(biz_privacy_officer ?? "").trim()));
+
     if (!ok) return NextResponse.json({ error: "저장에 실패했습니다." }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
