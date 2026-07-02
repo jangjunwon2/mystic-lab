@@ -143,3 +143,13 @@ p, li, blockquote, figcaption {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* PWA 스탠드얼론 모드에서 사이트 크롬(헤더, 푸터, 배너) 강제 비활성화 */
+@media (display-mode: standalone) {
+  header, footer, .announcement-banner {
+    display: none !important;
+  }
+  main {
+    padding-top: 0 !important;
+  }
+}

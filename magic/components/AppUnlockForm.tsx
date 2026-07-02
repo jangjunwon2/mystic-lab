@@ -64,6 +64,7 @@ export default function AppUnlockForm({
         try {
           const activatedKey = `ml_app_activated_${slug}`;
           localStorage.setItem(activatedKey, "1");
+          localStorage.setItem(`ml_dt_${data.productId}`, data.deviceToken);
           if (slug === "magic-calculator") {
             localStorage.setItem("ml_calc_device_token", data.deviceToken);
           }

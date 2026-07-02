@@ -94,11 +94,15 @@ export async function GET(request: NextRequest) {
         sameSite: "lax" as const,
         path: "/",
       };
+      const clientCookieOpts = {
+        ...cookieOpts,
+        httpOnly: false,
+      };
 
       response.cookies.set(`ml_unlock_${product.id}`, "granted", cookieOpts);
-      response.cookies.set(`ml_dt_${product.id}`, deviceToken, cookieOpts);
+      response.cookies.set(`ml_dt_${product.id}`, deviceToken, clientCookieOpts);
       if (slug === "magic-calculator") {
-        response.cookies.set("ml_calc_device_token", deviceToken, cookieOpts);
+        response.cookies.set("ml_calc_device_token", deviceToken, clientCookieOpts);
       }
 
       return response;

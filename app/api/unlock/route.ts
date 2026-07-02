@@ -185,14 +185,19 @@ export async function POST(request: NextRequest) {
       path: "/",
     };
 
+    const clientCookieOpts = {
+      ...cookieOpts,
+      httpOnly: false,
+    };
+
     // 1. 일반 unlock 쿠키
     response.cookies.set(`ml_unlock_${uc.product_id}`, "granted", cookieOpts);
 
     // 2. 앱 전용 기기 토큰 쿠키
     if (isApp && deviceToken) {
-      response.cookies.set(`ml_dt_${uc.product_id}`, deviceToken, cookieOpts);
+      response.cookies.set(`ml_dt_${uc.product_id}`, deviceToken, clientCookieOpts);
       if (product?.slug === "magic-calculator") {
-        response.cookies.set("ml_calc_device_token", deviceToken, cookieOpts);
+        response.cookies.set("ml_calc_device_token", deviceToken, clientCookieOpts);
       }
     }
 

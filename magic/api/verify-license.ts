@@ -114,16 +114,17 @@ export async function POST(request: NextRequest) {
     });
 
     const cookieOpts = { maxAge: 30 * 24 * 60 * 60, httpOnly: true, sameSite: "lax" as const, path: "/" };
+    const clientCookieOpts = { ...cookieOpts, httpOnly: false };
 
     // 일반 unlock 쿠키
     response.cookies.set(`ml_unlock_${unlockCode.product_id}`, "granted", cookieOpts);
 
     // 상품별 기기 토큰 쿠키 (앱 게이트가 상품별로 대조)
-    response.cookies.set(`ml_dt_${unlockCode.product_id}`, newDeviceToken, cookieOpts);
+    response.cookies.set(`ml_dt_${unlockCode.product_id}`, newDeviceToken, clientCookieOpts);
 
     // 계산기는 기존 게이트가 ml_calc_device_token 을 읽으므로 호환 유지 (계산기 상품에만 설정)
     if (slug === "magic-calculator") {
-      response.cookies.set("ml_calc_device_token", newDeviceToken, cookieOpts);
+      response.cookies.set("ml_calc_device_token", newDeviceToken, clientCookieOpts);
     }
 
     return response;
