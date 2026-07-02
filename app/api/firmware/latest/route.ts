@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     version: data.version,
     url: data.download_url,
+    notes: data.notes ?? "",
     file_size: data.file_size,
     released_at: data.created_at,
   });

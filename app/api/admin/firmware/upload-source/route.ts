@@ -238,7 +238,7 @@ export async function POST(req: NextRequest) {
         .filter((d) => detectedVersions[d])
         .map(async (d) => {
           // 1. 새 pending 행 삽입 (가장 최신 created_at 확보)
-          const { data: inserted } = await (supabase as any)
+          const { data: inserted, error: insertErr } = await (supabase as any)
             .from("firmware_releases")
             .insert({
               device_type: d,
@@ -251,14 +251,17 @@ export async function POST(req: NextRequest) {
             .select("id")
             .single();
 
-          // 2. 방금 삽입한 행을 제외하고 나머지 모두 삭제
-          if (inserted?.id) {
-            await (supabase as any)
-              .from("firmware_releases")
-              .delete()
-              .eq("device_type", d)
-              .neq("id", inserted.id);
+          if (insertErr || !inserted?.id) {
+            console.error("[upload-source] pending 행 삽입 실패:", d, insertErr?.message);
+            return;
           }
+
+          // 2. 방금 삽입한 행을 제외하고 나머지 모두 삭제
+          await (supabase as any)
+            .from("firmware_releases")
+            .delete()
+            .eq("device_type", d)
+            .neq("id", inserted.id);
         })
     );
   }

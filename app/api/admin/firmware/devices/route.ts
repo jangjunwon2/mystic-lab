@@ -9,7 +9,11 @@ export interface FirmwareDevice {
 }
 
 const DEFAULT_DEVICES: FirmwareDevice[] = [
-  { name: "nexus_pot", label: "Nexus Pot" },
+  { name: "nexus_transmitter", label: "Nexus Transmitter" },
+  { name: "nexus_pot",         label: "Nexus Pot" },
+  { name: "nexus_smoke",       label: "Nexus Smoke" },
+  { name: "nexus_receiver",    label: "Nexus Receiver" },
+  { name: "nexus_flux_case",   label: "Nexus Flux Case" },
 ];
 
 export async function getDevices(supabase: ReturnType<typeof createAdminClient>): Promise<FirmwareDevice[]> {

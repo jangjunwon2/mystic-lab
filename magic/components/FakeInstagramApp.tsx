@@ -80,6 +80,7 @@ const BLOCK_TEXTS: Record<string, {
 interface Props {
   locale: string;
   productId: string;
+  slug: "fake-instagram" | "magic-calculator";
 }
 
 interface UiStrings {
@@ -134,7 +135,7 @@ function Avatar({ src, name, fontPx }: { src: string; name: string; fontPx: numb
   );
 }
 
-export default function FakeInstagramApp({ locale, productId }: Props) {
+export default function FakeInstagramApp({ locale, productId, slug }: Props) {
   const router = useRouter();
   const [config, setConfig] = useState<InstaConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,7 +168,7 @@ export default function FakeInstagramApp({ locale, productId }: Props) {
     }
 
     // 2. 로컬스토리지 플래그 기반 낙관적(즉시) 인증 처리
-    const localActive = localStorage.getItem("ml_app_activated_fake-instagram") === "1";
+    const localActive = localStorage.getItem(`ml_app_activated_${slug}`) === "1";
     if (localActive) {
       setAuthorized(true);
     } else {
@@ -175,18 +176,18 @@ export default function FakeInstagramApp({ locale, productId }: Props) {
     }
 
     // 3. 백그라운드 라이선스 세션 검증 API 호출
-    fetch(`/api/magic/verify-session?slug=fake-instagram`)
+    fetch(`/api/magic/verify-session?slug=${slug}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.authorized) {
           setAuthorized(true);
-          localStorage.setItem("ml_app_activated_fake-instagram", "1");
+          localStorage.setItem(`ml_app_activated_${slug}`, "1");
           if (data.deviceToken) {
             localStorage.setItem(`ml_dt_${productId}`, data.deviceToken);
           }
         } else {
           setAuthorized(false);
-          localStorage.removeItem("ml_app_activated_fake-instagram");
+          localStorage.removeItem(`ml_app_activated_${slug}`);
         }
       })
       .catch(() => {
@@ -281,8 +282,8 @@ export default function FakeInstagramApp({ locale, productId }: Props) {
           <AppUnlockForm
             productId={productId}
             locale={locale}
-            slug="fake-instagram"
-            productUrl={`/${locale}/products/fake-instagram`}
+            slug={slug}
+            productUrl={`/${locale}/products/${slug}`}
             translations={{
               placeholder: bt.codePlaceholder,
               submit: bt.maRegister,
@@ -544,7 +545,12 @@ function PostCard({ post, config, ui, liked, likeCount, onLike, author, predicti
       )}
       <div className="px-3 space-y-0.5 text-[13px] text-gray-100">
         {post.comments.slice(0, 2).map((c, i) => (
-          <div key={i}><strong className="text-white mr-1.5">{c.user}</strong><span className="select-text">{pickText(c.text, config.appLocale)}</span></div>
+          <div key={i}>
+            <strong className="text-white mr-1.5">{c.user}</strong>
+            <span className="select-text">
+              {applyPrediction(pickText(c.text, config.appLocale), prediction ?? null)}
+            </span>
+          </div>
         ))}
       </div>
       <div className="px-3 pt-1 text-[10px] text-gray-500 uppercase tracking-wide">{formatPostDate(post, config.appLocale)}</div>

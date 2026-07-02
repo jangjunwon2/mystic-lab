@@ -25,7 +25,7 @@ export default async function InstaPage({ params }: Props) {
 
   return (
     <ClientPwaWrapper locale={locale} appName="Instagram">
-      <FakeInstagramApp locale={locale} productId={productId!} />
+      <FakeInstagramApp locale={locale} productId={productId!} slug="fake-instagram" />
     </ClientPwaWrapper>
   );
 }

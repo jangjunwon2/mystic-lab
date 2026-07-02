@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin-auth";
@@ -6,7 +7,8 @@ function isCIAuth(req: NextRequest): boolean {
   const ciToken = process.env.FIRMWARE_CI_TOKEN;
   if (!ciToken) return false;
   const bearer = req.headers.get("authorization")?.replace("Bearer ", "").trim();
-  return bearer === ciToken;
+  if (!bearer || bearer.length !== ciToken.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(bearer), Buffer.from(ciToken));
 }
 
 // GET: 전체 릴리스 목록
@@ -87,7 +89,7 @@ export async function POST(req: NextRequest) {
 
   // pending 행(download_url="")을 장치+버전으로 직접 UPDATE
   // 매칭 실패(0 rows) → 사용자가 이미 다른 버전을 올렸거나 이미 완료됨 → stale build 무시
-  const { data: updated } = await (supabase as any)
+  const { data: updated, error: updateError } = await (supabase as any)
     .from("firmware_releases")
     .update({
       download_url,
@@ -101,6 +103,10 @@ export async function POST(req: NextRequest) {
     .select("id, device_type, version, download_url, storage_path, file_size, notes, created_at, is_active")
     .single();
 
+  if (updateError && updateError.code !== "PGRST116") {
+    console.error("[firmware/POST] update error:", updateError.message);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
   if (!updated) {
     return NextResponse.json({ skipped: true, reason: "no matching pending row for this version" });
   }

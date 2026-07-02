@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin-auth";
@@ -6,7 +7,8 @@ function isCIAuth(req: NextRequest): boolean {
   const ciToken = process.env.FIRMWARE_CI_TOKEN;
   if (!ciToken) return false;
   const bearer = req.headers.get("authorization")?.replace("Bearer ", "").trim();
-  return bearer === ciToken;
+  if (!bearer || bearer.length !== ciToken.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(bearer), Buffer.from(ciToken));
 }
 
 // 어드민 또는 GitHub Actions CI가 Supabase Storage 서명 URL을 발급받는 엔드포인트
