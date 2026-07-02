@@ -188,14 +188,32 @@ export default function ClientPwaWrapper({ children, locale, appName }: Props) {
   // 인앱 브라우저 → 기본 외부 브라우저로 열기
   const openExternal = () => {
     const url = window.location.href;
+    const ua = navigator.userAgent.toLowerCase();
+    
     if (osType === "android") {
       // Android: intent URL 로 Chrome 강제 실행 (실패 시 기본 브라우저 선택창)
       const noScheme = url.replace(/^https?:\/\//, "");
       window.location.href = `intent://${noScheme}#Intent;scheme=https;end`;
     } else {
-      // iOS 등: 새 탭으로 열기 시도 + 링크 복사 폴백
-      window.open(url, "_blank");
-      navigator.clipboard?.writeText(url).catch(() => { /* ignore */ });
+      // iOS
+      if (ua.includes("kakaotalk")) {
+        // 카카오톡 외부 브라우저 호출 스키마
+        window.location.href = `kakaotalk://web/openExternalApp?url=${encodeURIComponent(url)}`;
+      } else if (ua.includes("line")) {
+        // 라인 외부 브라우저 오픈 쿼리
+        const newUrl = new URL(url);
+        newUrl.searchParams.set("openExternalBrowser", "1");
+        window.location.href = newUrl.toString();
+      } else {
+        // 인스타그램, 페이스북 등 기타 iOS 인앱 브라우저: 복사 및 팝업 안내
+        navigator.clipboard?.writeText(url)
+          .then(() => {
+            alert("인앱 브라우저 제한으로 인해 사파리를 자동으로 열 수 없습니다.\n\n주소가 복사되었습니다! Safari(사파리) 브라우저를 실행하고 주소창에 붙여넣어 접속해 주십시오.");
+          })
+          .catch(() => {
+            alert(`인앱 브라우저의 제한으로 인해 사파리로 자동 이동이 불가합니다. 아래 주소를 길게 눌러 복사하신 후 사파리에서 실행해 주세요:\n\n${url}`);
+          });
+      }
     }
   };
 
