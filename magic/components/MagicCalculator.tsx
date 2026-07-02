@@ -341,6 +341,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
     receiptTemplate: "Predicted:\nDrink sugar: {num1}%\nEspresso: {num2}ml\nTotal price: ${result}\nHave a magic day!",
     receiptFont: "cursive",
     appLocale: locale as any,
+    instaTriggerCode: "0000",
+    stealthIndicatorMode: "label",
   });
 
   // 버튼 홀딩 상태
@@ -460,7 +462,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
   // 수식 계산 처리
   const calculateResult = () => {
     // 0000 = 입력 시 인스타그램 페이지 전환
-    if (equation === "0000") {
+    const triggerCode = config.instaTriggerCode || "0000";
+    if (equation === triggerCode) {
       triggerDimmingFeedback();
       setTimeout(() => {
         // 피킹 데이터를 인스타그램으로 넘기기 위해 세션 캐시 저장
@@ -1157,7 +1160,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium transition-colors bg-[#A5A5A5] text-black active:bg-[#D9D9D9]"
               >
-                {isEraseLeftActive ? "-/+" : "+/-"}
+                <span className={config.stealthIndicatorMode === "shift" && isEraseLeftActive ? "inline-block -translate-y-1 scale-95" : "inline-block"}>
+                  {config.stealthIndicatorMode === "label" && isEraseLeftActive ? "-/+" : "+/-"}
+                </span>
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "%")}
@@ -1278,8 +1283,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "." && handleKeyPress(".")}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
               >
-                {/* 포스 모드 ON이면 점이 가운데(·)로 올라와 동작 표시, 평소엔 일반 소수점(.) */}
-                {isForceActive ? "·" : "."}
+                <span className={config.stealthIndicatorMode === "shift" && isForceActive ? "inline-block translate-x-1 font-bold" : "inline-block"}>
+                  {config.stealthIndicatorMode === "label" && isForceActive ? "·" : "."}
+                </span>
               </button>
               <button
                 onTouchStart={handleEqualStart}
@@ -1418,7 +1424,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#2E2E30] text-[#E6E6E6] active:bg-[#3A3A3C] transition-colors"
               >
-                {isEraseLeftActive ? "-/+" : "+/−"}
+                <span className={config.stealthIndicatorMode === "shift" && isEraseLeftActive ? "inline-block -translate-y-1 scale-95" : "inline-block"}>
+                  {config.stealthIndicatorMode === "label" && isEraseLeftActive ? "-/+" : "+/−"}
+                </span>
               </button>
               <button
                 onTouchStart={() => (isPressingKeyRef.current = "0")}
@@ -1432,8 +1440,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 onTouchEnd={() => isPressingKeyRef.current === "." && handleKeyPress(".")}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl bg-[#2E2E30] text-white active:bg-[#3A3A3C] transition-colors"
               >
-                {/* 포스 모드 ON이면 점이 가운데(·)로 올라와 동작 표시, 평소엔 일반 소수점(.) */}
-                {isForceActive ? "·" : "."}
+                <span className={config.stealthIndicatorMode === "shift" && isForceActive ? "inline-block translate-x-1 font-bold" : "inline-block"}>
+                  {config.stealthIndicatorMode === "label" && isForceActive ? "·" : "."}
+                </span>
               </button>
               <button
                 onTouchStart={handleEqualStart}
@@ -1620,6 +1629,55 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 </div>
               </div>
 
+              {/* 3-2. 마술 트릭 및 연동 설정 */}
+              <div className="space-y-4 rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4">
+                <h3 className="text-sm font-semibold text-[#A855F7]">
+                  {config.appLocale === "ko" ? "트릭 및 연동 설정" : "Trick & Morph Settings"}
+                </h3>
+
+                {/* 인스타 진입 코드 */}
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#9CA3AF]">
+                    {config.appLocale === "ko" ? "인스타그램 연동 비밀번호" : "Instagram Trigger Code"}
+                  </label>
+                  <input
+                    type="text"
+                    value={config.instaTriggerCode || "0000"}
+                    onChange={(e) => saveConfig({ ...config, instaTriggerCode: e.target.value.replace(/[^0-9]/g, "") })}
+                    maxLength={10}
+                    className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-3 py-2"
+                    placeholder="예: 0000"
+                  />
+                  <p className="text-[9px] text-gray-500">
+                    {config.appLocale === "ko"
+                      ? "• 계산기 화면에서 이 숫자를 치고 '='을 누르면 인스타그램으로 전환됩니다."
+                      : "• Enter this code and press '=' to transition to Instagram."}
+                  </p>
+                </div>
+
+                {/* 비밀 상태 표시 방식 */}
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#9CA3AF]">
+                    {config.appLocale === "ko" ? "비밀 상태 표시 방식" : "Stealth Indicator Mode"}
+                  </label>
+                  <select
+                    value={config.stealthIndicatorMode || "label"}
+                    onChange={(e) => saveConfig({ ...config, stealthIndicatorMode: e.target.value as any })}
+                    className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-3 py-2 focus:outline-none"
+                  >
+                    <option value="label">
+                      {config.appLocale === "ko" ? "심볼 변경 ( . → · , +/- → -/+ )" : "Symbol Change"}
+                    </option>
+                    <option value="shift">
+                      {config.appLocale === "ko" ? "미세 위치 이동 (1px 시프트)" : "Micro Position Shift"}
+                    </option>
+                    <option value="none">
+                      {config.appLocale === "ko" ? "표시 안 함 (완전 비밀)" : "No Visual Indicator"}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
               {/* 4. 감열 프린터 연동 설정 */}
               <div className="space-y-4 rounded-xl bg-[#1A1A2E] border border-[#2D2D4E] p-4">
                 <h3 className="text-sm font-semibold text-[#A855F7] flex items-center gap-1.5">
@@ -1742,6 +1800,8 @@ interface MagicConfig {
   receiptTemplate: string;
   receiptFont: "gothic" | "myeongjo" | "cursive";
   appLocale: "ko" | "en" | "ja" | "zh-CN" | "es" | "fr" | "de";
+  instaTriggerCode?: string;
+  stealthIndicatorMode?: "label" | "shift" | "none";
 }
 
 // Web Bluetooth API 타입 캐스팅
