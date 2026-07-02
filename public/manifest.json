@@ -4,7 +4,7 @@
   "short_name": "Calculator",
   "start_url": "/en/calc",
   "scope": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",
