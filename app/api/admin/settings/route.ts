@@ -24,11 +24,17 @@ export async function GET() {
   const biz_communication_reg = await getSetting(supabase, "biz_communication_reg", process.env.BIZ_COMMUNICATION_REG || "");
   const biz_privacy_officer = await getSetting(supabase, "biz_privacy_officer", process.env.BIZ_PRIVACY_OFFICER || "장준원 (jun923008@gmail.com)");
 
+  const newsletter_percent = parseFloat(await getSetting(supabase, "newsletter_coupon_percent", "10"));
+  const newsletterCoupon = {
+    percent: Number.isFinite(newsletter_percent) ? newsletter_percent : 10,
+  };
+
   return NextResponse.json({
     pointEarnRate,
     signupCoupon,
     wishlistCoupon,
     cartCoupon,
+    newsletterCoupon,
     bizDetails: {
       biz_name,
       biz_reg,
@@ -140,6 +146,18 @@ export async function POST(request: NextRequest) {
 
     if (!ok) return NextResponse.json({ error: "저장에 실패했습니다." }, { status: 500 });
     return NextResponse.json({ ok: true });
+  }
+
+  // 뉴스레터 구독 환영 쿠폰 설정
+  if (body?.newsletterCoupon) {
+    const { percent } = body.newsletterCoupon;
+    const p = Number(percent);
+    if (!Number.isFinite(p) || p < 0 || p > 100) {
+      return NextResponse.json({ error: "할인율은 0~100% 사이여야 합니다." }, { status: 400 });
+    }
+    const ok = await setSetting(supabase, "newsletter_coupon_percent", String(p));
+    if (!ok) return NextResponse.json({ error: "저장에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ ok: true, newsletterCoupon: { percent: p } });
   }
 
   // 포인트 적립률 설정

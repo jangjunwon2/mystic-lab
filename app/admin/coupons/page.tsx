@@ -1,7 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { getSignupCouponConfig, getWishlistCouponConfig, getCartCouponConfig } from "@/lib/promotions";
+import { getSetting } from "@/lib/settings";
 import CouponsAdminClient, { type IssuedCoupon, type ProductOption } from "@/components/admin/CouponsAdminClient";
 import SignupCouponCard from "@/components/admin/SignupCouponCard";
+import NewsletterCouponCard from "@/components/admin/NewsletterCouponCard";
 import WishlistCouponCard from "@/components/admin/WishlistCouponCard";
 import PromoDashboard, { type DashboardStats } from "@/components/admin/PromoDashboard";
 import CartCouponCard from "@/components/admin/CartCouponCard";
@@ -66,6 +68,13 @@ export default async function AdminCouponsPage() {
   const signupCoupon = await getSignupCouponConfig(admin);
   const wishlistCoupon = await getWishlistCouponConfig(admin);
   const cartCoupon = await getCartCouponConfig(admin);
+
+  const newsletterPercentRaw = await getSetting(admin, "newsletter_coupon_percent", "10");
+  const newsletterPercent = parseFloat(newsletterPercentRaw);
+  const newsletterCoupon = {
+    percent: Number.isFinite(newsletterPercent) ? newsletterPercent : 10,
+  };
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adminAny = admin as any;
 
@@ -107,8 +116,9 @@ export default async function AdminCouponsPage() {
         </p>
       </div>
       <PromoDashboard stats={stats} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
         <SignupCouponCard initial={signupCoupon} />
+        <NewsletterCouponCard initial={newsletterCoupon} />
         <WishlistCouponCard initial={wishlistCoupon} />
         <CartCouponCard initial={cartCoupon} />
       </div>
