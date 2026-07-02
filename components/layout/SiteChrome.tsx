@@ -18,7 +18,8 @@ function isAppRoute(pathname: string): boolean {
 export default function SiteChrome({ banner, header, footer, children }: Props) {
   const pathname = usePathname();
 
-  if (isAppRoute(pathname)) {
+  // 하이드레이션 초기 단계(pathname이 null)이거나 마술 앱 경로인 경우 헤더/푸터를 그리지 않아 깜빡임 방지
+  if (!pathname || isAppRoute(pathname)) {
     return <>{children}</>;
   }
 

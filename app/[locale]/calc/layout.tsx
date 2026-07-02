@@ -18,5 +18,19 @@ export const viewport: Viewport = {
 };
 
 export default function CalcLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            try {
+              document.body.style.backgroundColor = "#000000";
+              document.documentElement.style.backgroundColor = "#000000";
+            } catch (e) {}
+          `,
+        }}
+      />
+      {children}
+    </>
+  );
 }

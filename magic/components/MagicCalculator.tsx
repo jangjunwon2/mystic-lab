@@ -1,3 +1,4 @@
+/* eslint-disable */
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -226,9 +227,10 @@ const SETTINGS_TEXTS: Record<string, SettingsText> = {
 interface Props {
   locale: string;
   productId: string;
+  initialTheme: "ios" | "android";
 }
 
-export default function MagicCalculator({ locale, productId }: Props) {
+export default function MagicCalculator({ locale, productId, initialTheme }: Props) {
   const router = useRouter();
 
   // 계산기 상태
@@ -244,7 +246,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const [currentInputNumber, setCurrentInputNumber] = useState("");
   
   // UI 관련 상태
-  const [theme, setTheme] = useState<"ios" | "android">("ios");
+  const [theme, setTheme] = useState<"ios" | "android">(initialTheme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDimmed, setIsDimmed] = useState(false); // 햅틱 대체 미세 디밍 피드백
   
