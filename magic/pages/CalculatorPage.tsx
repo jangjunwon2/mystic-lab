@@ -1,4 +1,4 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
@@ -91,11 +91,6 @@ export default async function CalculatorPage({ params }: Props) {
     redirect(`/api/magic/auto-activate?slug=magic-calculator&next=/${locale}/calc`);
   }
 
-  const reqHeaders = await headers();
-  const ua = reqHeaders.get("user-agent") || "";
-  const isAndroid = ua.toLowerCase().includes("android");
-  const initialTheme = isAndroid ? "android" : "ios";
-
   // 미인증 시 접근 차단 페이지 렌더링
   if (!authorized) {
     const tc = await getTranslations("calc");
@@ -174,7 +169,7 @@ export default async function CalculatorPage({ params }: Props) {
   // 인증 성공 시 클라이언트 PWA 래퍼 및 마술 계산기 서빙
   return (
     <ClientPwaWrapper locale={locale}>
-      <MagicCalculator locale={locale} productId={productId!} initialTheme={initialTheme} />
+      <MagicCalculator locale={locale} productId={productId!} />
     </ClientPwaWrapper>
   );
 }

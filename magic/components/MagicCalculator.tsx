@@ -227,10 +227,9 @@ const SETTINGS_TEXTS: Record<string, SettingsText> = {
 interface Props {
   locale: string;
   productId: string;
-  initialTheme: "ios" | "android";
 }
 
-export default function MagicCalculator({ locale, productId, initialTheme }: Props) {
+export default function MagicCalculator({ locale, productId }: Props) {
   const router = useRouter();
 
   // 계산기 상태
@@ -246,7 +245,8 @@ export default function MagicCalculator({ locale, productId, initialTheme }: Pro
   const [currentInputNumber, setCurrentInputNumber] = useState("");
   
   // UI 관련 상태
-  const [theme, setTheme] = useState<"ios" | "android">(initialTheme);
+  const [theme, setTheme] = useState<"ios" | "android">("ios");
+  const [mounted, setMounted] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDimmed, setIsDimmed] = useState(false); // 햅틱 대체 미세 디밍 피드백
   
@@ -295,6 +295,7 @@ export default function MagicCalculator({ locale, productId, initialTheme }: Pro
     } else {
       setTheme(config.osTheme);
     }
+    setMounted(true);
   }, [config.osTheme]);
 
   // 로컬 스토리지에서 마술 설정 복원 (기기별 저장 → 사용자마다 각자 설정 유지)
@@ -835,6 +836,15 @@ export default function MagicCalculator({ locale, productId, initialTheme }: Pro
   // 다국어 매뉴얼 리소스 가져오기
   const manual = MANUAL_TEXTS[locale] ?? MANUAL_TEXTS.en;
 
+  if (!mounted) {
+    return (
+      <div
+        className="fixed inset-0 w-full h-full"
+        style={{ background: "#000000" }}
+      />
+    );
+  }
+
   return (
     <div
       className="fixed inset-0 flex flex-col justify-end w-full select-none overflow-hidden"
@@ -974,7 +984,7 @@ export default function MagicCalculator({ locale, productId, initialTheme }: Pro
         <div
           className={`grid grid-cols-4 ${theme === "android" ? "gap-x-4 gap-y-2.5 px-3.5" : "gap-3.5 px-5"}`}
           style={theme === "android"
-            ? { paddingBottom: "env(safe-area-inset-bottom)" }
+            ? { paddingBottom: "max(24px, env(safe-area-inset-bottom))" }
             : { height: "60vh", paddingBottom: "max(2rem, env(safe-area-inset-bottom))" }}
         >
           {theme === "ios" ? (
