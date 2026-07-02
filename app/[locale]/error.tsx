@@ -26,9 +26,13 @@ export default function LocaleError({
     if (error.digest) console.error("[error]", error.digest);
   }, [error]);
 
-  const pathname = usePathname();
-  const locale = pathname.split("/")[1] || "en";
+  const pathname = usePathname() || "";
+  const pathLocale = pathname.split("/")[1];
+  const locales = ["en", "ko", "ja", "zh-CN", "es", "fr", "de"];
+  const isLocale = locales.includes(pathLocale);
+  const locale = isLocale ? pathLocale : "en";
   const t = content[locale] ?? content.en;
+  const homePath = isLocale ? `/${locale}` : "/en";
 
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 p-8">
@@ -48,7 +52,7 @@ export default function LocaleError({
           {t.retry}
         </button>
         <Link
-          href={`/${locale}`}
+          href={homePath}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors border border-[#2D2D4E] text-[#9CA3AF] hover:text-[#F0E6FF]"
         >
           <Home className="w-4 h-4" />
