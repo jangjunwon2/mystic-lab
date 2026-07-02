@@ -1000,6 +1000,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   return (
     <div
+      id="calc-root"
       className="fixed inset-0 flex flex-col justify-end w-full select-none overflow-hidden"
       style={{
         background: "#000000",

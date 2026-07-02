@@ -43,6 +43,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* 마술 앱 페이지일 경우 html, body 배경을 순수 검은색으로 고정하여 시스템 바 여백 제거 */
+html:has(#calc-root), body:has(#calc-root),
+html:has(#insta-root), body:has(#insta-root) {
+  background-color: #000000 !important;
+  background: #000000 !important;
+}
+
 /* 줄바꿈 타이포그래피 — 기기 폭에 따라 어색하게 끊기는 현상 개선.
    · text-wrap: balance  → 제목 줄들을 균형 있게 분배(예쁜 헤드라인 래핑)
    · text-wrap: pretty    → 본문 마지막 줄 외톨이(orphan) 방지

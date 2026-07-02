@@ -313,6 +313,7 @@ export default function FakeInstagramApp({ locale, productId }: Props) {
 
   return (
     <div
+      id="insta-root"
       className="fixed inset-0 w-full bg-black text-white select-none overflow-hidden flex flex-col font-sans"
       style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", overscrollBehavior: "none" }}
     >
