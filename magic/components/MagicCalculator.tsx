@@ -352,8 +352,6 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const equalHoldFiredRef = useRef(false);
   const isPressingKeyRef = useRef<string | null>(null);
   const percentHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const percentTapCountRef = useRef<number>(0);
-  const lastPercentTapTimeRef = useRef<number>(0);
 
   const [statusBarTime, setStatusBarTime] = useState("9:41");
   const [isBatteryFlashing, setIsBatteryFlashing] = useState(false);
@@ -742,6 +740,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
   };
 
   const handlePercentEnd = () => {
+    const wasShortTap = percentHoldTimerRef.current !== null;
     if (percentHoldTimerRef.current) {
       clearTimeout(percentHoldTimerRef.current);
       percentHoldTimerRef.current = null;
@@ -750,18 +749,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
     if (isPressingKeyRef.current !== "%") return;
     isPressingKeyRef.current = null;
 
-    const now = Date.now();
-    if (now - lastPercentTapTimeRef.current > 1500) {
-      percentTapCountRef.current = 1;
-    } else {
-      percentTapCountRef.current += 1;
-    }
-    lastPercentTapTimeRef.current = now;
-
-    if (percentTapCountRef.current >= 5) {
-      percentTapCountRef.current = 0;
-      transitionToInstagram();
-    } else {
+    if (wasShortTap) {
       handlePercent();
     }
   };
