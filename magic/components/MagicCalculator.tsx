@@ -9,6 +9,7 @@ import {
   Clock, Ruler, Delete
 } from "lucide-react";
 import AppUnlockForm from "./AppUnlockForm";
+import { createClient } from "@/lib/supabase/client";
 
 // Google Fonts 동적 로드용 링크 컴포넌트
 function GoogleFontsLink() {
@@ -343,6 +344,15 @@ export default function MagicCalculator({ locale, productId }: Props) {
     appLocale: locale as any,
     instaTriggerCode: "0000",
     stealthIndicatorMode: "label",
+    isRemotePeekEnabled: false,
+    peekRoomId: "1004",
+    storyPredictionEnabled: false,
+    storyTextX: "42%",
+    storyTextY: "54%",
+    storyTextRotate: -4,
+    storyTextColor: "#2b2b2b",
+    storyTextSize: 22,
+    storyTextFont: "NanumPen",
   });
 
   // 버튼 홀딩 상태
@@ -352,9 +362,12 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const equalHoldFiredRef = useRef(false);
   const isPressingKeyRef = useRef<string | null>(null);
   const percentHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const plusMinusHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const plusMinusHoldFiredRef = useRef(false);
 
   const [statusBarTime, setStatusBarTime] = useState("9:41");
   const [isBatteryFlashing, setIsBatteryFlashing] = useState(false);
+  const [isCellularFlashing, setIsCellularFlashing] = useState(false);
 
   // 상단 상태바 실시간 시각 동기화
   useEffect(() => {
@@ -711,6 +724,36 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }
   };
 
+  // Supabase 실시간 브로드캐스트 채널 전송
+  useEffect(() => {
+    if (!config.isRemotePeekEnabled || !config.peekRoomId) return;
+
+    try {
+      const supabase = createClient();
+      const channel = supabase.channel(`ml_peek_${config.peekRoomId}`);
+      
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          channel.send({
+            type: "broadcast",
+            event: "calc_peek",
+            payload: {
+              display,
+              peekLogs,
+              isForceActive,
+            },
+          });
+        }
+      });
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (e) {
+      console.error(e);
+    }
+  }, [display, peekLogs, isForceActive, config.isRemotePeekEnabled, config.peekRoomId]);
+
   // 인스타 페이지로 비밀 전환하는 공통 함수
   const transitionToInstagram = () => {
     triggerDimmingFeedback();
@@ -720,11 +763,61 @@ export default function MagicCalculator({ locale, productId }: Props) {
           num1: peekLogs[0] ?? "0",
           num2: peekLogs[1] ?? "0",
           result: isForceActive ? getForceValue() : display,
+          // 스토리 예언 활성화 여부 및 스타일 오버레이 정보 전달
+          storyPredictionEnabled: config.storyPredictionEnabled,
+          storyTextX: config.storyTextX,
+          storyTextY: config.storyTextY,
+          storyTextRotate: config.storyTextRotate,
+          storyTextColor: config.storyTextColor,
+          storyTextSize: config.storyTextSize,
+          storyTextFont: config.storyTextFont,
         };
         localStorage.setItem("ml_calc_instagram_prediction", JSON.stringify(logData));
       } catch { /* ignore */ }
       router.push(`/${config.appLocale}/calc/instagram`);
     }, 500);
+  };
+
+  const handlePlusMinusStart = () => {
+    if (isPressingKeyRef.current === "+/-") return;
+    isPressingKeyRef.current = "+/-";
+    plusMinusHoldFiredRef.current = false;
+    
+    if (plusMinusHoldTimerRef.current) clearTimeout(plusMinusHoldTimerRef.current);
+    plusMinusHoldTimerRef.current = setTimeout(() => {
+      // 2초 롱탭 시 스토리 예언 모드 토글!
+      plusMinusHoldFiredRef.current = true;
+      const nextEnabled = !config.storyPredictionEnabled;
+      saveConfig({ ...config, storyPredictionEnabled: nextEnabled });
+      
+      // 피드백: 햅틱 진동 + 상단 안테나(Cellular) 3회 점멸
+      if (typeof window !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([100, 100, 100]); // 3번 짧게 징-징-징
+      }
+      setIsCellularFlashing(true);
+      setTimeout(() => setIsCellularFlashing(false), 1500);
+
+      plusMinusHoldTimerRef.current = null;
+      isPressingKeyRef.current = null;
+    }, 2000);
+  };
+
+  const handlePlusMinusEnd = () => {
+    if (plusMinusHoldTimerRef.current) {
+      clearTimeout(plusMinusHoldTimerRef.current);
+      plusMinusHoldTimerRef.current = null;
+    }
+    
+    if (isPressingKeyRef.current !== "+/-") return;
+    isPressingKeyRef.current = null;
+
+    if (plusMinusHoldFiredRef.current) {
+      plusMinusHoldFiredRef.current = false;
+      return;
+    }
+
+    // 짧은 탭 -> 기존 삭제 모드 토글
+    handlePlusMinusClick();
   };
 
   const handlePercentStart = () => {
@@ -1129,6 +1222,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
           .battery-blink-3 {
             animation: battery-blink 0.4s ease-in-out 3;
           }
+          .cellular-blink-3 {
+            animation: battery-blink 0.4s ease-in-out 3;
+          }
         `}</style>
 
         {/* ── 위장 상태바 (Camouflage Status Bar) ── */}
@@ -1136,21 +1232,23 @@ export default function MagicCalculator({ locale, productId }: Props) {
           <div>{statusBarTime}</div>
           <div className="flex items-center gap-1.5">
             {/* Cellular Signal Icons */}
-            {theme === "ios" ? (
-              <div className="flex items-end gap-[1.5px] h-2.5">
-                <div className="w-[3px] h-[3px] bg-white rounded-full" />
-                <div className="w-[3px] h-[5px] bg-white rounded-full" />
-                <div className="w-[3px] h-[7px] bg-white rounded-full" />
-                <div className="w-[3px] h-[9px] bg-white rounded-full" />
-              </div>
-            ) : (
-              <div className="flex items-end gap-[1px] h-2.5">
-                <div className="w-[2px] h-[2px] bg-white" />
-                <div className="w-[2px] h-[4px] bg-white" />
-                <div className="w-[2px] h-[6px] bg-white" />
-                <div className="w-[2px] h-[8px] bg-white" />
-              </div>
-            )}
+            <div className={isCellularFlashing ? "cellular-blink-3" : ""}>
+              {theme === "ios" ? (
+                <div className="flex items-end gap-[1.5px] h-2.5">
+                  <div className="w-[3px] h-[3px] bg-white rounded-full" />
+                  <div className="w-[3px] h-[5px] bg-white rounded-full" />
+                  <div className="w-[3px] h-[7px] bg-white rounded-full" />
+                  <div className="w-[3px] h-[9px] bg-white rounded-full" />
+                </div>
+              ) : (
+                <div className="flex items-end gap-[1px] h-2.5">
+                  <div className="w-[2px] h-[2px] bg-white" />
+                  <div className="w-[2px] h-[4px] bg-white" />
+                  <div className="w-[2px] h-[6px] bg-white" />
+                  <div className="w-[2px] h-[8px] bg-white" />
+                </div>
+              )}
+            </div>
 
             {/* Wifi Icon */}
             <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
@@ -1279,8 +1377,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 {equation ? "C" : "AC"}
               </button>
               <button
-                onTouchStart={() => (isPressingKeyRef.current = "+/-")}
-                onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
+                onTouchStart={handlePlusMinusStart}
+                onTouchEnd={handlePlusMinusEnd}
+                onMouseDown={handlePlusMinusStart}
+                onMouseUp={handlePlusMinusEnd}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium transition-colors bg-[#A5A5A5] text-black active:bg-[#D9D9D9]"
               >
                 +/-
@@ -1546,8 +1646,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
               {/* Row 5 — +/−, 0, ., = */}
               <button
-                onTouchStart={() => (isPressingKeyRef.current = "+/-")}
-                onTouchEnd={() => isPressingKeyRef.current === "+/-" && handlePlusMinusClick()}
+                onTouchStart={handlePlusMinusStart}
+                onTouchEnd={handlePlusMinusEnd}
+                onMouseDown={handlePlusMinusStart}
+                onMouseUp={handlePlusMinusEnd}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#2E2E30] text-[#E6E6E6] active:bg-[#3A3A3C] transition-colors"
               >
                 +/−
@@ -1779,6 +1881,129 @@ export default function MagicCalculator({ locale, productId }: Props) {
                       : "• Enter this code and press '=' to transition to Instagram."}
                   </p>
                 </div>
+
+                {/* 인스타 스토리 예언 활성화 */}
+                <div className="space-y-3 pt-3 border-t border-[#2D2D4E]/50">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[#F0E6FF]">
+                      {config.appLocale === "ko" ? "인스타 스토리 예언 활성화" : "Enable Insta Story Prediction"}
+                    </label>
+                    <input
+                      type="checkbox"
+                      checked={!!config.storyPredictionEnabled}
+                      onChange={(e) => saveConfig({ ...config, storyPredictionEnabled: e.target.checked })}
+                      className="w-4 h-4 accent-[#7C3AED] cursor-pointer"
+                    />
+                  </div>
+                  {config.storyPredictionEnabled && (
+                    <div className="space-y-2.5 pl-3 border-l border-[#2D2D4E] mt-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-[#9CA3AF]">X Position</label>
+                          <input
+                            type="text"
+                            value={config.storyTextX || "42%"}
+                            onChange={(e) => saveConfig({ ...config, storyTextX: e.target.value })}
+                            className="w-full rounded-md bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-2 py-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-[#9CA3AF]">Y Position</label>
+                          <input
+                            type="text"
+                            value={config.storyTextY || "54%"}
+                            onChange={(e) => saveConfig({ ...config, storyTextY: e.target.value })}
+                            className="w-full rounded-md bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-2 py-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-[#9CA3AF]">Rotation (deg)</label>
+                          <input
+                            type="number"
+                            value={config.storyTextRotate ?? -4}
+                            onChange={(e) => saveConfig({ ...config, storyTextRotate: parseInt(e.target.value, 10) || 0 })}
+                            className="w-full rounded-md bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-2 py-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-[#9CA3AF]">Font Size (px)</label>
+                          <input
+                            type="number"
+                            value={config.storyTextSize ?? 22}
+                            onChange={(e) => saveConfig({ ...config, storyTextSize: parseInt(e.target.value, 10) || 0 })}
+                            className="w-full rounded-md bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-2 py-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-[#9CA3AF]">Text Color</label>
+                          <input
+                            type="text"
+                            value={config.storyTextColor || "#2b2b2b"}
+                            onChange={(e) => saveConfig({ ...config, storyTextColor: e.target.value })}
+                            className="w-full rounded-md bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-2 py-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-[#9CA3AF]">Font Style</label>
+                          <select
+                            value={config.storyTextFont || "NanumPen"}
+                            onChange={(e) => saveConfig({ ...config, storyTextFont: e.target.value })}
+                            className="w-full rounded-md bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-2 py-1 focus:outline-none"
+                          >
+                            <option value="NanumPen">NanumPen (손글씨)</option>
+                            <option value="sans-serif">Sans-Serif (고딕)</option>
+                            <option value="serif">Serif (명조)</option>
+                            <option value="cursive">Cursive (필기)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-[9px] text-gray-500">
+                        {config.appLocale === "ko"
+                          ? "• 단축키: '+/-' 버튼을 2초간 누르면 홈 화면 스토리 예언 모드가 활성화됩니다. 활성화 시 상단 안테나(Cellular)가 3번 깜빡입니다."
+                          : "• Shortcut: Hold '+/-' for 2 seconds to toggle story prediction. The cellular icon flashes 3 times upon toggle."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 원격 피크 미러링 설정 */}
+                <div className="space-y-3 pt-3 border-t border-[#2D2D4E]/50">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[#F0E6FF]">
+                      {config.appLocale === "ko" ? "실시간 원격 피킹 활성화" : "Enable Remote Realtime Peek"}
+                    </label>
+                    <input
+                      type="checkbox"
+                      checked={!!config.isRemotePeekEnabled}
+                      onChange={(e) => saveConfig({ ...config, isRemotePeekEnabled: e.target.checked })}
+                      className="w-4 h-4 accent-[#7C3AED] cursor-pointer"
+                    />
+                  </div>
+                  {config.isRemotePeekEnabled && (
+                    <div className="space-y-2 pl-3 border-l border-[#2D2D4E] mt-2">
+                      <label className="text-xs text-[#9CA3AF]">
+                        {config.appLocale === "ko" ? "피킹 룸 ID" : "Peek Room ID"}
+                      </label>
+                      <input
+                        type="text"
+                        value={config.peekRoomId || "1004"}
+                        onChange={(e) => saveConfig({ ...config, peekRoomId: e.target.value.replace(/[^0-9]/g, "") })}
+                        maxLength={10}
+                        className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-3 py-2"
+                        placeholder="예: 1004"
+                      />
+                      <p className="text-[9px] text-gray-500">
+                        {config.appLocale === "ko"
+                          ? `• 원격 뷰어: /ko/calc/peek?room=${config.peekRoomId || '1004'}`
+                          : `• Viewer link: /en/calc/peek?room=${config.peekRoomId || '1004'}`}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* 4. 감열 프린터 연동 설정 */}
@@ -1905,6 +2130,15 @@ interface MagicConfig {
   appLocale: "ko" | "en" | "ja" | "zh-CN" | "es" | "fr" | "de";
   instaTriggerCode?: string;
   stealthIndicatorMode?: "label" | "shift" | "none";
+  isRemotePeekEnabled?: boolean;
+  peekRoomId?: string;
+  storyPredictionEnabled?: boolean;
+  storyTextX?: string;
+  storyTextY?: string;
+  storyTextRotate?: number;
+  storyTextColor?: string;
+  storyTextSize?: number;
+  storyTextFont?: string;
 }
 
 // Web Bluetooth API 타입 캐스팅

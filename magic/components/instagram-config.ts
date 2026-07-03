@@ -98,7 +98,18 @@ export function avatarGradient(seed: string): string {
 }
 
 // 계산기 연동 예언값 — 계산기가 저장한 관객 피킹/포스값.
-export interface CalcPrediction { num1: string; num2: string; result: string }
+export interface CalcPrediction {
+  num1: string;
+  num2: string;
+  result: string;
+  storyPredictionEnabled?: boolean;
+  storyTextX?: string;
+  storyTextY?: string;
+  storyTextRotate?: number;
+  storyTextColor?: string;
+  storyTextSize?: number;
+  storyTextFont?: string;
+}
 const CALC_PREDICTION_KEY = "ml_calc_instagram_prediction";
 
 export function loadCalcPrediction(): CalcPrediction | null {
@@ -106,7 +117,18 @@ export function loadCalcPrediction(): CalcPrediction | null {
     const raw = localStorage.getItem(CALC_PREDICTION_KEY);
     if (!raw) return null;
     const p = JSON.parse(raw);
-    return { num1: String(p?.num1 ?? ""), num2: String(p?.num2 ?? ""), result: String(p?.result ?? "") };
+    return {
+      num1: String(p?.num1 ?? ""),
+      num2: String(p?.num2 ?? ""),
+      result: String(p?.result ?? ""),
+      storyPredictionEnabled: !!p?.storyPredictionEnabled,
+      storyTextX: p?.storyTextX ? String(p.storyTextX) : undefined,
+      storyTextY: p?.storyTextY ? String(p.storyTextY) : undefined,
+      storyTextRotate: typeof p?.storyTextRotate === "number" ? p.storyTextRotate : undefined,
+      storyTextColor: p?.storyTextColor ? String(p.storyTextColor) : undefined,
+      storyTextSize: typeof p?.storyTextSize === "number" ? p.storyTextSize : undefined,
+      storyTextFont: p?.storyTextFont ? String(p.storyTextFont) : undefined,
+    };
   } catch {
     return null;
   }

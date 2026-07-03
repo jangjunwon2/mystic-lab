@@ -461,7 +461,7 @@ export default function FakeInstagramApp({ locale, productId, slug }: Props) {
       {/* 스토리 뷰어 (풀스크린 오버레이) */}
       <AnimatePresence>
         {storyStart !== null && (
-          <StoryViewer config={config} ui={ui} startIndex={storyStart} onClose={() => setStoryStart(null)} />
+          <StoryViewer config={config} ui={ui} startIndex={storyStart} onClose={() => setStoryStart(null)} prediction={prediction} />
         )}
       </AnimatePresence>
 
@@ -745,8 +745,9 @@ function ProfileView({
 }
 
 // ─── 스토리 뷰어 (풀스크린) ───
-function StoryViewer({ config, ui, startIndex, onClose }: {
+function StoryViewer({ config, ui, startIndex, onClose, prediction }: {
   config: InstaConfig; ui: UiStrings; startIndex: number; onClose: () => void;
+  prediction?: CalcPrediction | null;
 }) {
   const stories = useMemo<InstaStory[]>(() => [
     { id: "me", username: config.username, avatar: config.avatar, image: config.posts[0]?.image || config.avatar || AVATAR_FALLBACK },
@@ -774,6 +775,11 @@ function StoryViewer({ config, ui, startIndex, onClose }: {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="absolute inset-0 z-[200] bg-black flex flex-col">
+      {/* Google Font 로드 (필기체용) */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
+      `}</style>
+
       {/* 진행 바 */}
       <div className="flex gap-1 px-2 pt-2">
         {stories.map((s, i) => (
@@ -792,6 +798,30 @@ function StoryViewer({ config, ui, startIndex, onClose }: {
       <div className="flex-1 relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={cur.image || AVATAR_FALLBACK} alt="" className="absolute inset-0 w-full h-full object-contain" />
+
+        {/* 스토리 예언 텍스트 합성 */}
+        {prediction?.storyPredictionEnabled && cur.id === "me" && prediction?.result && (
+          <div
+            className="absolute pointer-events-none select-none"
+            style={{
+              left: prediction.storyTextX || "42%",
+              top: prediction.storyTextY || "54%",
+              transform: `translate(-50%, -50%) rotate(${prediction.storyTextRotate ?? -4}deg)`,
+              color: prediction.storyTextColor || "#2b2b2b",
+              fontSize: `${prediction.storyTextSize ?? 22}px`,
+              fontFamily:
+                prediction.storyTextFont === "NanumPen"
+                  ? "'Nanum Pen Script', cursive"
+                  : prediction.storyTextFont || "sans-serif",
+              whiteSpace: "nowrap",
+              mixBlendMode: "multiply",
+              fontWeight: "600",
+            }}
+          >
+            {prediction.result}
+          </div>
+        )}
+
         <button aria-label="prev" className="absolute left-0 top-0 w-1/3 h-full" onClick={() => (idx > 0 ? setIdx(idx - 1) : onClose())} />
         <button aria-label="next" className="absolute right-0 top-0 w-2/3 h-full" onClick={() => (idx < stories.length - 1 ? setIdx(idx + 1) : onClose())} />
       </div>
