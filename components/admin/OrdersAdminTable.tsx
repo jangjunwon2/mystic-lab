@@ -87,7 +87,7 @@ function downloadOrdersCSV(orders: Order[]) {
   const rows = orders.map((o) => {
     const items = o.order_items
       .map((i) => {
-        const name = i.products?.product_translations?.find((t) => t.language === "en")?.name ?? i.products?.slug ?? "?";
+        const name = itemName(i);
         return `${name}x${i.quantity}`;
       })
       .join(" | ");
@@ -452,10 +452,7 @@ export default function OrdersAdminTable({ orders: initialOrders }: Props) {
                             <p className="text-xs font-medium mb-2" style={{ color: "#9CA3AF" }}>주문 상품:</p>
                             <div className="space-y-1">
                               {order.order_items.map((item) => {
-                                const name =
-                                  item.products?.product_translations?.find(
-                                    (t) => t.language === "en"
-                                  )?.name ?? item.products?.slug ?? "Unknown";
+                                const name = itemName(item);
                                 return (
                                   <div
                                     key={item.id}

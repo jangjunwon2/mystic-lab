@@ -43,13 +43,18 @@ export default async function AdminVideosPage() {
     created_at: v.created_at,
     product_id: v.products?.id ?? null,
     product_name:
-      v.products?.product_translations?.find((t) => t.language === "en")?.name ?? v.products?.slug ?? "Unknown",
+      v.products?.product_translations?.find((t) => t.language === "ko")?.name ??
+      v.products?.product_translations?.find((t) => t.language === "en")?.name ??
+      v.products?.slug ?? "Unknown",
   }));
 
   const products = ((productsRes.data ?? []) as RawProduct[]).map((p) => ({
     id: p.id,
     slug: p.slug,
-    name: p.product_translations?.find((t) => t.language === "en")?.name ?? p.slug,
+    name:
+      p.product_translations?.find((t) => t.language === "ko")?.name ??
+      p.product_translations?.find((t) => t.language === "en")?.name ??
+      p.slug,
   }));
 
   return (
