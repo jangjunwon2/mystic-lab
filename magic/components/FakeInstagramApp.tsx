@@ -468,7 +468,7 @@ export default function FakeInstagramApp({ locale, productId, slug }: Props) {
       {/* 비밀 설정 패널 */}
       <AnimatePresence>
         {settingsOpen && (
-          <SettingsPanel config={config} locale={locale} onUpdate={update} onClose={() => setSettingsOpen(false)} onExit={() => router.push(`/${locale}/calc`)} />
+          <SettingsPanel config={config} locale={locale} onUpdate={update} onClose={() => setSettingsOpen(false)} onExit={slug === "magic-calculator" ? () => router.push(`/${locale}/calc`) : undefined} />
         )}
       </AnimatePresence>
     </div>
@@ -958,7 +958,7 @@ function DMThreadView({ thread, ui, onBack }: {
 
 // ─── 비밀 설정 패널 ───
 function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
-  config: InstaConfig; locale: string; onUpdate: (patch: Partial<InstaConfig>) => void; onClose: () => void; onExit: () => void;
+  config: InstaConfig; locale: string; onUpdate: (patch: Partial<InstaConfig>) => void; onClose: () => void; onExit?: () => void;
 }) {
   const avatarRef = useRef<HTMLInputElement>(null);
   const postFileRef = useRef<HTMLInputElement>(null);
@@ -1269,7 +1269,7 @@ function SettingsPanel({ config, locale, onUpdate, onClose, onExit }: {
 
         <div className="flex gap-2 pt-2 border-t border-[#2D2D4E]">
           <button onClick={() => { if (confirm(tx.resetConfirm)) onUpdate(defaultInstaConfig(locale)); }} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-red-950/20 border border-red-500/30 text-red-400">{tx.reset}</button>
-          <button onClick={onExit} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-[#1A1A2E] border border-[#2D2D4E] text-[#9CA3AF]">{tx.goCalc}</button>
+          {onExit && <button onClick={onExit} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-[#1A1A2E] border border-[#2D2D4E] text-[#9CA3AF]">{tx.goCalc}</button>}
           <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white">{tx.done}</button>
         </div>
       </div>
