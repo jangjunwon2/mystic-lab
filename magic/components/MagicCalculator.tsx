@@ -1168,12 +1168,26 @@ export default function MagicCalculator({ locale, productId }: Props) {
         <div
           className="absolute top-0 left-0 w-[25vw] h-[15vh] z-50 cursor-pointer"
           onTouchStart={() => {
+            if (leftTopHoldTimerRef.current) clearTimeout(leftTopHoldTimerRef.current);
             leftTopHoldTimerRef.current = setTimeout(() => {
               setIsSettingsOpen(true);
               triggerDimmingFeedback();
             }, 3000);
           }}
           onTouchEnd={() => {
+            if (leftTopHoldTimerRef.current) {
+              clearTimeout(leftTopHoldTimerRef.current);
+              leftTopHoldTimerRef.current = null;
+            }
+          }}
+          onMouseDown={() => {
+            if (leftTopHoldTimerRef.current) clearTimeout(leftTopHoldTimerRef.current);
+            leftTopHoldTimerRef.current = setTimeout(() => {
+              setIsSettingsOpen(true);
+              triggerDimmingFeedback();
+            }, 3000);
+          }}
+          onMouseUp={() => {
             if (leftTopHoldTimerRef.current) {
               clearTimeout(leftTopHoldTimerRef.current);
               leftTopHoldTimerRef.current = null;
@@ -1398,6 +1412,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
               <button
                 onTouchStart={handleEqualStart}
                 onTouchEnd={handleEqualEnd}
+                onMouseDown={handleEqualStart}
+                onMouseUp={handleEqualEnd}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#FF9F0A] text-white active:bg-[#CC7F08] transition-colors"
               >
                 =
@@ -1554,6 +1570,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
               <button
                 onTouchStart={handleEqualStart}
                 onTouchEnd={handleEqualEnd}
+                onMouseDown={handleEqualStart}
+                onMouseUp={handleEqualEnd}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#988E73] text-[#1C1C1E] active:bg-[#847B63] transition-colors"
               >
                 =
