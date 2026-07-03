@@ -351,6 +351,9 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const equalHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
   const equalHoldFiredRef = useRef(false);
   const isPressingKeyRef = useRef<string | null>(null);
+  const percentHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const percentTapCountRef = useRef<number>(0);
+  const lastPercentTapTimeRef = useRef<number>(0);
 
   const [statusBarTime, setStatusBarTime] = useState("9:41");
   const [isBatteryFlashing, setIsBatteryFlashing] = useState(false);
@@ -707,6 +710,59 @@ export default function MagicCalculator({ locale, productId }: Props) {
     isPressingKeyRef.current = null;
     if (wasShortTap) {
       handleKeyPress("9");
+    }
+  };
+
+  // 인스타 페이지로 비밀 전환하는 공통 함수
+  const transitionToInstagram = () => {
+    triggerDimmingFeedback();
+    setTimeout(() => {
+      try {
+        const logData = {
+          num1: peekLogs[0] ?? "0",
+          num2: peekLogs[1] ?? "0",
+          result: isForceActive ? getForceValue() : display,
+        };
+        localStorage.setItem("ml_calc_instagram_prediction", JSON.stringify(logData));
+      } catch { /* ignore */ }
+      router.push(`/${config.appLocale}/calc/instagram`);
+    }, 500);
+  };
+
+  const handlePercentStart = () => {
+    if (isPressingKeyRef.current === "%") return;
+    isPressingKeyRef.current = "%";
+    
+    if (percentHoldTimerRef.current) clearTimeout(percentHoldTimerRef.current);
+    percentHoldTimerRef.current = setTimeout(() => {
+      percentHoldTimerRef.current = null;
+      isPressingKeyRef.current = null;
+      transitionToInstagram();
+    }, 2000);
+  };
+
+  const handlePercentEnd = () => {
+    if (percentHoldTimerRef.current) {
+      clearTimeout(percentHoldTimerRef.current);
+      percentHoldTimerRef.current = null;
+    }
+
+    if (isPressingKeyRef.current !== "%") return;
+    isPressingKeyRef.current = null;
+
+    const now = Date.now();
+    if (now - lastPercentTapTimeRef.current > 1500) {
+      percentTapCountRef.current = 1;
+    } else {
+      percentTapCountRef.current += 1;
+    }
+    lastPercentTapTimeRef.current = now;
+
+    if (percentTapCountRef.current >= 5) {
+      percentTapCountRef.current = 0;
+      transitionToInstagram();
+    } else {
+      handlePercent();
     }
   };
 
@@ -1228,8 +1284,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 +/-
               </button>
               <button
-                onTouchStart={() => (isPressingKeyRef.current = "%")}
-                onTouchEnd={() => isPressingKeyRef.current === "%" && handlePercent()}
+                onTouchStart={handlePercentStart}
+                onTouchEnd={handlePercentEnd}
+                onMouseDown={handlePercentStart}
+                onMouseUp={handlePercentEnd}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#A5A5A5] text-black active:bg-[#D9D9D9] transition-colors"
               >
                 %
@@ -1376,8 +1434,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 ( )
               </button>
               <button
-                onTouchStart={() => (isPressingKeyRef.current = "%")}
-                onTouchEnd={() => isPressingKeyRef.current === "%" && handlePercent()}
+                onTouchStart={handlePercentStart}
+                onTouchEnd={handlePercentEnd}
+                onMouseDown={handlePercentStart}
+                onMouseUp={handlePercentEnd}
                 className="w-full aspect-square rounded-full flex items-center justify-center text-3xl font-medium bg-[#2E2E30] text-[#E6E6E6] active:bg-[#3A3A3C] transition-colors"
               >
                 %
