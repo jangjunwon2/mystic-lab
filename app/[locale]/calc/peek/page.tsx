@@ -221,7 +221,14 @@ function PeekContent() {
             VIBE
           </button>
           <button
-            onClick={() => setIsConnected(false)}
+            onClick={() => {
+              setIsConnected(false);
+              if (typeof window !== "undefined") {
+                const url = new URL(window.location.href);
+                url.searchParams.delete("room");
+                window.history.pushState({}, "", url.toString());
+              }
+            }}
             className="px-2 py-1 rounded text-[10px] font-bold border border-red-500/30 text-red-400"
           >
             EXIT
