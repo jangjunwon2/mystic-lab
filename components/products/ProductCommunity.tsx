@@ -101,6 +101,7 @@ export default function ProductCommunity({ productId, locale, isLoggedIn }: Prop
   }, [productId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isLoggedIn) load();
     else setLoading(false);
   }, [isLoggedIn, load]);
@@ -329,8 +330,9 @@ export default function ProductCommunity({ productId, locale, isLoggedIn }: Prop
                           </div>
                         ) : (
                           <>
-                            <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                              <span style={{ color: "#A855F7" }}>{c.authorName}</span> {c.body}
+                            <p className="text-xs whitespace-pre-wrap break-words" style={{ color: "#9CA3AF" }}>
+                              <span className="font-semibold mr-1.5" style={{ color: "#A855F7" }}>{c.authorName}</span>
+                              {c.body}
                             </p>
                             {(c.mine || isAdmin) && (
                               <div className="flex items-center gap-1 shrink-0">
