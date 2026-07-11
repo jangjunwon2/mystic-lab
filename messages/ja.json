@@ -215,6 +215,7 @@
     "title": "マイアカウント",
     "orders": "注文履歴",
     "tutorials": "マイチュートリアル",
+    "apps": "マジックアプリ",
     "wishlist": "ウィッシュリスト",
     "noOrders": "まだ注文はありません。",
     "noWishlist": "ウィッシュリストは空です。",
@@ -226,6 +227,7 @@
     "adminDashboard": "管理ダッシュボード",
     "browseProducts": "商品を見る",
     "noTutorials": "まだチュートリアルがありません。商品を購入すると解除されます。",
+    "noApps": "まだ利用可能なアプリがありません。商品を購入するとアクセス権が得られます。",
     "orderLabel": "注文",
     "remove": "削除",
     "reviewWrite": "レビューを書く",
@@ -433,7 +435,8 @@
     "lockedBodyGuest": "解法動画は正規購入者のみ視聴できます。ログインするか、デバイスに印刷された秘密コードを入力してください。",
     "signIn": "ログイン",
     "enterDeviceCode": "デバイスコード入力",
-    "myLibrary": "マイライブラリ"
+    "myLibrary": "マイライブラリ",
+    "chaptersTitle": "チャプター"
   },
   "calc": {
     "blockTitle": "正規端末の登録が必要",

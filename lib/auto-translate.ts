@@ -55,6 +55,33 @@ Keep the tone concise and punchy — it's a site banner. Preserve any coupon cod
   }
 }
 
+// 해법영상 챕터 설명 — message 단일 필드 번역
+export async function translateVideoChapter(koDescription: string): Promise<Record<Locale, string>> {
+  if (!koDescription.trim()) return {} as Record<Locale, string>;
+  const prompt = `Translate the following Korean magic tutorial video chapter description into these 6 languages: English, Japanese, Simplified Chinese, Spanish, French, German.
+
+Korean: ${koDescription}
+
+Return ONLY a valid JSON object with this exact structure, no markdown:
+{
+  "en": "...",
+  "ja": "...",
+  "zh-CN": "...",
+  "es": "...",
+  "fr": "...",
+  "de": "..."
+}
+
+Keep it short and clear — it's a clickable chapter label shown next to a timestamp.`;
+
+  try {
+    const text = await callLlm(prompt, 2048);
+    return extractJson<Record<Locale, string>>(text) ?? ({} as Record<Locale, string>);
+  } catch {
+    return {} as Record<Locale, string>;
+  }
+}
+
 interface PromoFields { title: string; subtitle?: string | null; description?: string | null }
 type PromoTranslations = Record<Locale, PromoFields>;
 

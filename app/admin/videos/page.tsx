@@ -11,6 +11,13 @@ interface RawVideo {
   products: { id: string; slug: string; product_translations: { name: string; language: string }[] } | null;
 }
 
+interface RawChapter {
+  id: string;
+  video_id: string;
+  timestamp_seconds: number;
+  video_chapter_translations: { language: string; description: string }[];
+}
+
 interface RawProduct {
   id: string;
   slug: string;
@@ -21,7 +28,7 @@ export default async function AdminVideosPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createAdminClient() as any;
 
-  const [videosRes, productsRes] = await Promise.all([
+  const [videosRes, productsRes, chaptersRes] = await Promise.all([
     supabase
       .from("solution_videos")
       .select(`
@@ -34,7 +41,22 @@ export default async function AdminVideosPage() {
       .select("id, slug, product_translations(name, language)")
       .eq("is_active", true)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("video_chapters")
+      .select("id, video_id, timestamp_seconds, video_chapter_translations(language, description)")
+      .order("timestamp_seconds", { ascending: true }),
   ]);
+
+  const chaptersByVideo = new Map<string, { id: string; timestamp_seconds: number; description_ko: string }[]>();
+  for (const c of (chaptersRes.data ?? []) as RawChapter[]) {
+    const list = chaptersByVideo.get(c.video_id) ?? [];
+    list.push({
+      id: c.id,
+      timestamp_seconds: c.timestamp_seconds,
+      description_ko: c.video_chapter_translations.find((t) => t.language === "ko")?.description ?? "",
+    });
+    chaptersByVideo.set(c.video_id, list);
+  }
 
   const videos = ((videosRes.data ?? []) as RawVideo[]).map((v) => ({
     id: v.id,
@@ -46,6 +68,7 @@ export default async function AdminVideosPage() {
       v.products?.product_translations?.find((t) => t.language === "ko")?.name ??
       v.products?.product_translations?.find((t) => t.language === "en")?.name ??
       v.products?.slug ?? "Unknown",
+    chapters: chaptersByVideo.get(v.id) ?? [],
   }));
 
   const products = ((productsRes.data ?? []) as RawProduct[]).map((p) => ({

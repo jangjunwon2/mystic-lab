@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Package, Play, Heart, LogOut, ChevronRight, Pencil, Check, X, Star, MessageSquare, ExternalLink, MapPin, Trash2, BookmarkCheck, Plus, ChevronDown, Coins, Ticket } from "lucide-react";
+import { Package, Play, Heart, LogOut, ChevronRight, Pencil, Check, X, Star, MessageSquare, ExternalLink, MapPin, Trash2, BookmarkCheck, Plus, ChevronDown, Coins, Ticket, Smartphone } from "lucide-react";
 import { COUNTRIES } from "@/lib/constants/countries";
 import { createClient } from "@/lib/supabase/client";
 import MagicMemberAccess from "@/components/products/MagicMemberAccess";
@@ -128,12 +128,13 @@ interface Props {
   orders: unknown[];
   customOrders?: unknown[];
   wishlist: WishlistItem[];
+  grants?: any[];
 }
 
-export default function AccountClient({ locale, profile, orders, customOrders = [], wishlist }: Props) {
+export default function AccountClient({ locale, profile, orders, customOrders = [], wishlist, grants = [] }: Props) {
   const t = useTranslations("account");
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"orders" | "tutorials" | "wishlist" | "addresses" | "points" | "coupons">("orders");
+  const [activeTab, setActiveTab] = useState<"orders" | "tutorials" | "apps" | "wishlist" | "addresses" | "points" | "coupons">("orders");
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(wishlist);
   const [addresses, setAddresses] = useState<SavedAddress[] | null>(null);
   const [addrLoading, setAddrLoading] = useState(false);
@@ -157,7 +158,14 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
     ["paid", "shipped", "completed"].includes(o.status)
   );
 
-  // 해법 영상 — 동일 상품은 중복 구매여도 1개만 노출
+  // 수동 권한 부여 필터링 (만료되지 않은 것)
+  const activeGrants = grants.filter((g) => {
+    if (!g.products) return false;
+    if (g.expires_at && new Date(g.expires_at) < new Date()) return false;
+    return true;
+  });
+
+  // 해법 영상 — 동일 상품은 중복 구매/부여여도 1개만 노출
   type TutorialProduct = NonNullable<Order["order_items"][number]["products"]>;
   const dedupedTutorials: TutorialProduct[] = (() => {
     const map = new Map<string, TutorialProduct>();
@@ -168,8 +176,17 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
         }
       }
     }
+    for (const grant of activeGrants) {
+      if (grant.products && !map.has(grant.products.id)) {
+        map.set(grant.products.id, grant.products);
+      }
+    }
     return [...map.values()];
   })();
+
+  // 권한이 있는 앱 상품 (계산기, 인스타)
+  const APP_SLUGS = ["magic-calculator", "fake-instagram"];
+  const ownedApps = dedupedTutorials.filter((p) => APP_SLUGS.includes(p.slug));
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -299,7 +316,7 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
 
         {/* Tabs */}
         <div className="flex gap-1 bg-[#1A1A2E] rounded-xl p-1 border border-[#2D2D4E] mb-6 w-fit flex-wrap">
-          {(["orders", "tutorials", "wishlist", "addresses", "points", "coupons"] as const).map((tab) => (
+          {(["orders", "tutorials", "apps", "wishlist", "addresses", "points", "coupons"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -337,6 +354,7 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
             >
               {tab === "orders" ? <Package className="w-3.5 h-3.5" />
                 : tab === "tutorials" ? <Play className="w-3.5 h-3.5" />
+                : tab === "apps" ? <Smartphone className="w-3.5 h-3.5" />
                 : tab === "wishlist" ? <Heart className="w-3.5 h-3.5" />
                 : tab === "addresses" ? <MapPin className="w-3.5 h-3.5" />
                 : tab === "points" ? <Coins className="w-3.5 h-3.5" />
@@ -397,7 +415,7 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            {purchasedOrders.length === 0 ? (
+            {dedupedTutorials.length === 0 ? (
               <div className="text-center py-16 text-[#9CA3AF]">
                 <Play className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="text-sm">{t("noTutorials")}</p>
@@ -412,6 +430,34 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
               <div className="rounded-xl border border-[#2D2D4E] overflow-hidden divide-y divide-[#2D2D4E]">
                 {dedupedTutorials.map((prod) => (
                   <TutorialRow key={prod.id} product={prod} locale={locale} t={t} />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Apps Tab */}
+        {activeTab === "apps" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-4"
+          >
+            {ownedApps.length === 0 ? (
+              <div className="text-center py-16 text-[#9CA3AF]">
+                <Smartphone className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="text-sm">{t("noApps")}</p>
+                <Link
+                  href={`/${locale}/products`}
+                  className="inline-block mt-4 text-sm text-[#A855F7] hover:text-[#C084FC] transition-colors"
+                >
+                  {t("browseProducts")}
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {ownedApps.map((prod) => (
+                  <MagicMemberAccess key={prod.id} productId={prod.id} slug={prod.slug} locale={locale} />
                 ))}
               </div>
             )}

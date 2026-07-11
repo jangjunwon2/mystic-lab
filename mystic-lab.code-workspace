@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../마술/도구 개발 - 복사본"
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}

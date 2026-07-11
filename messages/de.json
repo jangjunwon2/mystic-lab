@@ -215,6 +215,7 @@
     "title": "Mein Konto",
     "orders": "Meine Bestellungen",
     "tutorials": "Meine Tutorials",
+    "apps": "Zauber-Apps",
     "wishlist": "Wunschliste",
     "noOrders": "Noch keine Bestellungen.",
     "noWishlist": "Ihre Wunschliste ist leer.",
@@ -226,6 +227,7 @@
     "adminDashboard": "Admin-Dashboard",
     "browseProducts": "Produkte ansehen",
     "noTutorials": "Noch keine Tutorials. Kaufen Sie ein Produkt, um sie freizuschalten.",
+    "noApps": "Noch keine Apps verfügbar. Kaufen Sie ein Produkt, um Zugriff zu erhalten.",
     "orderLabel": "Bestellung",
     "remove": "Entfernen",
     "reviewWrite": "Bewertung schreiben",
@@ -433,7 +435,8 @@
     "lockedBodyGuest": "Das Tutorial ist für verifizierte Käufer verfügbar. Melden Sie sich an oder verwenden Sie den im Gerät aufgedruckten Geheimcode.",
     "signIn": "Anmelden",
     "enterDeviceCode": "Gerätecode eingeben",
-    "myLibrary": "Meine Bibliothek"
+    "myLibrary": "Meine Bibliothek",
+    "chaptersTitle": "Kapitel"
   },
   "calc": {
     "blockTitle": "Geräteaktivierung erforderlich",

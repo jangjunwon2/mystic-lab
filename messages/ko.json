@@ -215,6 +215,7 @@
     "title": "마이페이지",
     "orders": "주문 내역",
     "tutorials": "해법 영상",
+    "apps": "마술 앱",
     "wishlist": "위시리스트",
     "noOrders": "아직 주문 내역이 없습니다.",
     "noWishlist": "위시리스트가 비어 있습니다.",
@@ -226,6 +227,7 @@
     "adminDashboard": "관리자 대시보드",
     "browseProducts": "상품 둘러보기",
     "noTutorials": "아직 해법 영상이 없습니다. 상품을 구매하면 잠금이 해제됩니다.",
+    "noApps": "아직 활성화할 수 있는 앱이 없습니다. 상품을 구매하면 권한이 생깁니다.",
     "orderLabel": "주문",
     "remove": "삭제",
     "reviewWrite": "리뷰 쓰기",
@@ -433,7 +435,8 @@
     "lockedBodyGuest": "해법 영상은 정품 구매자만 볼 수 있습니다. 로그인하거나 기기에 인쇄된 비밀 코드를 입력하세요.",
     "signIn": "로그인",
     "enterDeviceCode": "기기 코드 입력",
-    "myLibrary": "내 보관함"
+    "myLibrary": "내 보관함",
+    "chaptersTitle": "챕터"
   },
   "calc": {
     "blockTitle": "정품 기기 등록 필요",

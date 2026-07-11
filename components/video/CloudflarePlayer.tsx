@@ -13,6 +13,8 @@ interface Props {
   autoplay?: boolean;
   /** Additional className applied to the outer wrapper. */
   className?: string;
+  /** Jump playback to this time. `nonce` must change on every request (even repeat clicks) to force a reload. */
+  seek?: { seconds: number; nonce: number } | null;
 }
 
 /**
@@ -23,7 +25,7 @@ interface Props {
  * Mock mode renders a placeholder that matches the stream player's proportions
  * so layouts don't break during development without real Cloudflare credentials.
  */
-export default function CloudflarePlayer({ src, title, mock = false, autoplay = false, className = "" }: Props) {
+export default function CloudflarePlayer({ src, title, mock = false, autoplay = false, className = "", seek = null }: Props) {
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [retries, setRetries] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -34,6 +36,18 @@ export default function CloudflarePlayer({ src, title, mock = false, autoplay = 
       const url = new URL(src);
       if (autoplay) url.searchParams.set("autoplay", "true");
       url.searchParams.set("controls", "true");
+      if (seek) {
+        // 플랫폼마다 시작 시점 파라미터 형식이 다름
+        if (url.hostname.includes("cloudflarestream.com")) {
+          url.searchParams.set("startTime", `${seek.seconds}s`);
+        } else if (url.hostname.includes("youtube.com")) {
+          url.searchParams.set("start", `${Math.floor(seek.seconds)}`);
+        } else if (url.hostname.includes("vimeo.com")) {
+          url.hash = `t=${seek.seconds}s`;
+        }
+        // nonce를 붙여 같은 시점을 다시 클릭해도 src가 바뀌어 iframe이 리로드되도록 보장
+        url.searchParams.set("_seek", `${seek.nonce}`);
+      }
       return url.toString();
     } catch {
       return src;

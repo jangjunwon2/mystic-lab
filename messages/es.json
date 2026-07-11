@@ -215,6 +215,7 @@
     "title": "Mi Cuenta",
     "orders": "Mis Pedidos",
     "tutorials": "Mis Tutoriales",
+    "apps": "Apps de Magia",
     "wishlist": "Lista de Deseos",
     "noOrders": "Aún no tienes pedidos.",
     "noWishlist": "Tu lista de deseos está vacía.",
@@ -226,6 +227,7 @@
     "adminDashboard": "Panel de administración",
     "browseProducts": "Ver productos",
     "noTutorials": "Aún no hay tutoriales. Compra un producto para desbloquearlos.",
+    "noApps": "No hay aplicaciones disponibles. Compra un producto para acceder.",
     "orderLabel": "Pedido",
     "remove": "Eliminar",
     "reviewWrite": "Escribir reseña",
@@ -433,7 +435,8 @@
     "lockedBodyGuest": "El tutorial está disponible para compradores verificados. Inicia sesión o usa el código secreto impreso en tu dispositivo.",
     "signIn": "Iniciar sesión",
     "enterDeviceCode": "Introducir código",
-    "myLibrary": "Mi biblioteca"
+    "myLibrary": "Mi biblioteca",
+    "chaptersTitle": "Capítulos"
   },
   "calc": {
     "blockTitle": "Activación de dispositivo requerida",

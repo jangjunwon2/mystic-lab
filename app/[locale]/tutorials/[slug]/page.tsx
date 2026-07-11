@@ -4,9 +4,16 @@ import { getTranslations } from "next-intl/server";
 import { ChevronLeft } from "lucide-react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
-import CloudflarePlayer from "@/components/video/CloudflarePlayer";
+import VideoPlayerWithChapters from "@/components/video/VideoPlayerWithChapters";
 import SolutionVideoSection from "@/components/video/SolutionVideoSection";
+import type { VideoChapter } from "@/components/video/VideoChapters";
 import type { Metadata } from "next";
+
+type RawVideoChapter = {
+  id: string;
+  timestamp_seconds: number;
+  video_chapter_translations: { language: string; description: string }[];
+};
 
 interface Props {
   params: Promise<{ locale: string; slug: string }>;
@@ -76,10 +83,22 @@ export default async function TutorialPage({ params }: Props) {
       .maybeSingle();
     hasPurchased = !!orderItem;
   }
+  if (!hasPurchased) {
+    const { data: grant } = await admin
+      .from("manual_video_grants")
+      .select("id, expires_at")
+      .eq("product_id", product.id)
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+    if (grant && (!grant.expires_at || new Date(grant.expires_at) > new Date())) {
+      hasPurchased = true;
+    }
+  }
 
   const { data: videoData } = await admin
     .from("solution_videos")
-    .select("cloudflare_stream_id, title")
+    .select("id, cloudflare_stream_id, title")
     .eq("product_id", product.id)
     .maybeSingle();
 
@@ -93,6 +112,24 @@ export default async function TutorialPage({ params }: Props) {
     hasPurchased && videoData?.cloudflare_stream_id
       ? await generateSignedUrl(videoData.cloudflare_stream_id)
       : null;
+
+  let chapters: VideoChapter[] = [];
+  if (signedUrl && videoData?.id) {
+    const { data: chapterRows } = await admin
+      .from("video_chapters")
+      .select("id, timestamp_seconds, video_chapter_translations(language, description)")
+      .eq("video_id", videoData.id)
+      .order("timestamp_seconds", { ascending: true });
+    chapters = ((chapterRows ?? []) as RawVideoChapter[]).map((c) => ({
+      id: c.id,
+      timestampSeconds: c.timestamp_seconds,
+      description:
+        c.video_chapter_translations.find((tr) => tr.language === locale)?.description ??
+        c.video_chapter_translations.find((tr) => tr.language === "en")?.description ??
+        c.video_chapter_translations[0]?.description ??
+        "",
+    }));
+  }
 
   return (
     <div className="min-h-screen bg-[#0D0D1A] pt-24 pb-16">
@@ -116,7 +153,7 @@ export default async function TutorialPage({ params }: Props) {
         </p>
 
         {signedUrl ? (
-          <CloudflarePlayer src={signedUrl} title={videoData?.title ?? name} autoplay />
+          <VideoPlayerWithChapters src={signedUrl} title={videoData?.title ?? name} chapters={chapters} autoplay />
         ) : (
           <SolutionVideoSection
             isLoggedIn

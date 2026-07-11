@@ -28,6 +28,7 @@ export default async function AccountPage({ params }: Props) {
   let orders: unknown[] = [];
   let customOrders: unknown[] = [];
   let wishlist: unknown[] = [];
+  let grants: unknown[] = [];
   let profile: { display_name: string | null; avatar_url: string | null; role: string } | null = null;
 
   try {
@@ -38,7 +39,7 @@ export default async function AccountPage({ params }: Props) {
       redirect(`/${locale}/sign-in?redirect=/${locale}/account`);
     }
 
-    const [profileRes, ordersRes, wishlistRes, customOrdersRes] = await Promise.all([
+    const [profileRes, ordersRes, wishlistRes, customOrdersRes, grantsRes] = await Promise.all([
       supabase.from("profiles").select("display_name, avatar_url, role").eq("id", user.id).single(),
       supabase
         .from("orders")
@@ -64,6 +65,13 @@ export default async function AccountPage({ params }: Props) {
         .select("id, name, description, budget_range, desired_deadline, quoted_price_usd, quoted_price_krw, payment_status, payment_token, status, created_at, admin_message")
         .eq("email", user.email)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("manual_video_grants")
+        .select(`
+          id, expires_at, created_at,
+          products (id, slug, thumbnail_url, product_translations(name, language))
+        `)
+        .eq("user_id", user.id),
     ]);
 
     type ProfileRow = { display_name: string | null; avatar_url: string | null; role: string };
@@ -71,6 +79,7 @@ export default async function AccountPage({ params }: Props) {
     orders = ordersRes.data ?? [];
     customOrders = customOrdersRes.data ?? [];
     wishlist = wishlistRes.data ?? [];
+    grants = grantsRes.data ?? [];
 
     // display_name이 없으면 가입 시 입력한 이름(user metadata)으로 채워줌
     if (rawProfile && !rawProfile.display_name) {
@@ -100,6 +109,7 @@ export default async function AccountPage({ params }: Props) {
       orders={orders}
       customOrders={customOrders}
       wishlist={wishlist as any}
+      grants={grants}
     />
   );
 }

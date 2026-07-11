@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Lock, Play, ShoppingCart, KeyRound, LogIn } from "lucide-react";
-import CloudflarePlayer from "@/components/video/CloudflarePlayer";
+import VideoPlayerWithChapters from "@/components/video/VideoPlayerWithChapters";
+import type { VideoChapter } from "@/components/video/VideoChapters";
 
 interface Props {
   isLoggedIn: boolean;
@@ -14,6 +15,7 @@ interface Props {
   videoTitle: string | null;
   locale: string;
   productSlug: string;
+  chapters?: VideoChapter[];
 }
 
 export default function SolutionVideoSection({
@@ -24,6 +26,7 @@ export default function SolutionVideoSection({
   videoTitle,
   locale,
   productSlug,
+  chapters = [],
 }: Props) {
   const t = useTranslations("tutorial");
   // Case 1: Has signed URL → play the video
@@ -33,9 +36,10 @@ export default function SolutionVideoSection({
         {videoTitle && (
           <p className="text-sm" style={{ color: "#9CA3AF" }}>{videoTitle}</p>
         )}
-        <CloudflarePlayer
+        <VideoPlayerWithChapters
           src={signedUrl}
           title={videoTitle ?? t("solutionTutorial")}
+          chapters={chapters}
         />
         <p className="text-xs flex items-center gap-1.5" style={{ color: "#6B7280" }}>
           <Play className="w-3 h-3" />

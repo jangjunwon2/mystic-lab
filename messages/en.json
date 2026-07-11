@@ -215,6 +215,7 @@
     "title": "My Account",
     "orders": "My Orders",
     "tutorials": "My Tutorials",
+    "apps": "Magic Apps",
     "wishlist": "Wishlist",
     "noOrders": "No orders yet.",
     "noWishlist": "Your wishlist is empty.",
@@ -226,6 +227,7 @@
     "adminDashboard": "Admin Dashboard",
     "browseProducts": "Browse Products",
     "noTutorials": "No tutorials yet. Purchase a product to unlock tutorials.",
+    "noApps": "No apps available yet. Purchase a product to gain access.",
     "orderLabel": "Order",
     "remove": "Remove",
     "reviewWrite": "Write a review",
@@ -433,7 +435,8 @@
     "lockedBodyGuest": "The solution tutorial is available to verified purchasers. Sign in to your account, or use the secret code printed inside your device.",
     "signIn": "Sign In",
     "enterDeviceCode": "Enter Device Code",
-    "myLibrary": "My Library"
+    "myLibrary": "My Library",
+    "chaptersTitle": "Chapters"
   },
   "calc": {
     "blockTitle": "Device Activation Required",

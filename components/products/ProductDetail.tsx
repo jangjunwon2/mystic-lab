@@ -15,6 +15,7 @@ import ReviewForm from "@/components/products/ReviewForm";
 import WishlistButton from "@/components/products/WishlistButton";
 import MagicMemberAccess from "@/components/products/MagicMemberAccess";
 import ProductCommunity from "@/components/products/ProductCommunity";
+import type { VideoChapter } from "@/components/video/VideoChapters";
 import type {
   ProductWithTranslations,
   ProductTranslation,
@@ -57,6 +58,7 @@ interface Props {
   hasDelivered?: boolean;
   solutionVideo: SolutionVideo | null;
   signedVideoUrl: string | null;
+  videoChapters?: VideoChapter[];
 }
 
 export default function ProductDetail({
@@ -71,6 +73,7 @@ export default function ProductDetail({
   hasDelivered = false,
   solutionVideo,
   signedVideoUrl,
+  videoChapters = [],
 }: Props) {
   const t = useTranslations("products");
   const router = useRouter();
@@ -370,6 +373,7 @@ export default function ProductDetail({
             videoTitle={solutionVideo?.title ?? null}
             locale={locale}
             productSlug={product.slug}
+            chapters={videoChapters}
           />
           {(product.slug === "magic-calculator" || product.slug === "fake-instagram") && isLoggedIn && hasPurchased && (
             <MagicMemberAccess productId={product.id} locale={locale} slug={product.slug} />

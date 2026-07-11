@@ -29,5 +29,24 @@ export async function userOwnsProduct(admin: any, userId: string, productId: str
     // user_id 컬럼(019) 미배포 — 주문 기준만 사용
   }
 
+  // 수동 권한 부여(manual_video_grants) 보유 인정
+  try {
+    const { data: grant } = await admin
+      .from("manual_video_grants")
+      .select("id, expires_at")
+      .eq("product_id", productId)
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (grant) {
+      if (!grant.expires_at || new Date(grant.expires_at) > new Date()) {
+        return true;
+      }
+    }
+  } catch {
+    // 테이블 또는 컬럼 오류 무시
+  }
+
   return false;
 }

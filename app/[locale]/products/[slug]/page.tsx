@@ -8,6 +8,13 @@ import RelatedProducts from "@/components/products/RelatedProducts";
 import TrackProductView from "@/components/TrackProductView";
 import RestockAlert from "@/components/products/RestockAlert";
 import type { ProductCategory } from "@/lib/supabase/types";
+import type { VideoChapter } from "@/components/video/VideoChapters";
+
+type RawVideoChapter = {
+  id: string;
+  timestamp_seconds: number;
+  video_chapter_translations: { language: string; description: string }[];
+};
 
 export type ProductTranslation = {
   id: string;
@@ -203,6 +210,7 @@ export default async function ProductPage({ params }: Props) {
   let reviews: ReviewWithProfile[] = [];
   let solutionVideo: SolutionVideo | null = null;
   let signedVideoUrl: string | null = null;
+  let videoChapters: VideoChapter[] = [];
   let isLoggedIn = false;
   let isAdmin = false;
   let userEmail: string | null = null;
@@ -346,6 +354,24 @@ export default async function ProductPage({ params }: Props) {
       if (solutionVideo?.cloudflare_stream_id) {
         signedVideoUrl = await generateSignedUrl(solutionVideo.cloudflare_stream_id);
       }
+
+      // 챕터(타임스탬프) 목록 — RLS가 구매 여부를 검증
+      if (solutionVideo?.id) {
+        const { data: chapterRows } = await supabase
+          .from("video_chapters")
+          .select("id, timestamp_seconds, video_chapter_translations(language, description)")
+          .eq("video_id", solutionVideo.id)
+          .order("timestamp_seconds", { ascending: true });
+        videoChapters = ((chapterRows ?? []) as RawVideoChapter[]).map((c) => ({
+          id: c.id,
+          timestampSeconds: c.timestamp_seconds,
+          description:
+            c.video_chapter_translations.find((tr) => tr.language === locale)?.description ??
+            c.video_chapter_translations.find((tr) => tr.language === "en")?.description ??
+            c.video_chapter_translations[0]?.description ??
+            "",
+        }));
+      }
     }
   } catch {
     product = SAMPLE[slug] ?? null;
@@ -430,6 +456,7 @@ export default async function ProductPage({ params }: Props) {
         hasDelivered={hasDelivered}
         solutionVideo={solutionVideo}
         signedVideoUrl={signedVideoUrl}
+        videoChapters={videoChapters}
       />
       {product.stock === 0 && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

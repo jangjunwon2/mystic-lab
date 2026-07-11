@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Upload, Link as LinkIcon, X, CheckCircle, Loader2 } from "lucide-react";
+import { Fragment, useState, useRef } from "react";
+import { Upload, Link as LinkIcon, X, CheckCircle, Loader2, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { formatTimestamp } from "@/components/video/VideoChapters";
+
+interface VideoChapterRow {
+  id: string;
+  timestamp_seconds: number;
+  description_ko: string;
+}
 
 interface VideoRow {
   id: string;
@@ -10,6 +17,16 @@ interface VideoRow {
   created_at: string;
   product_id: string | null;
   product_name: string;
+  chapters: VideoChapterRow[];
+}
+
+// "mm:ss" 또는 "h:mm:ss" → 총 초. 형식이 잘못되면 null.
+function parseTimeInput(value: string): number | null {
+  const parts = value.trim().split(":").map((p) => Number(p));
+  if (parts.length < 2 || parts.length > 3 || parts.some((p) => !Number.isFinite(p) || p < 0)) return null;
+  return parts.length === 3
+    ? parts[0] * 3600 + parts[1] * 60 + parts[2]
+    : parts[0] * 60 + parts[1];
 }
 
 interface Product {
@@ -47,6 +64,72 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
   const [uploadStatus, setUploadStatus] = useState<"idle" | "requesting" | "uploading" | "saving" | "done" | "error">("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadedStreamId, setUploadedStreamId] = useState<string | null>(null);
+
+  // Chapters
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [chapterTime, setChapterTime] = useState("");
+  const [chapterDesc, setChapterDesc] = useState("");
+  const [chapterSaving, setChapterSaving] = useState(false);
+  const [chapterError, setChapterError] = useState<string | null>(null);
+  const [chapterDeletingId, setChapterDeletingId] = useState<string | null>(null);
+
+  function toggleExpanded(videoId: string) {
+    setExpandedId((prev) => (prev === videoId ? null : videoId));
+    setChapterTime("");
+    setChapterDesc("");
+    setChapterError(null);
+  }
+
+  async function addChapter(videoId: string) {
+    const seconds = parseTimeInput(chapterTime);
+    if (seconds === null || !chapterDesc.trim()) {
+      setChapterError("시간(mm:ss)과 설명을 입력해주세요.");
+      return;
+    }
+    setChapterSaving(true);
+    setChapterError(null);
+
+    const res = await fetch(`/api/admin/videos/${videoId}/chapters`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ timestamp_seconds: seconds, description: chapterDesc.trim() }),
+    });
+
+    if (res.ok) {
+      const { chapter } = await res.json();
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === videoId
+            ? {
+                ...v,
+                chapters: [
+                  ...v.chapters,
+                  { id: chapter.id, timestamp_seconds: chapter.timestamp_seconds, description_ko: chapter.description },
+                ].sort((a, b) => a.timestamp_seconds - b.timestamp_seconds),
+              }
+            : v
+        )
+      );
+      setChapterTime("");
+      setChapterDesc("");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setChapterError(data.error ?? "챕터 추가에 실패했습니다.");
+    }
+    setChapterSaving(false);
+  }
+
+  async function deleteChapter(videoId: string, chapterId: string) {
+    if (!confirm("이 챕터를 삭제할까요?")) return;
+    setChapterDeletingId(chapterId);
+    const res = await fetch(`/api/admin/videos/${videoId}/chapters/${chapterId}`, { method: "DELETE" });
+    if (res.ok) {
+      setVideos((prev) =>
+        prev.map((v) => (v.id === videoId ? { ...v, chapters: v.chapters.filter((c) => c.id !== chapterId) } : v))
+      );
+    }
+    setChapterDeletingId(null);
+  }
 
   // ── Paste Stream ID ──────────────────────────────────────────────────────────
 
@@ -90,7 +173,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
     if (res.ok) {
       const { video } = await res.json();
       const productName = products.find((p) => p.id === addProductId)?.name ?? "Unknown";
-      setVideos((prev) => [{ ...video, product_name: productName }, ...prev]);
+      setVideos((prev) => [{ ...video, product_name: productName, chapters: [] }, ...prev]);
       setAddStreamId("");
       setAddTitle("");
     } else {
@@ -177,7 +260,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
     if (res.ok) {
       const { video } = await res.json();
       const productName = products.find((p) => p.id === uploadProductId)?.name ?? "Unknown";
-      setVideos((prev) => [{ ...video, product_name: productName }, ...prev]);
+      setVideos((prev) => [{ ...video, product_name: productName, chapters: [] }, ...prev]);
       setUploadStatus("done");
       setUploadFile(null);
       setUploadTitle("");
@@ -419,7 +502,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
-              {["상품", "Stream ID", "제목", "추가일", "관리"].map((h) => (
+              {["상품", "Stream ID", "제목", "챕터", "추가일", "관리"].map((h) => (
                 <th key={h} className="text-left px-6 py-3 font-medium" style={{ color: "#9CA3AF" }}>
                   {h}
                 </th>
@@ -429,42 +512,109 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
           <tbody>
             {videos.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
+                <td colSpan={6} className="px-6 py-12 text-center" style={{ color: "#9CA3AF" }}>
                   연결된 해법 영상이 없습니다.
                 </td>
               </tr>
             ) : (
               videos.map((v) => (
-                <tr
-                  key={v.id}
-                  className="border-b last:border-0"
-                  style={{ borderColor: "#2D2D4E", opacity: loadingId === v.id ? 0.5 : 1 }}
-                >
-                  <td className="px-6 py-4 font-medium" style={{ color: "#F0E6FF" }}>
-                    {v.product_name}
-                  </td>
-                  <td className="px-6 py-4 font-mono text-xs" style={{ color: "#9CA3AF" }}>
-                    {v.cloudflare_stream_id.length > 20
-                      ? `${v.cloudflare_stream_id.slice(0, 20)}…`
-                      : v.cloudflare_stream_id}
-                  </td>
-                  <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
-                    {v.title ?? "—"}
-                  </td>
-                  <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
-                    {new Date(v.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => deleteVideo(v.id)}
-                      disabled={loadingId === v.id}
-                      className="text-xs hover:opacity-80 transition-opacity"
-                      style={{ color: "#EF4444" }}
-                    >
-                      삭제
-                    </button>
-                  </td>
-                </tr>
+                <Fragment key={v.id}>
+                  <tr
+                    className="border-b last:border-0"
+                    style={{ borderColor: "#2D2D4E", opacity: loadingId === v.id ? 0.5 : 1 }}
+                  >
+                    <td className="px-6 py-4 font-medium" style={{ color: "#F0E6FF" }}>
+                      {v.product_name}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs" style={{ color: "#9CA3AF" }}>
+                      {v.cloudflare_stream_id.length > 20
+                        ? `${v.cloudflare_stream_id.slice(0, 20)}…`
+                        : v.cloudflare_stream_id}
+                    </td>
+                    <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
+                      {v.title ?? "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => toggleExpanded(v.id)}
+                        className="flex items-center gap-1 text-xs hover:opacity-80 transition-opacity"
+                        style={{ color: "#A855F7" }}
+                      >
+                        {expandedId === v.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        {v.chapters.length}개
+                      </button>
+                    </td>
+                    <td className="px-6 py-4" style={{ color: "#9CA3AF" }}>
+                      {new Date(v.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => deleteVideo(v.id)}
+                        disabled={loadingId === v.id}
+                        className="text-xs hover:opacity-80 transition-opacity"
+                        style={{ color: "#EF4444" }}
+                      >
+                        삭제
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedId === v.id && (
+                    <tr style={{ borderBottom: "1px solid #2D2D4E" }}>
+                      <td colSpan={6} className="px-6 py-4" style={{ background: "#13131F" }}>
+                        <div className="space-y-3">
+                          {v.chapters.length > 0 && (
+                            <ul className="space-y-1.5">
+                              {v.chapters.map((c) => (
+                                <li key={c.id} className="flex items-center gap-3 text-sm">
+                                  <span
+                                    className="font-mono text-xs px-2 py-1 rounded-md shrink-0"
+                                    style={{ background: "#0D0D1A", color: "#A855F7" }}
+                                  >
+                                    {formatTimestamp(c.timestamp_seconds)}
+                                  </span>
+                                  <span className="flex-1" style={{ color: "#F0E6FF" }}>{c.description_ko}</span>
+                                  <button
+                                    onClick={() => deleteChapter(v.id, c.id)}
+                                    disabled={chapterDeletingId === c.id}
+                                    className="shrink-0 hover:opacity-80 transition-opacity disabled:opacity-40"
+                                    style={{ color: "#EF4444" }}
+                                    aria-label="챕터 삭제"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {chapterError && <p className="text-xs" style={{ color: "#EF4444" }}>{chapterError}</p>}
+                          <div className="flex flex-wrap gap-2 items-center">
+                            <input
+                              value={chapterTime}
+                              onChange={(e) => setChapterTime(e.target.value)}
+                              placeholder="mm:ss (예: 1:23)"
+                              style={{ ...inputStyle, width: "112px" }}
+                            />
+                            <input
+                              value={chapterDesc}
+                              onChange={(e) => setChapterDesc(e.target.value)}
+                              placeholder="설명 (한국어 입력 — 7개 언어 자동번역)"
+                              className="flex-1"
+                              style={{ ...inputStyle, width: "auto", minWidth: "200px" }}
+                            />
+                            <button
+                              onClick={() => addChapter(v.id)}
+                              disabled={chapterSaving}
+                              className="px-4 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50 shrink-0"
+                              style={{ background: "#7C3AED", color: "#fff" }}
+                            >
+                              {chapterSaving ? "추가 중…" : "+ 챕터 추가"}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))
             )}
           </tbody>

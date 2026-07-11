@@ -215,6 +215,7 @@
     "title": "我的账户",
     "orders": "我的订单",
     "tutorials": "我的教程",
+    "apps": "魔术应用",
     "wishlist": "心愿单",
     "noOrders": "暂无订单。",
     "noWishlist": "心愿单为空。",
@@ -226,6 +227,7 @@
     "adminDashboard": "管理后台",
     "browseProducts": "浏览商品",
     "noTutorials": "暂无教程。购买商品即可解锁。",
+    "noApps": "暂无可用应用。购买商品即可获得访问权限。",
     "orderLabel": "订单",
     "remove": "移除",
     "reviewWrite": "写评价",
@@ -433,7 +435,8 @@
     "lockedBodyGuest": "解法视频仅限已验证购买者观看。请登录账户，或输入设备内印刷的密码。",
     "signIn": "登录",
     "enterDeviceCode": "输入设备代码",
-    "myLibrary": "我的资料库"
+    "myLibrary": "我的资料库",
+    "chaptersTitle": "章节"
   },
   "calc": {
     "blockTitle": "需要激活设备",

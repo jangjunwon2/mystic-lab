@@ -121,6 +121,37 @@ export interface Database {
           title?: string | null;
         };
       };
+      video_chapters: {
+        Row: {
+          id: string;
+          video_id: string;
+          timestamp_seconds: number;
+          created_at: string;
+        };
+        Insert: {
+          video_id: string;
+          timestamp_seconds: number;
+        };
+        Update: {
+          timestamp_seconds?: number;
+        };
+      };
+      video_chapter_translations: {
+        Row: {
+          id: string;
+          chapter_id: string;
+          language: string;
+          description: string;
+        };
+        Insert: {
+          chapter_id: string;
+          language: string;
+          description: string;
+        };
+        Update: {
+          description?: string;
+        };
+      };
       product_unlock_codes: {
         Row: {
           id: string;

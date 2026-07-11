@@ -215,6 +215,7 @@
     "title": "Mon Compte",
     "orders": "Mes Commandes",
     "tutorials": "Mes Tutoriels",
+    "apps": "Applications de Magie",
     "wishlist": "Liste de Souhaits",
     "noOrders": "Aucune commande pour l'instant.",
     "noWishlist": "Votre liste de souhaits est vide.",
@@ -226,6 +227,7 @@
     "adminDashboard": "Tableau de bord admin",
     "browseProducts": "Parcourir les produits",
     "noTutorials": "Aucun tutoriel pour le moment. Achetez un produit pour les débloquer.",
+    "noApps": "Aucune application disponible. Achetez un produit pour y accéder.",
     "orderLabel": "Commande",
     "remove": "Supprimer",
     "reviewWrite": "Écrire un avis",
@@ -433,7 +435,8 @@
     "lockedBodyGuest": "Le tutoriel est réservé aux acheteurs vérifiés. Connectez-vous ou utilisez le code secret imprimé dans votre appareil.",
     "signIn": "Se connecter",
     "enterDeviceCode": "Saisir le code",
-    "myLibrary": "Ma bibliothèque"
+    "myLibrary": "Ma bibliothèque",
+    "chaptersTitle": "Chapitres"
   },
   "calc": {
     "blockTitle": "Activation de l'appareil requise",
