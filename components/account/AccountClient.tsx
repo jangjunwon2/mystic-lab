@@ -130,19 +130,31 @@ interface Props {
   wishlist: WishlistItem[];
   grants?: any[];
   initialCodes?: Record<string, string>;
+  initialPoints?: any;
+  initialCoupons?: any;
 }
 
-export default function AccountClient({ locale, profile, orders, customOrders = [], wishlist, grants = [], initialCodes = {} }: Props) {
+export default function AccountClient({
+  locale,
+  profile,
+  orders,
+  customOrders = [],
+  wishlist,
+  grants = [],
+  initialCodes = {},
+  initialPoints = null,
+  initialCoupons = null,
+}: Props) {
   const t = useTranslations("account");
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"orders" | "tutorials" | "apps" | "wishlist" | "addresses" | "points" | "coupons">("orders");
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(wishlist);
   const [addresses, setAddresses] = useState<SavedAddress[] | null>(null);
   const [addrLoading, setAddrLoading] = useState(false);
-  const [points, setPoints] = useState<{ balance: number; history: PointTx[] } | null>(null);
+  const [points, setPoints] = useState<{ balance: number; history: PointTx[] } | null>(initialPoints);
   const [pointsLoading, setPointsLoading] = useState(false);
-  const [coupons, setCoupons] = useState<Coupon[] | null>(null);
-  const [claimable, setClaimable] = useState<Coupon[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[] | null>(initialCoupons?.coupons ?? null);
+  const [claimable, setClaimable] = useState<Coupon[]>(initialCoupons?.claimable ?? []);
   const [couponsLoading, setCouponsLoading] = useState(false);
   const [showNewAddrForm, setShowNewAddrForm] = useState(false);
   const [newAddr, setNewAddr] = useState({ name: "", phone: "", line1: "", line2: "", city: "", postal: "", country: "" });

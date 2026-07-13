@@ -248,3 +248,17 @@ export async function consumeHold(
     note: params.note,
   });
 }
+
+export async function getAccountPointsData(admin: any, userId: string) {
+  await grantSignupBonus(admin, userId);
+  const balance = await getPointsBalance(admin, userId);
+
+  const { data: history } = await admin
+    .from("point_transactions")
+    .select("id, amount, type, note, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  return { balance, history: history ?? [] };
+}

@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { decryptCode } from "@/lib/crypto/unlock-code";
+import { getAccountPointsData } from "@/lib/points";
+import { getAccountCouponsData } from "@/lib/coupons";
 import AccountClient from "@/components/account/AccountClient";
 
 interface Props {
@@ -31,6 +33,8 @@ export default async function AccountPage({ params }: Props) {
   let wishlist: unknown[] = [];
   let grants: unknown[] = [];
   let initialCodes: Record<string, string> = {};
+  let initialPoints: any = null;
+  let initialCoupons: any = null;
   let profile: { display_name: string | null; avatar_url: string | null; role: string } | null = null;
 
   try {
@@ -43,7 +47,7 @@ export default async function AccountPage({ params }: Props) {
 
     const admin = (await createAdminClient()) as any;
 
-    const [profileRes, ordersRes, wishlistRes, customOrdersRes, grantsRes, codesRes] = await Promise.all([
+    const [profileRes, ordersRes, wishlistRes, customOrdersRes, grantsRes, codesRes, pointsData, couponsData] = await Promise.all([
       supabase.from("profiles").select("display_name, avatar_url, role").eq("id", user.id).single(),
       supabase
         .from("orders")
@@ -80,6 +84,8 @@ export default async function AccountPage({ params }: Props) {
         .from("product_unlock_codes")
         .select("product_id, code_plain")
         .eq("user_id", user.id),
+      getAccountPointsData(admin, user.id),
+      getAccountCouponsData(admin, user.id, user.email ?? null),
     ]);
 
     type ProfileRow = { display_name: string | null; avatar_url: string | null; role: string };
@@ -88,6 +94,8 @@ export default async function AccountPage({ params }: Props) {
     customOrders = customOrdersRes.data ?? [];
     wishlist = wishlistRes.data ?? [];
     grants = grantsRes.data ?? [];
+    initialPoints = pointsData;
+    initialCoupons = couponsData;
 
     const rawCodes = (codesRes.data ?? []) as { product_id: string; code_plain: string | null }[];
     for (const item of rawCodes) {
@@ -131,6 +139,8 @@ export default async function AccountPage({ params }: Props) {
       wishlist={wishlist as any}
       grants={grants}
       initialCodes={initialCodes}
+      initialPoints={initialPoints}
+      initialCoupons={initialCoupons}
     />
   );
 }
