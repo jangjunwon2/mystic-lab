@@ -308,61 +308,72 @@ export default async function ProductPage({ params }: Props) {
       isLoggedIn = true;
       userEmail = user.email ?? null;
 
-      const profileRes = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      isAdmin = (profileRes.data as { role: string } | null)?.role === "admin";
-
-      // RLS controls access — if data comes back, user is authorized
-      const { data: videoData } = await supabase
-        .from("solution_videos")
-        .select("*")
-        .eq("product_id", product.id)
-        .maybeSingle();
-      solutionVideo = videoData as SolutionVideo | null;
-
-      if (isAdmin) {
-        hasPurchased = true;
-        hasDelivered = true;
-      } else {
-        // 구매 여부 (해법영상·앱코드 접근 — 결제완료부터)
-        const { data: orderItem } = await supabase
+      // 1차 병렬 쿼리: Profiles 롤, 해법비디오, 구매여부, 배송완료여부 조회
+      const [profileRes, videoRes, orderItemRes, deliveredItemRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single(),
+        supabase
+          .from("solution_videos")
+          .select("*")
+          .eq("product_id", product.id)
+          .maybeSingle(),
+        supabase
           .from("order_items")
           .select("id, orders!inner(user_id, status)")
           .eq("product_id", product.id)
           .eq("orders.user_id", user.id)
           .in("orders.status", ["paid", "shipped", "completed"])
           .limit(1)
-          .maybeSingle();
-        hasPurchased = !!orderItem || !!solutionVideo;
-
-        // 배송완료 여부 (리뷰 작성 — 배송완료 주문만)
-        const { data: deliveredItem } = await supabase
+          .maybeSingle(),
+        supabase
           .from("order_items")
           .select("id, orders!inner(user_id, status)")
           .eq("product_id", product.id)
           .eq("orders.user_id", user.id)
           .eq("orders.status", "completed")
           .limit(1)
-          .maybeSingle();
-        hasDelivered = !!deliveredItem;
+          .maybeSingle(),
+      ]);
+
+      isAdmin = (profileRes.data as { role: string } | null)?.role === "admin";
+      solutionVideo = videoRes.data as SolutionVideo | null;
+
+      if (isAdmin) {
+        hasPurchased = true;
+        hasDelivered = true;
+      } else {
+        hasPurchased = !!orderItemRes.data || !!solutionVideo;
+        hasDelivered = !!deliveredItemRes.data;
       }
 
-      // Generate signed playback URL server-side (avoids exposing raw stream IDs)
-      if (solutionVideo?.cloudflare_stream_id) {
-        signedVideoUrl = await generateSignedUrl(solutionVideo.cloudflare_stream_id);
-      }
+      // 2차 병렬 쿼리: Cloudflare signed URL 및 비디오 챕터 조회 (의존성이 있으므로 1차 완료 후 병렬 수행)
+      if (solutionVideo) {
+        const promises: any[] = [];
 
-      // 챕터(타임스탬프) 목록 — RLS가 구매 여부를 검증
-      if (solutionVideo?.id) {
-        const { data: chapterRows } = await supabase
-          .from("video_chapters")
-          .select("id, timestamp_seconds, video_chapter_translations(language, description)")
-          .eq("video_id", solutionVideo.id)
-          .order("timestamp_seconds", { ascending: true });
-        videoChapters = ((chapterRows ?? []) as RawVideoChapter[]).map((c) => ({
+        // 2-1) signed url 생성
+        const getSigned = solutionVideo.cloudflare_stream_id
+          ? generateSignedUrl(solutionVideo.cloudflare_stream_id)
+          : Promise.resolve(null);
+        promises.push(getSigned);
+
+        // 2-2) 비디오 챕터 조회
+        const getChapters = solutionVideo.id
+          ? (supabase
+              .from("video_chapters")
+              .select("id, timestamp_seconds, video_chapter_translations(language, description)")
+              .eq("video_id", solutionVideo.id)
+              .order("timestamp_seconds", { ascending: true }) as any)
+          : Promise.resolve({ data: [] });
+        promises.push(getChapters);
+
+        const [signedUrlResult, chaptersResult] = await Promise.all(promises);
+
+        signedVideoUrl = signedUrlResult;
+        const chapterRows = chaptersResult.data ?? [];
+        videoChapters = ((chapterRows) as RawVideoChapter[]).map((c) => ({
           id: c.id,
           timestampSeconds: c.timestamp_seconds,
           description:
