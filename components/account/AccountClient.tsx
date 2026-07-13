@@ -132,6 +132,7 @@ interface Props {
   initialCodes?: Record<string, string>;
   initialPoints?: any;
   initialCoupons?: any;
+  initialAddresses?: any[];
 }
 
 export default function AccountClient({
@@ -144,12 +145,13 @@ export default function AccountClient({
   initialCodes = {},
   initialPoints = null,
   initialCoupons = null,
+  initialAddresses = [],
 }: Props) {
   const t = useTranslations("account");
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"orders" | "tutorials" | "apps" | "wishlist" | "addresses" | "points" | "coupons">("orders");
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(wishlist);
-  const [addresses, setAddresses] = useState<SavedAddress[] | null>(null);
+  const [addresses, setAddresses] = useState<SavedAddress[] | null>(initialAddresses);
   const [addrLoading, setAddrLoading] = useState(false);
   const [points, setPoints] = useState<{ balance: number; history: PointTx[] } | null>(initialPoints);
   const [pointsLoading, setPointsLoading] = useState(false);

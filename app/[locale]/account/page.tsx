@@ -35,6 +35,7 @@ export default async function AccountPage({ params }: Props) {
   let initialCodes: Record<string, string> = {};
   let initialPoints: any = null;
   let initialCoupons: any = null;
+  let initialAddresses: any[] = [];
   let profile: { display_name: string | null; avatar_url: string | null; role: string } | null = null;
 
   try {
@@ -47,7 +48,7 @@ export default async function AccountPage({ params }: Props) {
 
     const admin = (await createAdminClient()) as any;
 
-    const [profileRes, ordersRes, wishlistRes, customOrdersRes, grantsRes, codesRes, pointsData, couponsData] = await Promise.all([
+    const [profileRes, ordersRes, wishlistRes, customOrdersRes, grantsRes, codesRes, pointsData, couponsData, addressesRes] = await Promise.all([
       supabase.from("profiles").select("display_name, avatar_url, role").eq("id", user.id).single(),
       supabase
         .from("orders")
@@ -86,6 +87,12 @@ export default async function AccountPage({ params }: Props) {
         .eq("user_id", user.id),
       getAccountPointsData(admin, user.id),
       getAccountCouponsData(admin, user.id, user.email ?? null),
+      supabase
+        .from("shipping_addresses")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false }),
     ]);
 
     type ProfileRow = { display_name: string | null; avatar_url: string | null; role: string };
@@ -96,6 +103,7 @@ export default async function AccountPage({ params }: Props) {
     grants = grantsRes.data ?? [];
     initialPoints = pointsData;
     initialCoupons = couponsData;
+    initialAddresses = addressesRes.data ?? [];
 
     const rawCodes = (codesRes.data ?? []) as { product_id: string; code_plain: string | null }[];
     for (const item of rawCodes) {
@@ -141,6 +149,7 @@ export default async function AccountPage({ params }: Props) {
       initialCodes={initialCodes}
       initialPoints={initialPoints}
       initialCoupons={initialCoupons}
+      initialAddresses={initialAddresses}
     />
   );
 }
