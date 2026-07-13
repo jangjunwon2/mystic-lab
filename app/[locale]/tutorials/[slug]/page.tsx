@@ -113,38 +113,45 @@ export default async function TutorialPage({ params }: Props) {
   // 재생목록 아이템 구축
   const playlist = [];
   if (hasPurchased && videos && videos.length > 0) {
-    for (const video of videos) {
-      const signedUrl = video.cloudflare_stream_id
-        ? await generateSignedUrl(video.cloudflare_stream_id)
-        : null;
+    const playlistPromises = videos.map(async (video: any) => {
+      const signedUrlPromise = video.cloudflare_stream_id
+        ? generateSignedUrl(video.cloudflare_stream_id)
+        : Promise.resolve(null);
 
-      let chapters: VideoChapter[] = [];
-      if (signedUrl) {
-        const { data: chapterRows } = await admin
-          .from("video_chapters")
-          .select("id, timestamp_seconds, video_chapter_translations(language, description)")
-          .eq("video_id", video.id)
-          .order("timestamp_seconds", { ascending: true });
+      const chaptersPromise = video.cloudflare_stream_id
+        ? (admin
+            .from("video_chapters")
+            .select("id, timestamp_seconds, video_chapter_translations(language, description)")
+            .eq("video_id", video.id)
+            .order("timestamp_seconds", { ascending: true }) as any)
+        : Promise.resolve({ data: [] });
 
-        chapters = ((chapterRows ?? []) as RawVideoChapter[]).map((c) => ({
-          id: c.id,
-          timestampSeconds: c.timestamp_seconds,
-          description:
-            c.video_chapter_translations.find((tr) => tr.language === locale)?.description ??
-            c.video_chapter_translations.find((tr) => tr.language === "en")?.description ??
-            c.video_chapter_translations[0]?.description ??
-            "",
-        }));
-      }
+      const [signedUrl, chaptersRes] = await Promise.all([
+        signedUrlPromise,
+        chaptersPromise,
+      ]);
 
-      playlist.push({
+      const chapterRows = chaptersRes.data ?? [];
+      const chapters: VideoChapter[] = ((chapterRows) as RawVideoChapter[]).map((c) => ({
+        id: c.id,
+        timestampSeconds: c.timestamp_seconds,
+        description:
+          c.video_chapter_translations.find((tr) => tr.language === locale)?.description ??
+          c.video_chapter_translations.find((tr) => tr.language === "en")?.description ??
+          c.video_chapter_translations[0]?.description ??
+          "",
+      }));
+
+      return {
         id: video.id,
         title: video.title,
         part_order: video.part_order,
         signedUrl,
         chapters,
-      });
-    }
+      };
+    });
+
+    playlist.push(...(await Promise.all(playlistPromises)));
   }
 
   return (
