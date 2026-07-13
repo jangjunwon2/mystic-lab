@@ -54,7 +54,7 @@ export interface CheckoutStateReturn {
   lsError: string;
   setLsError: (error: string) => void;
   lsSuccess: boolean;
-  lsScriptReady: React.MutableRefObject<boolean>;
+  lsScriptReadyRef: React.MutableRefObject<boolean>;
   couponCode: string;
   setCouponCode: (code: string) => void;
   couponLoading: boolean;
@@ -126,7 +126,7 @@ export function useCheckoutState(
   const [lsLoading, setLsLoading] = useState(false);
   const [lsError, setLsError] = useState("");
   const [lsSuccess, setLsSuccess] = useState(false);
-  const lsScriptReady = useRef(false);
+  const lsScriptReadyRef = useRef(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
@@ -455,7 +455,7 @@ export function useCheckoutState(
     lsError,
     setLsError,
     lsSuccess,
-    lsScriptReady,
+    lsScriptReadyRef,
     couponCode,
     setCouponCode,
     couponLoading,

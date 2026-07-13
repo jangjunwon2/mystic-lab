@@ -4,8 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { ChevronLeft } from "lucide-react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { generateSignedUrl } from "@/lib/cloudflare/stream";
-import VideoPlayerWithChapters from "@/components/video/VideoPlayerWithChapters";
 import SolutionVideoSection from "@/components/video/SolutionVideoSection";
+import TutorialPlaylistPlayer from "@/components/video/TutorialPlaylistPlayer";
 import type { VideoChapter } from "@/components/video/VideoChapters";
 import type { Metadata } from "next";
 
@@ -96,39 +96,55 @@ export default async function TutorialPage({ params }: Props) {
     }
   }
 
-  const { data: videoData } = await admin
+  const { data: videos } = await admin
     .from("solution_videos")
-    .select("id, cloudflare_stream_id, title")
+    .select("id, cloudflare_stream_id, title, part_order")
     .eq("product_id", product.id)
-    .maybeSingle();
+    .order("part_order", { ascending: true })
+    .order("created_at", { ascending: true });
 
   // 미구매자는 상품 상세로 돌려보냄 (구매 유도)
-  if (!hasPurchased && !videoData) {
+  if (!hasPurchased && (!videos || videos.length === 0)) {
     redirect(`/${locale}/products/${slug}`);
   }
 
   const name = pickName(product.product_translations, locale, slug);
-  const signedUrl =
-    hasPurchased && videoData?.cloudflare_stream_id
-      ? await generateSignedUrl(videoData.cloudflare_stream_id)
-      : null;
 
-  let chapters: VideoChapter[] = [];
-  if (signedUrl && videoData?.id) {
-    const { data: chapterRows } = await admin
-      .from("video_chapters")
-      .select("id, timestamp_seconds, video_chapter_translations(language, description)")
-      .eq("video_id", videoData.id)
-      .order("timestamp_seconds", { ascending: true });
-    chapters = ((chapterRows ?? []) as RawVideoChapter[]).map((c) => ({
-      id: c.id,
-      timestampSeconds: c.timestamp_seconds,
-      description:
-        c.video_chapter_translations.find((tr) => tr.language === locale)?.description ??
-        c.video_chapter_translations.find((tr) => tr.language === "en")?.description ??
-        c.video_chapter_translations[0]?.description ??
-        "",
-    }));
+  // 재생목록 아이템 구축
+  const playlist = [];
+  if (hasPurchased && videos && videos.length > 0) {
+    for (const video of videos) {
+      const signedUrl = video.cloudflare_stream_id
+        ? await generateSignedUrl(video.cloudflare_stream_id)
+        : null;
+
+      let chapters: VideoChapter[] = [];
+      if (signedUrl) {
+        const { data: chapterRows } = await admin
+          .from("video_chapters")
+          .select("id, timestamp_seconds, video_chapter_translations(language, description)")
+          .eq("video_id", video.id)
+          .order("timestamp_seconds", { ascending: true });
+
+        chapters = ((chapterRows ?? []) as RawVideoChapter[]).map((c) => ({
+          id: c.id,
+          timestampSeconds: c.timestamp_seconds,
+          description:
+            c.video_chapter_translations.find((tr) => tr.language === locale)?.description ??
+            c.video_chapter_translations.find((tr) => tr.language === "en")?.description ??
+            c.video_chapter_translations[0]?.description ??
+            "",
+        }));
+      }
+
+      playlist.push({
+        id: video.id,
+        title: video.title,
+        part_order: video.part_order,
+        signedUrl,
+        chapters,
+      });
+    }
   }
 
   return (
@@ -143,24 +159,28 @@ export default async function TutorialPage({ params }: Props) {
         </Link>
 
         <h1
-          className="text-2xl font-bold text-[#F0E6FF] mb-2"
+          className="text-2xl font-bold text-[#F0E6FF] mb-6"
           style={{ fontFamily: "var(--font-cinzel), serif" }}
         >
           {name}
         </h1>
-        <p className="text-sm text-[#9CA3AF] mb-6">
-          {videoData?.title ?? tt("solutionTutorial")}
-        </p>
 
-        {signedUrl ? (
-          <VideoPlayerWithChapters src={signedUrl} title={videoData?.title ?? name} chapters={chapters} autoplay />
+        {playlist.length > 0 ? (
+          <TutorialPlaylistPlayer
+            productId={product.id}
+            locale={locale}
+            currentUserId={user.id}
+            hasPurchased={hasPurchased}
+            playlist={playlist}
+            name={name}
+          />
         ) : (
           <SolutionVideoSection
             isLoggedIn
             isAdmin={isAdmin}
             hasPurchased={hasPurchased}
             signedUrl={null}
-            videoTitle={videoData?.title ?? null}
+            videoTitle={null}
             locale={locale}
             productSlug={slug}
           />

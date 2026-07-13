@@ -20,9 +20,10 @@ export async function GET(req: NextRequest) {
   // 빌드 중에는 이전 완료 버전 또는 404를 반환 — 빈 URL로 OTA 시도하면 기기가 오류 발생
   const { data, error } = await (supabase as any)
     .from("firmware_releases")
-    .select("id, version, download_url, notes, created_at, file_size")
+    .select("id, version, download_url, notes, created_at, file_size, is_active")
     .eq("device_type", device)
     .neq("download_url", "")
+    .order("is_active", { ascending: false })
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(1)

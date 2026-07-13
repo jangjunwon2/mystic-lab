@@ -206,24 +206,14 @@ const MANUAL_TEXTS: Record<string, {
   }
 };
 
-// 비밀 설정창 7개 언어 라벨 (사용자=마술사용)
-interface SettingsText {
-  panelTitle: string; language: string; forceTarget: string; staticNum: string; timeBased: string;
-  forcedNumber: string; timeFormat: string; minutesOffset: string; minUnit: string; forceBehavior: string;
-  oneTime: string; continuous: string; camouflage: string; printerSettings: string; scanPair: string;
-  receiptTemplate: string; variables: string; printFont: string; fontCursive: string; fontMyeongjo: string;
-  fontGothic: string; printing: string; testPrint: string; clearLogs: string;
-  btScanning: string; btConnecting: string; btConnected: string; btNoChar: string; btFailed: string;
-  prNotConnected: string; prBuilding: string; prDone: string; prFailed: string;
-}
-const SETTINGS_TEXTS: Record<string, SettingsText> = {
-  en: { panelTitle: "Secret Config Panel", language: "Language", forceTarget: "Force Target Value", staticNum: "Static Number", timeBased: "Time-based", forcedNumber: "Forced Number", timeFormat: "Time Format", minutesOffset: "Minutes Offset", minUnit: "min", forceBehavior: "Force Behavior Mode", oneTime: "One-time", continuous: "Continuous", camouflage: "Calculator Camouflage Theme", printerSettings: "Thermal Printer Settings", scanPair: "Scan & Pair Bluetooth Printer", receiptTemplate: "Receipt Template", variables: "Variables", printFont: "Print Font Style", fontCursive: "Cursive", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Printing...", testPrint: "Test Print Receipt", clearLogs: "Clear Background Logs History", btScanning: "Scanning Bluetooth...", btConnecting: "Connecting", btConnected: "✓ Printer connected successfully.", btNoChar: "Characteristic not found.", btFailed: "Connection failed", prNotConnected: "Printer not connected. Please pair it in settings.", prBuilding: "Building receipt image...", prDone: "✓ Receipt printed successfully.", prFailed: "Print failed" },
-  ko: { panelTitle: "비밀 설정", language: "언어", forceTarget: "포스 대상 값", staticNum: "고정 숫자", timeBased: "시간 기반", forcedNumber: "포스할 숫자", timeFormat: "시간 형식", minutesOffset: "분 오프셋", minUnit: "분", forceBehavior: "포스 동작 모드", oneTime: "1회성", continuous: "지속", camouflage: "계산기 위장 테마", printerSettings: "감열 프린터 설정", scanPair: "블루투스 프린터 검색·연결", receiptTemplate: "영수증 템플릿", variables: "변수", printFont: "인쇄 글꼴", fontCursive: "필기체", fontMyeongjo: "명조체", fontGothic: "고딕체", printing: "인쇄 중...", testPrint: "테스트 인쇄", clearLogs: "백그라운드 로그 지우기", btScanning: "블루투스 검색 중...", btConnecting: "연결 시도 중", btConnected: "✓ 프린터가 성공적으로 연결되었습니다.", btNoChar: "특성(Characteristic)을 찾을 수 없습니다.", btFailed: "연결 실패", prNotConnected: "프린터가 연결되지 않았습니다. 설정에서 연결해 주세요.", prBuilding: "영수증 이미지 생성 중...", prDone: "✓ 영수증 출력이 완료되었습니다.", prFailed: "인쇄 실패" },
-  ja: { panelTitle: "シークレット設定", language: "言語", forceTarget: "フォース対象の値", staticNum: "固定数字", timeBased: "時間ベース", forcedNumber: "フォースする数字", timeFormat: "時間フォーマット", minutesOffset: "分オフセット", minUnit: "分", forceBehavior: "フォース動作モード", oneTime: "1回のみ", continuous: "継続", camouflage: "電卓カモフラージュ", printerSettings: "感熱プリンター設定", scanPair: "Bluetoothプリンターを検索・接続", receiptTemplate: "レシートテンプレート", variables: "変数", printFont: "印刷フォント", fontCursive: "筆記体", fontMyeongjo: "明朝体", fontGothic: "ゴシック体", printing: "印刷中...", testPrint: "テスト印刷", clearLogs: "バックグラウンドログを消去", btScanning: "Bluetoothを検索中...", btConnecting: "接続を試行中", btConnected: "✓ プリンターが正常に接続されました。", btNoChar: "Characteristicが見つかりません。", btFailed: "接続失敗", prNotConnected: "プリンターが接続されていません。設定から接続してください。", prBuilding: "レシート画像を生成中...", prDone: "✓ レシートの印刷が完了しました。", prFailed: "印刷失敗" },
-  "zh-CN": { panelTitle: "秘密设置", language: "语言", forceTarget: "强迫目标值", staticNum: "固定数字", timeBased: "基于时间", forcedNumber: "强迫的数字", timeFormat: "时间格式", minutesOffset: "分钟偏移", minUnit: "分", forceBehavior: "强迫行为模式", oneTime: "一次性", continuous: "持续", camouflage: "计算器伪装主题", printerSettings: "热敏打印机设置", scanPair: "扫描并配对蓝牙打印机", receiptTemplate: "小票模板", variables: "变量", printFont: "打印字体", fontCursive: "手写体", fontMyeongjo: "明体", fontGothic: "黑体", printing: "打印中...", testPrint: "测试打印", clearLogs: "清除后台记录", btScanning: "正在扫描蓝牙...", btConnecting: "正在尝试连接", btConnected: "✓ 打印机已成功连接。", btNoChar: "未找到特征(Characteristic)。", btFailed: "连接失败", prNotConnected: "打印机未连接。请在设置中连接。", prBuilding: "正在生成小票图像...", prDone: "✓ 小票打印完成。", prFailed: "打印失败" },
-  es: { panelTitle: "Configuración Secreta", language: "Idioma", forceTarget: "Valor Forzado", staticNum: "Número Fijo", timeBased: "Basado en Tiempo", forcedNumber: "Número a Forzar", timeFormat: "Formato de Hora", minutesOffset: "Desfase de Minutos", minUnit: "min", forceBehavior: "Modo de Forzaje", oneTime: "Una vez", continuous: "Continuo", camouflage: "Tema de Camuflaje", printerSettings: "Impresora Térmica", scanPair: "Buscar y Vincular Impresora Bluetooth", receiptTemplate: "Plantilla de Recibo", variables: "Variables", printFont: "Fuente de Impresión", fontCursive: "Cursiva", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Imprimiendo...", testPrint: "Imprimir Prueba", clearLogs: "Borrar Registros de Fondo", btScanning: "Buscando Bluetooth...", btConnecting: "Conectando", btConnected: "✓ Impresora conectada correctamente.", btNoChar: "Característica no encontrada.", btFailed: "Conexión fallida", prNotConnected: "Impresora no conectada. Vincúlela en ajustes.", prBuilding: "Generando imagen del recibo...", prDone: "✓ Recibo impreso correctamente.", prFailed: "Error de impresión" },
-  fr: { panelTitle: "Configuration Secrète", language: "Langue", forceTarget: "Valeur Forcée", staticNum: "Nombre Fixe", timeBased: "Basé sur l'Heure", forcedNumber: "Nombre à Forcer", timeFormat: "Format de l'Heure", minutesOffset: "Décalage en Minutes", minUnit: "min", forceBehavior: "Mode de Forçage", oneTime: "Une fois", continuous: "Continu", camouflage: "Thème de Camouflage", printerSettings: "Imprimante Thermique", scanPair: "Rechercher et Associer l'Imprimante Bluetooth", receiptTemplate: "Modèle de Reçu", variables: "Variables", printFont: "Police d'Impression", fontCursive: "Cursive", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Impression...", testPrint: "Imprimer un Test", clearLogs: "Effacer les Journaux", btScanning: "Recherche Bluetooth...", btConnecting: "Connexion en cours", btConnected: "✓ Imprimante connectée.", btNoChar: "Caractéristique introuvable.", btFailed: "Échec de la connexion", prNotConnected: "Imprimante non connectée. Associez-la dans les réglages.", prBuilding: "Génération de l'image du reçu...", prDone: "✓ Reçu imprimé.", prFailed: "Échec de l'impression" },
-  de: { panelTitle: "Geheime Einstellungen", language: "Sprache", forceTarget: "Forcier-Zielwert", staticNum: "Feste Zahl", timeBased: "Zeitbasiert", forcedNumber: "Zu forcierende Zahl", timeFormat: "Zeitformat", minutesOffset: "Minuten-Versatz", minUnit: "Min", forceBehavior: "Forcier-Modus", oneTime: "Einmalig", continuous: "Dauerhaft", camouflage: "Rechner-Tarnung", printerSettings: "Thermodrucker", scanPair: "Bluetooth-Drucker suchen & koppeln", receiptTemplate: "Beleg-Vorlage", variables: "Variablen", printFont: "Druckschrift", fontCursive: "Schreibschrift", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Druckt...", testPrint: "Testdruck", clearLogs: "Hintergrund-Logs löschen", btScanning: "Bluetooth wird gesucht...", btConnecting: "Verbindung wird hergestellt", btConnected: "✓ Drucker erfolgreich verbunden.", btNoChar: "Characteristic nicht gefunden.", btFailed: "Verbindung fehlgeschlagen", prNotConnected: "Drucker nicht verbunden. Bitte in den Einstellungen koppeln.", prBuilding: "Beleg-Bild wird erstellt...", prDone: "✓ Beleg erfolgreich gedruckt.", prFailed: "Druck fehlgeschlagen" },
+const SETTINGS_TEXTS: Record<string, any> = {
+  en: { panelTitle: "Secret Config Panel", language: "Language", forceTarget: "Force Target Value", staticNum: "Static Number", timeBased: "Time-based", forcedNumber: "Forced Number", timeFormat: "Time Format", minutesOffset: "Minutes Offset", minUnit: "min", forceBehavior: "Force Behavior Mode", oneTime: "One-time", continuous: "Continuous", camouflage: "Calculator Camouflage Theme", printerSettings: "Thermal Printer Settings", scanPair: "Scan & Pair Bluetooth Printer", receiptTemplate: "Receipt Template", variables: "Variables", printFont: "Print Font Style", fontCursive: "Cursive", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Printing...", testPrint: "Test Print Receipt", clearLogs: "Clear Background Logs History", btScanning: "Scanning Bluetooth...", btConnecting: "Connecting", btConnected: "✓ Printer connected successfully.", btNoChar: "Characteristic not found.", btFailed: "Connection failed", prNotConnected: "Printer not connected. Please pair it in settings.", prBuilding: "Building receipt image...", prDone: "✓ Receipt printed successfully.", prFailed: "Print failed", tiltForceSettings: "Tilt Sensor Trigger", tiltForceEnable: "Enable Tilt Sensor Force", tiltLimitLabel: "Forcing Angle Threshold", fakeHistorySettings: "Calculation History Camouflage", fakeHistoryEnable: "Enable Fake History", fakeHistoryCountLabel: "Fake History Generation Count", clearFakeHistory: "Clear History", iosHistoryTitle: "History", androidHistoryTitle: "History", tiltStaticNumberLabel: "Tilt Force Target Number" },
+  ko: { panelTitle: "비밀 설정", language: "언어", forceTarget: "포스 대상 값", staticNum: "고정 숫자", timeBased: "시간 기반", forcedNumber: "포스할 숫자", timeFormat: "시간 형식", minutesOffset: "분 오프셋", minUnit: "분", forceBehavior: "포스 동작 모드", oneTime: "1회성", continuous: "지속", camouflage: "계산기 위장 테마", printerSettings: "감열 프린터 설정", scanPair: "블루투스 프린터 검색·연결", receiptTemplate: "영수증 템플릿", variables: "변수", printFont: "인쇄 글꼴", fontCursive: "필기체", fontMyeongjo: "명조체", fontGothic: "고딕체", printing: "인쇄 중...", testPrint: "테스트 인쇄", clearLogs: "백그라운드 로그 지우기", btScanning: "블루투스 검색 중...", btConnecting: "연결 시도 중", btConnected: "✓ 프린터가 성공적으로 연결되었습니다.", btNoChar: "특성(Characteristic)을 찾을 수 없습니다.", btFailed: "연결 실패", prNotConnected: "프린터가 연결되지 않았습니다. 설정에서 연결해 주세요.", prBuilding: "영수증 이미지 생성 중...", prDone: "✓ 영수증 출력이 완료되었습니다.", prFailed: "인쇄 실패", tiltForceSettings: "기울기 센서 트리거", tiltForceEnable: "기울기 센서 포스 활성화", tiltLimitLabel: "포스 각도 임계값", fakeHistorySettings: "계산 이력 위장", fakeHistoryEnable: "페이크 계산 이력 활성화", fakeHistoryCountLabel: "가짜 이력 생성 개수", clearFakeHistory: "이력 지우기", iosHistoryTitle: "기록", androidHistoryTitle: "계산 기록", tiltStaticNumberLabel: "기울기 포스 목표 숫자" },
+  ja: { panelTitle: "シークレット設定", language: "言語", forceTarget: "フォース対象の値", staticNum: "固定数字", timeBased: "時間ベース", forcedNumber: "フォースする数字", timeFormat: "時間フォーマット", minutesOffset: "分オフセット", minUnit: "分", forceBehavior: "フォース動作モード", oneTime: "1回のみ", continuous: "継続", camouflage: "電卓カモフラージュ", printerSettings: "感熱プリンター設定", scanPair: "Bluetoothプリンターを検索・接続", receiptTemplate: "レシートテンプレート", variables: "変数", printFont: "印刷フォント", fontCursive: "筆記体", fontMyeongjo: "明朝体", fontGothic: "ゴシック体", printing: "印刷中...", testPrint: "テスト印刷", clearLogs: "バックグラウンドログを消去", btScanning: "Bluetoothを検索中...", btConnecting: "接続を試行中", btConnected: "✓ プリンターが正常に接続されました。", btNoChar: "Characteristicが見つかりません。", btFailed: "接続失敗", prNotConnected: "プリンターが接続されていません。設定から接続してください。", prBuilding: "レシート画像を生成中...", prDone: "✓ レシートの印刷が完了しました。", prFailed: "印刷失敗", tiltForceSettings: "傾きセンサートリガー", tiltForceEnable: "傾きセンサーフォース有効化", tiltLimitLabel: "フォース角度しきい値", fakeHistorySettings: "計算履歴カモフラージュ", fakeHistoryEnable: "フェイク計算履歴有効化", fakeHistoryCountLabel: "偽履歴の生成件数", clearFakeHistory: "履歴の消去", iosHistoryTitle: "履歴", androidHistoryTitle: "計算履歴", tiltStaticNumberLabel: "傾きフォース目標数字" },
+  "zh-CN": { panelTitle: "秘密设置", language: "语言", forceTarget: "强迫目标值", staticNum: "固定数字", timeBased: "基于时间", forcedNumber: "强迫的数字", timeFormat: "时间格式", minutesOffset: "分钟偏移", minUnit: "分", forceBehavior: "强迫行为模式", oneTime: "一次性", continuous: "持续", camouflage: "计算器伪装主题", printerSettings: "热敏打印机设置", scanPair: "扫描并配对蓝牙打印机", receiptTemplate: "小票模板", variables: "变量", printFont: "打印字体", fontCursive: "手写体", fontMyeongjo: "明体", fontGothic: "黑体", printing: "打印中...", testPrint: "测试打印", clearLogs: "清除后台记录", btScanning: "正在扫描蓝牙...", btConnecting: "正在尝试连接", btConnected: "✓ 打印机已成功连接。", btNoChar: "未找到特征(Characteristic)。", btFailed: "连接失败", prNotConnected: "打印机未连接。请在设置中连接。", prBuilding: "正在生成小票图像...", prDone: "✓ 小票打印完成。", prFailed: "打印失败", tiltForceSettings: "重力感应触发", tiltForceEnable: "启用重力感应强迫", tiltLimitLabel: "强迫角度阈值", fakeHistorySettings: "计算历史伪装", fakeHistoryEnable: "启用虚假历史", fakeHistoryCountLabel: "生成虚假历史条数", clearFakeHistory: "清除历史", iosHistoryTitle: "历史记录", androidHistoryTitle: "计算历史", tiltStaticNumberLabel: "重力感应强迫数字" },
+  es: { panelTitle: "Configuración Secreta", language: "Idioma", forceTarget: "Valor Forzado", staticNum: "Número Fijo", timeBased: "Basado en Tiempo", forcedNumber: "Número a Forzar", timeFormat: "Formato de Hora", minutesOffset: "Desfase de Minutos", minUnit: "min", forceBehavior: "Modo de Forzaje", oneTime: "Una vez", continuous: "Continuo", camouflage: "Tema de Camuflaje", printerSettings: "Impresora Térmica", scanPair: "Buscar y Vincular Impresora Bluetooth", receiptTemplate: "Plantilla de Recibo", variables: "Variables", printFont: "Fuente de Impresión", fontCursive: "Cursiva", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Imprimiendo...", testPrint: "Imprimir Prueba", clearLogs: "Borrar Registros de Fondo", btScanning: "Buscando Bluetooth...", btConnecting: "Conectando", btConnected: "✓ Impresora conectada correctamente.", btNoChar: "Característica no encontrada.", btFailed: "Conexión fallida", prNotConnected: "Impresora no conectada. Vincúlela en ajustes.", prBuilding: "Generando imagen del recibo...", prDone: "✓ Recibo impreso correctamente.", prFailed: "Error de impresión", tiltForceSettings: "Disparador de Inclinación", tiltForceEnable: "Activar Forzaje por Inclinación", tiltLimitLabel: "Umbral de Ángulo de Forzaje", fakeHistorySettings: "Historial de Camuflaje", fakeHistoryEnable: "Activar Historial Falso", fakeHistoryCountLabel: "Cantidad de Historial Falso", clearFakeHistory: "Borrar Historial", iosHistoryTitle: "Historial", androidHistoryTitle: "Historial de cálculos", tiltStaticNumberLabel: "Número Forzado de Inclinación" },
+  fr: { panelTitle: "Configuration Secrète", language: "Langue", forceTarget: "Valeur Forcée", staticNum: "Nombre Fixe", timeBased: "Basé sur l'Heure", forcedNumber: "Nombre à Forcer", timeFormat: "Format de l'Heure", minutesOffset: "Décalage en Minutes", minUnit: "min", forceBehavior: "Mode de Forçage", oneTime: "Une fois", continuous: "Continu", camouflage: "Thème de Camouflage", printerSettings: "Imprimante Thermique", scanPair: "Rechercher et Associer l'Imprimante Bluetooth", receiptTemplate: "Modèle de Reçu", variables: "Variables", printFont: "Police d'Impression", fontCursive: "Cursive", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Impression...", testPrint: "Imprimer un Test", clearLogs: "Effacer les Journaux", btScanning: "Recherche Bluetooth...", btConnecting: "Connexion en cours", btConnected: "✓ Imprimante connectée.", btNoChar: "Caractéristique introuvable.", btFailed: "Échec de la connexion", prNotConnected: "Imprimante non connectée. Associez-la dans les réglages.", prBuilding: "Génération de l'image du reçu...", prDone: "✓ Reçu imprimé.", prFailed: "Échec de l'impression", tiltForceSettings: "Déclencheur d'Inclinaison", tiltForceEnable: "Activer le Forçage par Inclinaison", tiltLimitLabel: "Seuil d'Angle de Forçage", fakeHistorySettings: "Historique de Camouflage", fakeHistoryEnable: "Activer le Faux Historique", fakeHistoryCountLabel: "Nombre de Faux Historiques", clearFakeHistory: "Effacer l'Historique", iosHistoryTitle: "Historique", androidHistoryTitle: "Historique des calculs", tiltStaticNumberLabel: "Nombre Forcé d'Inclinaison" },
+  de: { panelTitle: "Geheime Einstellungen", language: "Sprache", forceTarget: "Forcier-Zielwert", staticNum: "Feste Zahl", timeBased: "Zeitbasiert", forcedNumber: "Zu forcierende Zahl", timeFormat: "Zeitformat", minutesOffset: "Minuten-Versatz", minUnit: "Min", forceBehavior: "Forcier-Modus", oneTime: "Einmalig", continuous: "Dauerhaft", camouflage: "Rechner-Tarnung", printerSettings: "Thermodrucker", scanPair: "Bluetooth-Drucker suchen & koppeln", receiptTemplate: "Beleg-Vorlage", variables: "Variablen", printFont: "Druckschrift", fontCursive: "Schreibschrift", fontMyeongjo: "Serif", fontGothic: "Sans-serif", printing: "Druckt...", testPrint: "Testdruck", clearLogs: "Hintergrund-Logs löschen", btScanning: "Bluetooth wird gesucht...", btConnecting: "Verbindung wird hergestellt", btConnected: "✓ Drucker erfolgreich verbunden.", btNoChar: "Characteristic nicht gefunden.", btFailed: "Verbindung fehlgeschlagen", prNotConnected: "Drucker nicht verbunden. Bitte in den Einstellungen koppeln.", prBuilding: "Beleg-Bild wird erstellt...", prDone: "✓ Beleg erfolgreich gedruckt.", prFailed: "Druck verpasst", tiltForceSettings: "Neigungssensor-Trigger", tiltForceEnable: "Neigungssensor-Forcierung aktivieren", tiltLimitLabel: "Forcier-Winkelschwelle", fakeHistorySettings: "Berechnungsverlauf-Tarnung", fakeHistoryEnable: "Gefälschten Verlauf aktivieren", fakeHistoryCountLabel: "Anzahl gefälschter Einträge", clearFakeHistory: "Verlauf löschen", iosHistoryTitle: "Verlauf", androidHistoryTitle: "Rechenverlauf", tiltStaticNumberLabel: "Neigungs-Forcier-Zielzahl" }
 };
 
 const BLOCK_TEXTS: Record<string, {
@@ -325,6 +315,15 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const [dragOffset, setDragOffset] = useState(0);
   const peekStartXRef = useRef<number | null>(null);
 
+  // 디바이스 기울기 센서 상태
+  const [currentTilt, setCurrentTilt] = useState({ pitch: 0, roll: 0 });
+
+  // 계산 이력 관련 상태
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [fakeHistory, setFakeHistory] = useState<{ date: string; expr: string; result: string }[]>([]);
+
+
+
   // 블루투스 프린터 상태
   const [printerDevice, setPrinterDevice] = useState<BluetoothDevice | null>(null);
   const [printerChar, setPrinterChar] = useState<BluetoothRemoteGATTCharacteristic | null>(null);
@@ -368,6 +367,40 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const [statusBarTime, setStatusBarTime] = useState("9:41");
   const [isBatteryFlashing, setIsBatteryFlashing] = useState(false);
   const [isCellularFlashing, setIsCellularFlashing] = useState(false);
+
+  // iOS DeviceOrientation 센서 권한 요청
+  const requestTiltPermission = async (): Promise<boolean> => {
+    if (
+      typeof window !== "undefined" &&
+      typeof DeviceOrientationEvent !== "undefined" &&
+      (DeviceOrientationEvent as any).requestPermission
+    ) {
+      try {
+        const permission = await (DeviceOrientationEvent as any).requestPermission();
+        return permission === "granted";
+      } catch (err) {
+        console.error("Sensor permission request failed:", err);
+        return false;
+      }
+    }
+    return true; // iOS 외 기기는 기본 승인
+  };
+
+  // 디바이스 기울기 센서 감청 이펙트
+  useEffect(() => {
+    if (!config.isTiltTriggerEnabled) return;
+
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      const pitch = e.beta || 0;
+      const roll = e.gamma || 0;
+      setCurrentTilt({ pitch, roll });
+    };
+
+    window.addEventListener("deviceorientation", handleOrientation);
+    return () => {
+      window.removeEventListener("deviceorientation", handleOrientation);
+    };
+  }, [config.isTiltTriggerEnabled]);
 
   // 상단 상태바 실시간 시각 동기화
   useEffect(() => {
@@ -482,6 +515,53 @@ export default function MagicCalculator({ locale, productId }: Props) {
     } catch { /* ignore */ }
   };
 
+  // 페이크 계산 이력 자동 생성 엔진
+  const initFakeHistory = () => {
+    const isEnabled = config.isFakeHistoryEnabled ?? false;
+    if (!isEnabled) {
+      setFakeHistory([]);
+      return;
+    }
+    const target = isForceActive ? getForceValue() : display;
+    const targetNum = parseFloat(target) || 73;
+    const count = config.fakeHistoryCount ?? 10;
+    const list = [];
+    const now = new Date();
+
+    for (let i = 0; i < count; i++) {
+      // 날짜 분산 (최근 것부터 과거 순으로 분산)
+      const date = new Date(now.getTime() - i * (4 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000) - 20 * 60 * 1000);
+      const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+      
+      let expr = "";
+      const randType = i % 3;
+      if (randType === 0) {
+        // A + B - C = T
+        const a = Math.floor(Math.random() * 500) + 100;
+        const b = Math.floor(Math.random() * 400) + 50;
+        const c = a + b - targetNum;
+        expr = `${a} + ${b} - ${c}`;
+      } else if (randType === 1) {
+        // A * B - C = T
+        const a = Math.floor(Math.random() * 20) + 5;
+        const b = Math.floor(Math.random() * 15) + 5;
+        const c = a * b - targetNum;
+        expr = `${a} × ${b} - ${c}`;
+      } else {
+        // A / B = T -> A = T * B
+        const b = Math.floor(Math.random() * 5) + 2;
+        const a = targetNum * b;
+        expr = `${a} ÷ ${b}`;
+      }
+      list.push({ date: dateStr, expr, result: String(targetNum) });
+    }
+    setFakeHistory(list);
+  };
+
+  useEffect(() => {
+    initFakeHistory();
+  }, [config.isFakeHistoryEnabled, config.fakeHistoryCount, isForceActive, display]);
+
   // 설정창 라벨 (현재 앱 언어 기준)
   const st = SETTINGS_TEXTS[config.appLocale] ?? SETTINGS_TEXTS[locale] ?? SETTINGS_TEXTS.en;
 
@@ -522,8 +602,18 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }
 
     // 포스 모드 활성화 시 강제 주입
-    if (isForceActive) {
-      const forcedVal = getForceValue();
+    let forceTriggered = isForceActive;
+    let isTiltForced = false;
+    if (config.isTiltTriggerEnabled && !isForceActive) {
+      const pitch = Math.abs(currentTilt.pitch);
+      if (pitch < (config.tiltLimit ?? 45)) {
+        forceTriggered = true;
+        isTiltForced = true;
+      }
+    }
+
+    if (forceTriggered) {
+      const forcedVal = getForceValue(isTiltForced);
       // 관객 입력 숫자는 피킹 로그에 기록 후 비움 (배경에 남아 비쳐 보이지 않도록)
       if (currentInputNumber) {
         appendToPeekLog(currentInputNumber);
@@ -580,7 +670,11 @@ export default function MagicCalculator({ locale, productId }: Props) {
   };
 
   // 포스 계산 결과값 빌드
-  const getForceValue = (): string => {
+  const getForceValue = (isTilt: boolean = false): string => {
+    if (isTilt && config.isTiltTriggerEnabled) {
+      return config.tiltStaticNumber || config.staticNumber;
+    }
+
     if (config.forceType === "static") {
       return config.staticNumber;
     }
@@ -625,18 +719,17 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }
   };
 
-  // 독립 인스타 앱 연동 — 관객 피킹값/포스값을 공유 키에 지속 저장한다.
-  // 인스타 앱(/insta)이 이 값을 읽어 게시물 캡션의 {force}/{num1}/{num2}/{result} 토큰을 치환.
   useEffect(() => {
     try {
+      const isTiltForced = !isForceActive && !!config.isTiltTriggerEnabled && (Math.abs(currentTilt.pitch) < (config.tiltLimit ?? 45));
       localStorage.setItem("ml_calc_instagram_prediction", JSON.stringify({
         num1: peekLogs[0] ?? "",
         num2: peekLogs[1] ?? "",
-        result: isForceActive ? getForceValue() : display,
+        result: (isForceActive || isTiltForced) ? getForceValue(isTiltForced) : display,
       }));
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [peekLogs, display, isForceActive]);
+  }, [peekLogs, display, isForceActive, currentTilt.pitch, config.isTiltTriggerEnabled, config.tiltLimit]);
 
   // 키패드 입력 핸들러 (touchend 릴리즈 감지)
   const handleKeyPress = (val: string) => {
@@ -885,6 +978,14 @@ export default function MagicCalculator({ locale, productId }: Props) {
   // C 버튼 홀드 (3초) - 포스 모드 온오프
   const handleCStart = () => {
     holdTimerRef.current = setTimeout(() => {
+      // 기울기 포스가 이미 물리적으로 성립하여 동작 중인 상태라면 수동 포스 켬을 방지
+      if (config.isTiltTriggerEnabled) {
+        const pitch = Math.abs(currentTilt.pitch);
+        if (pitch < (config.tiltLimit ?? 45)) {
+          holdTimerRef.current = null;
+          return;
+        }
+      }
       setIsForceActive((prev) => !prev);
       triggerDimmingFeedback();
       holdTimerRef.current = null;
@@ -1160,6 +1261,15 @@ export default function MagicCalculator({ locale, productId }: Props) {
     );
   }
 
+  const isCurrentForceActive = (() => {
+    if (isForceActive) return true;
+    if (config.isTiltTriggerEnabled) {
+      const pitch = Math.abs(currentTilt.pitch);
+      if (pitch < (config.tiltLimit ?? 45)) return true;
+    }
+    return false;
+  })();
+
   return (
     <div
       id="calc-root"
@@ -1229,7 +1339,23 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
         {/* ── 위장 상태바 (Camouflage Status Bar) ── */}
         <div className="absolute top-0 left-0 w-full h-10 px-6 pt-3 flex items-center justify-between text-xs font-semibold text-white select-none z-40 bg-black/10">
-          <div>{statusBarTime}</div>
+          <div
+            className="cursor-pointer active:opacity-60"
+            onClick={() => {
+              if (config.isFakeHistoryEnabled) {
+                setIsHistoryOpen(true);
+                triggerDimmingFeedback();
+              }
+            }}
+            onTouchEnd={() => {
+              if (config.isFakeHistoryEnabled) {
+                setIsHistoryOpen(true);
+                triggerDimmingFeedback();
+              }
+            }}
+          >
+            {statusBarTime}
+          </div>
           <div className="flex items-center gap-1.5">
             {/* Cellular Signal Icons */}
             <div className={isCellularFlashing ? "cellular-blink-3" : ""}>
@@ -1257,7 +1383,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
             {/* Battery Icon */}
             <div className={`relative w-[22px] h-[11px] border border-white/60 rounded-xs p-[1px] flex items-center ${isBatteryFlashing ? "battery-blink-3" : ""}`}>
-              <div className="h-full bg-white rounded-3xs" style={{ width: "80%" }} />
+              <div className="h-full bg-white rounded-3xs" style={{ width: isCurrentForceActive ? "73%" : "80%" }} />
               <div className="absolute -right-[3px] top-[3px] w-[2px] h-[3px] bg-white/60 rounded-r-3xs" />
             </div>
           </div>
@@ -1339,7 +1465,22 @@ export default function MagicCalculator({ locale, productId }: Props) {
           <>
             <div className="flex items-center px-6 pb-3">
               <div className="flex items-center gap-10">
-                <Clock className="w-[26px] h-[26px] text-[#9A9A9F]" strokeWidth={2} />
+                <Clock
+                  className="w-[26px] h-[26px] text-[#9A9A9F] cursor-pointer active:opacity-60"
+                  strokeWidth={2}
+                  onClick={() => {
+                    if (config.isFakeHistoryEnabled) {
+                      setIsHistoryOpen(true);
+                      triggerDimmingFeedback();
+                    }
+                  }}
+                  onTouchEnd={() => {
+                    if (config.isFakeHistoryEnabled) {
+                      setIsHistoryOpen(true);
+                      triggerDimmingFeedback();
+                    }
+                  }}
+                />
                 <Ruler className="w-[26px] h-[26px] text-[#9A9A9F]" strokeWidth={2} />
                 <div className="w-[26px] h-[26px] rounded-md border-[1.5px] border-[#9A9A9F] flex items-center justify-center text-[#9A9A9F] text-[8px] font-semibold leading-[1.05] text-center">
                   <span>√π<br />e=</span>
@@ -1882,6 +2023,89 @@ export default function MagicCalculator({ locale, productId }: Props) {
                   </p>
                 </div>
 
+                {/* 기울기 센서 설정 */}
+                <div className="space-y-3 pt-3 border-t border-[#2D2D4E]/50">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[#F0E6FF]">
+                      {st.tiltForceSettings}
+                    </label>
+                    <input
+                      type="checkbox"
+                      checked={!!config.isTiltTriggerEnabled}
+                      onChange={async (e) => {
+                        const isChecked = e.target.checked;
+                        if (isChecked) {
+                          const granted = await requestTiltPermission();
+                          if (!granted) {
+                            alert(locale === "ko" ? "기울기 센서 권한이 거부되었습니다." : "Permission denied.");
+                            return;
+                          }
+                        }
+                        saveConfig({ ...config, isTiltTriggerEnabled: isChecked });
+                      }}
+                      className="w-4 h-4 accent-[#7C3AED] cursor-pointer"
+                    />
+                  </div>
+                  {config.isTiltTriggerEnabled && (
+                    <div className="space-y-2 pl-3 border-l border-[#2D2D4E] mt-2">
+                      <div className="space-y-1 mt-1 mb-3">
+                        <label className="text-xs text-[#9CA3AF]">{st.tiltStaticNumberLabel}</label>
+                        <input
+                          type="text"
+                          value={config.tiltStaticNumber ?? ""}
+                          onChange={(e) => saveConfig({ ...config, tiltStaticNumber: e.target.value.replace(/[^0-9.-]/g, "") })}
+                          className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-3 py-2 focus:outline-none"
+                          placeholder="ex: 73"
+                        />
+                      </div>
+                      <label className="text-xs text-[#9CA3AF] flex items-center justify-between">
+                        <span>{st.tiltLimitLabel}</span>
+                        <span className="text-[#A855F7] font-semibold">{config.tiltLimit ?? 45}°</span>
+                      </label>
+                      <input
+                        type="range"
+                        min={30}
+                        max={75}
+                        step={5}
+                        value={config.tiltLimit ?? 45}
+                        onChange={(e) => saveConfig({ ...config, tiltLimit: parseInt(e.target.value, 10) || 45 })}
+                        className="w-full accent-[#7C3AED]"
+                      />
+                      <div className="flex justify-between text-[10px] text-[#6B7280]">
+                        <span>30°</span><span>45°</span><span>60°</span><span>75°</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 페이크 계산 이력 설정 */}
+                <div className="space-y-3 pt-3 border-t border-[#2D2D4E]/50">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[#F0E6FF]">
+                      {st.fakeHistorySettings}
+                    </label>
+                    <input
+                      type="checkbox"
+                      checked={!!config.isFakeHistoryEnabled}
+                      onChange={(e) => saveConfig({ ...config, isFakeHistoryEnabled: e.target.checked })}
+                      className="w-4 h-4 accent-[#7C3AED] cursor-pointer"
+                    />
+                  </div>
+                  {config.isFakeHistoryEnabled && (
+                    <div className="space-y-2 pl-3 border-l border-[#2D2D4E] mt-2">
+                      <label className="text-xs text-[#9CA3AF]">{st.fakeHistoryCountLabel}</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={config.fakeHistoryCount ?? 10}
+                        onChange={(e) => saveConfig({ ...config, fakeHistoryCount: parseInt(e.target.value, 10) || 10 })}
+                        className="w-full rounded-lg bg-[#13131F] border border-[#2D2D4E] text-white text-xs px-3 py-2"
+                      />
+                    </div>
+                  )}
+                </div>
+
                 {/* 인스타 스토리 예언 활성화 */}
                 <div className="space-y-3 pt-3 border-t border-[#2D2D4E]/50">
                   <div className="flex items-center justify-between">
@@ -2113,6 +2337,66 @@ export default function MagicCalculator({ locale, productId }: Props) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── 페이크 계산 이력 모달 (Fake History Modal) ── */}
+      <AnimatePresence>
+        {isHistoryOpen && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed inset-0 z-50 flex flex-col justify-end w-full h-full"
+            style={{ touchAction: "none" }}
+          >
+            <div 
+              className="w-full h-full flex flex-col pt-12 pb-6 px-6"
+              style={{ background: "#1C1C1E", borderTop: "1px solid #2D2D4E" }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-[#2D2D4E] pb-3 mb-4">
+                <h3 className="text-base font-semibold text-white">
+                  {theme === "android" ? st.androidHistoryTitle : st.iosHistoryTitle}
+                </h3>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setFakeHistory([]);
+                      triggerDimmingFeedback();
+                    }}
+                    className="text-sm font-semibold text-red-400 hover:text-red-300"
+                  >
+                    {st.clearFakeHistory}
+                  </button>
+                  <button
+                    onClick={() => setIsHistoryOpen(false)}
+                    className="text-sm font-semibold text-[#A855F7] hover:text-[#C084FC]"
+                  >
+                    {locale === "ko" ? "닫기" : "Close"}
+                  </button>
+                </div>
+              </div>
+
+              {/* History list */}
+              <div className="flex-1 overflow-y-auto space-y-4" style={{ touchAction: "pan-y" }}>
+                {fakeHistory.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-xs text-[#6B7280]">
+                    {locale === "ko" ? "계산 기록이 없습니다." : "No history."}
+                  </div>
+                ) : (
+                  fakeHistory.map((item, idx) => (
+                    <div key={idx} className="space-y-1 text-right border-b border-[#2D2D4E]/30 pb-3">
+                      <div className="text-[10px] text-gray-500 font-mono">{item.date}</div>
+                      <div className="text-sm text-gray-300 font-mono">{item.expr}</div>
+                      <div className="text-lg font-bold text-white font-mono">= {item.result}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -2139,6 +2423,11 @@ interface MagicConfig {
   storyTextColor?: string;
   storyTextSize?: number;
   storyTextFont?: string;
+  isTiltTriggerEnabled?: boolean;
+  tiltLimit?: number;
+  isFakeHistoryEnabled?: boolean;
+  fakeHistoryCount?: number;
+  tiltStaticNumber?: string;
 }
 
 // Web Bluetooth API 타입 캐스팅

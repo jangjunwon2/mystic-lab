@@ -11,10 +11,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   const supabase = createAdminClient();
 
-  const ALLOWED_FIELDS = ["notes", "download_url", "device_type", "version"] as const;
+  const ALLOWED_FIELDS = ["notes", "download_url", "device_type", "version", "is_active"] as const;
   const patch: Record<string, unknown> = {};
   for (const key of ALLOWED_FIELDS) {
     if (key in body) patch[key] = body[key];
+  }
+
+  // 만약 특정 버전을 배포 활성화(is_active = true) 하는 경우, 동일 장치타입의 타 버전들을 전부 비활성화 처리
+  if (patch.is_active === true) {
+    const { data: release } = await (supabase as any)
+      .from("firmware_releases")
+      .select("device_type")
+      .eq("id", id)
+      .single();
+
+    if (release?.device_type) {
+      await (supabase as any)
+        .from("firmware_releases")
+        .update({ is_active: false })
+        .eq("device_type", release.device_type);
+    }
   }
 
   const { error } = await (supabase as any)

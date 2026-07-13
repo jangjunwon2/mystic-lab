@@ -2,10 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import AnnouncementBannerClient from "./AnnouncementBannerClient";
 
 export default async function AnnouncementBanner({ locale }: { locale: string }) {
+  let data = null;
   try {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const res = await (supabase as any)
       .from("announcements")
       .select("id, message, link_url, link_label, coupon_code, translations")
       .eq("is_active", true)
@@ -14,9 +15,10 @@ export default async function AnnouncementBanner({ locale }: { locale: string })
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-
-    return <AnnouncementBannerClient announcement={data ?? null} locale={locale} />;
+    data = res.data;
   } catch {
     return null;
   }
+
+  return <AnnouncementBannerClient announcement={data ?? null} locale={locale} />;
 }

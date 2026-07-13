@@ -1,12 +1,12 @@
 // 개인 발급 쿠폰(issued_coupons) — 발급·검증·사용 처리. service-role(admin client)로 접근.
 // 공용 할인코드(discount_codes)와 별개: 특정 회원/이메일에게 1회용으로 지급.
+import { randomBytes } from "crypto";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 // 혼동되는 글자(0/O, 1/I) 제외
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function genCode(prefix = "ML"): string {
-  const { randomBytes } = require("crypto") as typeof import("crypto");
   let s = "";
   for (let i = 0; i < 8; i++) s += CODE_CHARS[randomBytes(1)[0] % CODE_CHARS.length];
   return `${prefix}-${s}`;

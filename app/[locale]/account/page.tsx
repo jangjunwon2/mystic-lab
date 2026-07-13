@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { decryptCode } from "@/lib/crypto/unlock-code";
 import AccountClient from "@/components/account/AccountClient";
 
 interface Props {
@@ -29,6 +30,7 @@ export default async function AccountPage({ params }: Props) {
   let customOrders: unknown[] = [];
   let wishlist: unknown[] = [];
   let grants: unknown[] = [];
+  let initialCodes: Record<string, string> = {};
   let profile: { display_name: string | null; avatar_url: string | null; role: string } | null = null;
 
   try {
@@ -39,7 +41,9 @@ export default async function AccountPage({ params }: Props) {
       redirect(`/${locale}/sign-in?redirect=/${locale}/account`);
     }
 
-    const [profileRes, ordersRes, wishlistRes, customOrdersRes, grantsRes] = await Promise.all([
+    const admin = (await createAdminClient()) as any;
+
+    const [profileRes, ordersRes, wishlistRes, customOrdersRes, grantsRes, codesRes] = await Promise.all([
       supabase.from("profiles").select("display_name, avatar_url, role").eq("id", user.id).single(),
       supabase
         .from("orders")
@@ -55,15 +59,15 @@ export default async function AccountPage({ params }: Props) {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20),
-      (supabase as any)
+      supabase
         .from("wishlists")
         .select("id, product_id, products(id, slug, thumbnail_url, price_usd, product_translations(name, language))")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false }),
-      (supabase as any)
+      supabase
         .from("custom_order_requests")
         .select("id, name, description, budget_range, desired_deadline, quoted_price_usd, quoted_price_krw, payment_status, payment_token, status, created_at, admin_message")
-        .eq("email", user.email)
+        .eq("email", user.email ?? "")
         .order("created_at", { ascending: false }),
       supabase
         .from("manual_video_grants")
@@ -71,6 +75,10 @@ export default async function AccountPage({ params }: Props) {
           id, expires_at, created_at,
           products (id, slug, thumbnail_url, product_translations(name, language))
         `)
+        .eq("user_id", user.id),
+      admin
+        .from("product_unlock_codes")
+        .select("product_id, code_plain")
         .eq("user_id", user.id),
     ]);
 
@@ -80,6 +88,18 @@ export default async function AccountPage({ params }: Props) {
     customOrders = customOrdersRes.data ?? [];
     wishlist = wishlistRes.data ?? [];
     grants = grantsRes.data ?? [];
+
+    const rawCodes = (codesRes.data ?? []) as { product_id: string; code_plain: string | null }[];
+    for (const item of rawCodes) {
+      if (item.code_plain) {
+        try {
+          const decrypted = decryptCode(item.code_plain);
+          if (decrypted) {
+            initialCodes[item.product_id] = decrypted;
+          }
+        } catch { /* ignore */ }
+      }
+    }
 
     // display_name이 없으면 가입 시 입력한 이름(user metadata)으로 채워줌
     if (rawProfile && !rawProfile.display_name) {
@@ -110,6 +130,7 @@ export default async function AccountPage({ params }: Props) {
       customOrders={customOrders}
       wishlist={wishlist as any}
       grants={grants}
+      initialCodes={initialCodes}
     />
   );
 }

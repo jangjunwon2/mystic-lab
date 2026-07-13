@@ -5,6 +5,7 @@ import { Upload, FolderArchive, X, RefreshCw, Zap } from "lucide-react";
 import type { FirmwareDevice } from "@/app/api/admin/firmware/devices/route";
 import FirmwareDeviceList from "./FirmwareDeviceList";
 import FirmwareDeviceManager from "./FirmwareDeviceManager";
+import BuildMonitorTerminal from "./BuildMonitorTerminal";
 
 interface FirmwareRelease {
   id: string;
@@ -60,6 +61,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const [optimizing, setOptimizing] = useState(false);
   const [stagedDevices, setStagedDevices] = useState<StagedDevice[]>([]);
   const [polling, setPolling] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
   const [newReleaseAlert, setNewReleaseAlert] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollDeadlineRef = useRef<number>(0);
@@ -80,6 +82,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
   const startPolling = useCallback((expectedCount = 0) => {
     if (pollRef.current) return;
     setPolling(true);
+    setShowTerminal(true);
     expectedCountRef.current = expectedCount;
     foundNewIdsRef.current = new Set();
     pollDeadlineRef.current = Date.now() + 20 * 60 * 1000;
@@ -358,7 +361,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
 
           {stagedDevices.length === 0 && (
             <p className="text-xs text-center py-3" style={{ color: "#4B5563" }}>
-              zip 선택 후 "목록에 추가" → 각 장치의 빌드 버튼으로 GitHub에 배포
+              zip 선택 후 &quot;목록에 추가&quot; → 각 장치의 빌드 버튼으로 GitHub에 배포
             </p>
           )}
 
@@ -430,7 +433,7 @@ export default function FirmwareClient({ initialReleases, initialDevices }: Prop
             <span className="text-sm font-medium" style={{ color: "#F0E6FF" }}>소스코드 업로드 방법</span>
           </div>
           <div className="px-5 py-4 space-y-3 text-xs" style={{ color: "#9CA3AF" }}>
-            <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>①</span><span><strong style={{ color: "#F0E6FF" }}>config.h</strong> (또는 transmitter 계열은 <strong style={{ color: "#F0E6FF" }}>config_t.h</strong>)의 <code style={{ color: "#A855F7" }}>FIRMWARE_VERSION</code>을 새 버전으로 수정합니다. (예: <code style={{ color: "#A855F7" }}>"1.0"</code> → <code style={{ color: "#A855F7" }}>"1.1"</code>)<br /><span style={{ color: "#6B7280" }}><code>#define</code> 및 <code>constexpr const char*</code> 두 형식 모두 인식합니다.</span></span></div>
+            <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>①</span><span><strong style={{ color: "#F0E6FF" }}>config.h</strong> (또는 transmitter 계열은 <strong style={{ color: "#F0E6FF" }}>config_t.h</strong>)의 <code style={{ color: "#A855F7" }}>FIRMWARE_VERSION</code>을 새 버전으로 수정합니다. (예: <code style={{ color: "#A855F7" }}>&quot;1.0&quot;</code> → <code style={{ color: "#A855F7" }}>&quot;1.1&quot;</code>)<br /><span style={{ color: "#6B7280" }}><code>#define</code> 및 <code>constexpr const char*</code> 두 형식 모두 인식합니다.</span></span></div>
             <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>②</span><span>해당 <strong style={{ color: "#F0E6FF" }}>장치 폴더 전체</strong>를 zip으로 압축합니다.<br /><span style={{ color: "#6B7280" }}>예) nexus_flux_case 폴더 우클릭 → 압축(ZIP)으로 보내기</span></span></div>
             <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>③</span><span>위 업로드 영역에 zip을 드래그하거나 선택합니다. <strong style={{ color: "#F0E6FF" }}>장치 이름은 .ino 파일명으로 자동 감지</strong>됩니다.</span></div>
             <div className="flex gap-3"><span className="shrink-0 font-bold" style={{ color: "#A855F7" }}>④</span><span>빌드 완료까지 <strong style={{ color: "#F0E6FF" }}>약 5~10분</strong> 소요. 완료 후 이전 버전은 자동 삭제됩니다.<br /><span style={{ color: "#6B7280" }}>진행 상황: github.com/jangjunwon2/nexus-firmware → Actions 탭</span></span></div>
@@ -501,6 +504,7 @@ void otaCheckAndUpdate() {
           </div>
         </div>
       </div>
+      {showTerminal && <BuildMonitorTerminal onClose={() => setShowTerminal(false)} />}
     </div>
   );
 }

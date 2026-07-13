@@ -64,7 +64,7 @@ export default function CheckoutPage({ params }: Props) {
     lsError,
     setLsError,
     lsSuccess,
-    lsScriptReady,
+    lsScriptReadyRef,
     couponCode,
     setCouponCode,
     couponLoading,
@@ -167,7 +167,7 @@ export default function CheckoutPage({ params }: Props) {
         strategy="lazyOnload"
         onLoad={() => {
           window.createLemonSqueezy?.();
-          lsScriptReady.current = true;
+          lsScriptReadyRef.current = true;
         }}
       />
 

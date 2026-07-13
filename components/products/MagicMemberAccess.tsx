@@ -8,19 +8,20 @@ import { Zap, Copy, Check } from "lucide-react";
 interface Props {
   productId: string;
   locale: string;
-  slug?: string; // 앱 경로/활성화 키 분기 (magic-calculator → /calc, fake-instagram → /insta)
+  slug?: string;
+  initialCode?: string;
 }
 
 // 회원 구매자에게 해법 영상 하단에서 자동 발급 코드 + 웹앱 실행을 제공
-export default function MagicMemberAccess({ productId, locale, slug = "magic-calculator" }: Props) {
+export default function MagicMemberAccess({ productId, locale, slug = "magic-calculator", initialCode }: Props) {
   const router = useRouter();
   const t = useTranslations("calc");
 
   const appPath = slug === "fake-instagram" ? `/${locale}/insta` : `/${locale}/calc`;
   const activatedKey = `ml_app_activated_${slug}`;
 
-  const [code, setCode] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [code, setCode] = useState<string | null>(initialCode ?? null);
+  const [loading, setLoading] = useState(!initialCode);
   const [activated, setActivated] = useState(false);
   const [activating, setActivating] = useState(false);
   const [error, setError] = useState("");
@@ -33,6 +34,26 @@ export default function MagicMemberAccess({ productId, locale, slug = "magic-cal
       }
     } catch { /* ignore */ }
 
+    // 만약 서버 하이드레이션으로 initialCode가 이미 주입되었다면, API 요청을 스킵
+    const cacheKey = `ml_code_${productId}`;
+    if (initialCode) {
+      try {
+        sessionStorage.setItem(cacheKey, initialCode);
+      } catch { /* ignore */ }
+      return;
+    }
+
+    // SWR 캐시 조회
+    let hasCache = false;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setCode(cached);
+        setLoading(false);
+        hasCache = true;
+      }
+    } catch { /* ignore */ }
+
     fetch("/api/magic/my-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -40,11 +61,20 @@ export default function MagicMemberAccess({ productId, locale, slug = "magic-cal
     })
       .then((r) => r.json())
       .then((d) => {
-        if (d.code) setCode(d.code);
+        if (d.code) {
+          setCode(d.code);
+          try {
+            sessionStorage.setItem(cacheKey, d.code);
+          } catch { /* ignore */ }
+        }
       })
       .catch(() => { /* 구매 안 했거나 오류 → 표시 안 함 */ })
-      .finally(() => setLoading(false));
-  }, [productId, activatedKey, slug]);
+      .finally(() => {
+        if (!hasCache) {
+          setLoading(false);
+        }
+      });
+  }, [productId, activatedKey, slug, initialCode]);
 
   const openApp = () => router.push(appPath);
 
@@ -82,8 +112,26 @@ export default function MagicMemberAccess({ productId, locale, slug = "magic-cal
     setTimeout(() => setCopied(false), 1500);
   };
 
-  // 로딩 중이거나 코드 없음(미구매)이면 노출하지 않음
-  if (loading || !code) return null;
+  // 로딩 중일 때는 반짝이는 스켈레톤 뼈대 카드 노출
+  if (loading) {
+    return (
+      <div className="mt-6 rounded-xl border border-[#2D2D4E] bg-[#13131F] p-5 animate-pulse space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-[#2D2D4E]" />
+          <div className="w-24 h-4 rounded bg-[#2D2D4E]" />
+        </div>
+        <div className="w-full h-8 rounded bg-[#2D2D4E]" />
+        <div className="flex gap-2">
+          <div className="flex-1 h-9 rounded bg-[#2D2D4E]" />
+          <div className="w-10 h-9 rounded bg-[#2D2D4E]" />
+        </div>
+        <div className="w-28 h-9 rounded bg-[#2D2D4E]" />
+      </div>
+    );
+  }
+
+  // 코드 없음(미구매)이면 노출하지 않음
+  if (!code) return null;
 
   return (
     <div className="mt-6 rounded-xl border border-[#2D2D4E] bg-[#13131F] p-5">

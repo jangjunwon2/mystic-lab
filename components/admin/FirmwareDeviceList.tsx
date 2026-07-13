@@ -11,6 +11,7 @@ interface FirmwareRelease {
   storage_path: string;
   file_size: number | null;
   notes: string | null;
+  is_active?: boolean;
   created_at: string;
 }
 
@@ -32,6 +33,32 @@ export default function FirmwareDeviceList({ releases, setReleases, polling, new
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function toggleActive(id: string, currentActive: boolean) {
+    const nextActive = !currentActive;
+    setDeleteError(null);
+    const res = await fetch(`/api/admin/firmware/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: nextActive }),
+    });
+
+    if (res.ok) {
+      const clickedRel = releases.find((r) => r.id === id);
+      if (clickedRel) {
+        setReleases((prev) =>
+          prev.map((r) => {
+            if (r.device_type === clickedRel.device_type) {
+              return { ...r, is_active: r.id === id ? nextActive : false };
+            }
+            return r;
+          })
+        );
+      }
+    } else {
+      setDeleteError("배포 상태 변경에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    }
+  }
 
   async function deleteRelease(id: string, version: string) {
     if (!confirm(`버전 ${version}을 삭제할까요? 파일도 함께 삭제됩니다.`)) return;
@@ -150,7 +177,7 @@ export default function FirmwareDeviceList({ releases, setReleases, polling, new
                     style={{ accentColor: "#7C3AED" }}
                   />
                 </th>
-                {["장치 타입", "버전", "파일 크기", "날짜", "다운로드 URL", ""].map((h) => (
+                {["장치 타입", "버전", "배포 상태", "파일 크기", "날짜", "다운로드 URL", ""].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium" style={{ color: "#9CA3AF" }}>
                     {h}
                   </th>
@@ -183,6 +210,28 @@ export default function FirmwareDeviceList({ releases, setReleases, polling, new
                   </td>
                   <td className="px-4 py-3 font-mono font-semibold" style={{ color: "#F0E6FF" }}>
                     {rel.version}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {rel.is_active ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#10B981]/20 text-[#10B981]" title="수동 고정 배포 중">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#4B5563]/20 text-[#9CA3AF]">
+                          Inactive
+                        </span>
+                      )}
+                      {rel.download_url && (
+                        <button
+                          onClick={() => toggleActive(rel.id, !!rel.is_active)}
+                          className="text-[10px] font-semibold px-2 py-1 rounded bg-[#2D2D4E] hover:bg-[#3d3d63] transition-colors"
+                          style={{ color: rel.is_active ? "#EF4444" : "#A855F7" }}
+                        >
+                          {rel.is_active ? "해제" : "배포"}
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-xs" style={{ color: "#9CA3AF" }}>
                     {rel.file_size ? formatBytes(rel.file_size) : "—"}

@@ -129,9 +129,10 @@ interface Props {
   customOrders?: unknown[];
   wishlist: WishlistItem[];
   grants?: any[];
+  initialCodes?: Record<string, string>;
 }
 
-export default function AccountClient({ locale, profile, orders, customOrders = [], wishlist, grants = [] }: Props) {
+export default function AccountClient({ locale, profile, orders, customOrders = [], wishlist, grants = [], initialCodes = {} }: Props) {
   const t = useTranslations("account");
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"orders" | "tutorials" | "apps" | "wishlist" | "addresses" | "points" | "coupons">("orders");
@@ -457,7 +458,7 @@ export default function AccountClient({ locale, profile, orders, customOrders = 
             ) : (
               <div className="space-y-4">
                 {ownedApps.map((prod) => (
-                  <MagicMemberAccess key={prod.id} productId={prod.id} slug={prod.slug} locale={locale} />
+                  <MagicMemberAccess key={prod.id} productId={prod.id} slug={prod.slug} locale={locale} initialCode={initialCodes[prod.id]} />
                 ))}
               </div>
             )}

@@ -206,6 +206,7 @@ export default function VideosAdminManager({ videos: initialVideos, products }: 
         await new Promise((r) => setTimeout(r, 120));
         setUploadProgress(i);
       }
+      // eslint-disable-next-line react-hooks/purity
       const mockStreamId = `mock-${Date.now()}`;
       setUploadedStreamId(mockStreamId);
       await saveVideoRecord(mockStreamId);
