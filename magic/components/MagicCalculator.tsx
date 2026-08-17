@@ -820,7 +820,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }, 1000);
   };
 
-  const handle9End = () => {
+  const handle9End = (e?: React.TouchEvent | React.MouseEvent) => {
+    if (e && "preventDefault" in e && e.cancelable) e.preventDefault();
     // 타이머가 아직 살아있으면(2초 미만) 짧은 탭으로 간주 → 숫자 9 입력
     const wasShortTap = holdTimerRef.current !== null;
     if (holdTimerRef.current) {
@@ -911,7 +912,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }, 2000);
   };
 
-  const handlePlusMinusEnd = () => {
+  const handlePlusMinusEnd = (e?: React.TouchEvent | React.MouseEvent) => {
+    if (e && "preventDefault" in e && e.cancelable) e.preventDefault();
     if (plusMinusHoldTimerRef.current) {
       clearTimeout(plusMinusHoldTimerRef.current);
       plusMinusHoldTimerRef.current = null;
@@ -941,7 +943,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }, 2000);
   };
 
-  const handlePercentEnd = () => {
+  const handlePercentEnd = (e?: React.TouchEvent | React.MouseEvent) => {
+    if (e && "preventDefault" in e && e.cancelable) e.preventDefault();
     const wasShortTap = percentHoldTimerRef.current !== null;
     if (percentHoldTimerRef.current) {
       clearTimeout(percentHoldTimerRef.current);
@@ -1008,7 +1011,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }, 3000);
   };
 
-  const handleCEnd = () => {
+  const handleCEnd = (e?: React.TouchEvent | React.MouseEvent) => {
+    if (e && "preventDefault" in e && e.cancelable) e.preventDefault();
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
@@ -1027,7 +1031,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
     }, 3000);
   };
 
-  const handleEqualEnd = () => {
+  const handleEqualEnd = (e?: React.TouchEvent | React.MouseEvent) => {
+    if (e && "preventDefault" in e && e.cancelable) e.preventDefault();
     if (equalHoldTimerRef.current) {
       clearTimeout(equalHoldTimerRef.current);
       equalHoldTimerRef.current = null;
@@ -1469,7 +1474,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 <button
                   onTouchStart={handleCStart}
                   onTouchEnd={handleCEnd}
-                  onClick={() => handleKeyPress(equation ? "C" : "AC")}
+                  onMouseDown={handleCStart}
+                  onMouseUp={handleCEnd}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#A5A5A5] text-black active:bg-[#D9D9D9] transition-colors"
                 >
                   {equation ? "C" : "AC"}
@@ -1479,7 +1485,6 @@ export default function MagicCalculator({ locale, productId }: Props) {
                   onTouchEnd={handlePlusMinusEnd}
                   onMouseDown={handlePlusMinusStart}
                   onMouseUp={handlePlusMinusEnd}
-                  onClick={handlePlusMinusClick}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium transition-colors bg-[#A5A5A5] text-black active:bg-[#D9D9D9]"
                 >
                   +/-
@@ -1489,14 +1494,11 @@ export default function MagicCalculator({ locale, productId }: Props) {
                   onTouchEnd={handlePercentEnd}
                   onMouseDown={handlePercentStart}
                   onMouseUp={handlePercentEnd}
-                  onClick={handlePercent}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#A5A5A5] text-black active:bg-[#D9D9D9] transition-colors"
                 >
                   %
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "÷")}
-                  onTouchEnd={() => isPressingKeyRef.current === "÷" && handleKeyPress("÷")}
                   onClick={() => handleKeyPress("÷")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#FF9F0A] text-white active:bg-[#CC7F08] transition-colors"
                 >
@@ -1505,16 +1507,12 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
                 {/* Row 2 */}
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "7")}
-                  onTouchEnd={() => isPressingKeyRef.current === "7" && handleKeyPress("7")}
                   onClick={() => handleKeyPress("7")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
                   7
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "8")}
-                  onTouchEnd={() => isPressingKeyRef.current === "8" && handleKeyPress("8")}
                   onClick={() => handleKeyPress("8")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
@@ -1523,14 +1521,13 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 <button
                   onTouchStart={handle9Start}
                   onTouchEnd={handle9End}
-                  onClick={() => handleKeyPress("9")}
+                  onMouseDown={handle9Start}
+                  onMouseUp={handle9End}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
                   9
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "×")}
-                  onTouchEnd={() => isPressingKeyRef.current === "×" && handleKeyPress("×")}
                   onClick={() => handleKeyPress("×")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#FF9F0A] text-white active:bg-[#CC7F08] transition-colors"
                 >
@@ -1539,32 +1536,24 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
                 {/* Row 3 */}
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "4")}
-                  onTouchEnd={() => isPressingKeyRef.current === "4" && handleKeyPress("4")}
                   onClick={() => handleKeyPress("4")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
                   4
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "5")}
-                  onTouchEnd={() => isPressingKeyRef.current === "5" && handleKeyPress("5")}
                   onClick={() => handleKeyPress("5")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
                   5
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "6")}
-                  onTouchEnd={() => isPressingKeyRef.current === "6" && handleKeyPress("6")}
                   onClick={() => handleKeyPress("6")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
                   6
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "-")}
-                  onTouchEnd={() => isPressingKeyRef.current === "-" && handleKeyPress("-")}
                   onClick={() => handleKeyPress("-")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#FF9F0A] text-white active:bg-[#CC7F08] transition-colors"
                 >
@@ -1573,32 +1562,24 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
                 {/* Row 4 */}
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "1")}
-                  onTouchEnd={() => isPressingKeyRef.current === "1" && handleKeyPress("1")}
                   onClick={() => handleKeyPress("1")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
                   1
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "2")}
-                  onTouchEnd={() => isPressingKeyRef.current === "2" && handleKeyPress("2")}
                   onClick={() => handleKeyPress("2")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
                   2
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "3")}
-                  onTouchEnd={() => isPressingKeyRef.current === "3" && handleKeyPress("3")}
                   onClick={() => handleKeyPress("3")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
                   3
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "+")}
-                  onTouchEnd={() => isPressingKeyRef.current === "+" && handleKeyPress("+")}
                   onClick={() => handleKeyPress("+")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#FF9F0A] text-white active:bg-[#CC7F08] transition-colors"
                 >
@@ -1607,16 +1588,12 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
                 {/* Row 5 */}
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "0")}
-                  onTouchEnd={() => isPressingKeyRef.current === "0" && handleKeyPress("0")}
                   onClick={() => handleKeyPress("0")}
                   className="col-span-2 w-full h-full rounded-full flex items-center justify-start pl-8 text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
                   0
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = ".")}
-                  onTouchEnd={() => isPressingKeyRef.current === "." && handleKeyPress(".")}
                   onClick={() => handleKeyPress(".")}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#333333] text-white active:bg-[#555555] transition-colors"
                 >
@@ -1627,7 +1604,6 @@ export default function MagicCalculator({ locale, productId }: Props) {
                   onTouchEnd={handleEqualEnd}
                   onMouseDown={handleEqualStart}
                   onMouseUp={handleEqualEnd}
-                  onClick={handleEqualsClick}
                   className="w-full h-full rounded-full flex items-center justify-center text-3xl font-medium bg-[#FF9F0A] text-white active:bg-[#CC7F08] transition-colors"
                 >
                   =
@@ -1640,13 +1616,13 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 <button
                   onTouchStart={handleCStart}
                   onTouchEnd={handleCEnd}
-                  onClick={() => handleKeyPress(equation ? "C" : "AC")}
+                  onMouseDown={handleCStart}
+                  onMouseUp={handleCEnd}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   {equation ? "C" : "AC"}
                 </button>
                 <button
-                  onTouchStart={(e) => { e.preventDefault(); handleBackspace(); }}
                   onClick={handleBackspace}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-white active:bg-[#38383B] transition-colors bg-[#242426]"
                   aria-label="backspace"
@@ -1658,14 +1634,11 @@ export default function MagicCalculator({ locale, productId }: Props) {
                   onTouchEnd={handlePercentEnd}
                   onMouseDown={handlePercentStart}
                   onMouseUp={handlePercentEnd}
-                  onClick={handlePercent}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   %
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "÷")}
-                  onTouchEnd={() => isPressingKeyRef.current === "÷" && handleKeyPress("÷")}
                   onClick={() => handleKeyPress("÷")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#2D6A2E] text-white active:bg-[#235324] transition-colors"
                 >
@@ -1674,16 +1647,12 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
                 {/* Row 2 — 7, 8, 9, × (Green) */}
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "7")}
-                  onTouchEnd={() => isPressingKeyRef.current === "7" && handleKeyPress("7")}
                   onClick={() => handleKeyPress("7")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   7
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "8")}
-                  onTouchEnd={() => isPressingKeyRef.current === "8" && handleKeyPress("8")}
                   onClick={() => handleKeyPress("8")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
@@ -1692,14 +1661,13 @@ export default function MagicCalculator({ locale, productId }: Props) {
                 <button
                   onTouchStart={handle9Start}
                   onTouchEnd={handle9End}
-                  onClick={() => handleKeyPress("9")}
+                  onMouseDown={handle9Start}
+                  onMouseUp={handle9End}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   9
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "×")}
-                  onTouchEnd={() => isPressingKeyRef.current === "×" && handleKeyPress("×")}
                   onClick={() => handleKeyPress("×")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#2D6A2E] text-white active:bg-[#235324] transition-colors"
                 >
@@ -1708,32 +1676,24 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
                 {/* Row 3 — 4, 5, 6, − (Green) */}
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "4")}
-                  onTouchEnd={() => isPressingKeyRef.current === "4" && handleKeyPress("4")}
                   onClick={() => handleKeyPress("4")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   4
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "5")}
-                  onTouchEnd={() => isPressingKeyRef.current === "5" && handleKeyPress("5")}
                   onClick={() => handleKeyPress("5")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   5
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "6")}
-                  onTouchEnd={() => isPressingKeyRef.current === "6" && handleKeyPress("6")}
                   onClick={() => handleKeyPress("6")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   6
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "-")}
-                  onTouchEnd={() => isPressingKeyRef.current === "-" && handleKeyPress("-")}
                   onClick={() => handleKeyPress("-")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#2D6A2E] text-white active:bg-[#235324] transition-colors"
                 >
@@ -1742,32 +1702,24 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
                 {/* Row 4 — 1, 2, 3, + (Green) */}
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "1")}
-                  onTouchEnd={() => isPressingKeyRef.current === "1" && handleKeyPress("1")}
                   onClick={() => handleKeyPress("1")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   1
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "2")}
-                  onTouchEnd={() => isPressingKeyRef.current === "2" && handleKeyPress("2")}
                   onClick={() => handleKeyPress("2")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   2
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "3")}
-                  onTouchEnd={() => isPressingKeyRef.current === "3" && handleKeyPress("3")}
                   onClick={() => handleKeyPress("3")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   3
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "+")}
-                  onTouchEnd={() => isPressingKeyRef.current === "+" && handleKeyPress("+")}
                   onClick={() => handleKeyPress("+")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#2D6A2E] text-white active:bg-[#235324] transition-colors"
                 >
@@ -1780,22 +1732,17 @@ export default function MagicCalculator({ locale, productId }: Props) {
                   onTouchEnd={handlePlusMinusEnd}
                   onMouseDown={handlePlusMinusStart}
                   onMouseUp={handlePlusMinusEnd}
-                  onClick={handleParen}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   {isEraseLeftActive ? "-/+" : "( )"}
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = "0")}
-                  onTouchEnd={() => isPressingKeyRef.current === "0" && handleKeyPress("0")}
                   onClick={() => handleKeyPress("0")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
                   0
                 </button>
                 <button
-                  onTouchStart={() => (isPressingKeyRef.current = ".")}
-                  onTouchEnd={() => isPressingKeyRef.current === "." && handleKeyPress(".")}
                   onClick={() => handleKeyPress(".")}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#242426] text-white active:bg-[#38383B] transition-colors"
                 >
@@ -1806,7 +1753,6 @@ export default function MagicCalculator({ locale, productId }: Props) {
                   onTouchEnd={handleEqualEnd}
                   onMouseDown={handleEqualStart}
                   onMouseUp={handleEqualEnd}
-                  onClick={handleEqualsClick}
                   className="w-full h-full rounded-[26px] flex items-center justify-center text-3xl font-medium bg-[#3B82F6] text-white active:bg-[#2563EB] transition-colors"
                 >
                   =
