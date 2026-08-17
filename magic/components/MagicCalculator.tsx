@@ -315,6 +315,7 @@ export default function MagicCalculator({ locale, productId }: Props) {
   const [dragOffset, setDragOffset] = useState(0);
   const peekStartXRef = useRef<number | null>(null);
   const displayRef = useRef<HTMLDivElement>(null);
+  const lastKeyPressTimeRef = useRef<number>(0);
 
   // 숫자 길어짐 대응: 계산기 디스플레이 변경 시 오른쪽(최신 위치)으로 자동 스크롤
   useEffect(() => {
@@ -325,9 +326,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   const getCalcFontSize = (len: number) => {
     if (len <= 6) return 5.5;
-    if (len <= 9) return 5.5 - (len - 6) * 0.5;
-    if (len <= 14) return 4.0 - (len - 9) * 0.35;
-    if (len <= 20) return 2.25 - (len - 14) * 0.2;
+    if (len <= 8) return 5.5 - (len - 6) * 0.6; // 7: 4.9, 8: 4.3
+    if (len <= 12) return 4.3 - (len - 8) * 0.45; // 9: 3.85, 10: 3.4, 11: 2.95, 12: 2.5
+    if (len <= 16) return 2.5 - (len - 12) * 0.25; // 13: 2.25, 14: 2.0, 15: 1.75, 16: 1.5
+    if (len <= 20) return 1.5 - (len - 16) * 0.1; // 17: 1.4, 18: 1.3, 19: 1.2, 20: 1.1
     return 1.0;
   };
 
@@ -747,8 +749,12 @@ export default function MagicCalculator({ locale, productId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peekLogs, display, isForceActive, currentTilt.pitch, config.isTiltTriggerEnabled, config.tiltLimit]);
 
-  // 키패드 입력 핸들러 (touchend 릴리즈 감지)
+  // 키패드 입력 핸들러 (touchend/click 중복 발생 방지 120ms 디바운스 락)
   const handleKeyPress = (val: string) => {
+    const now = Date.now();
+    if (now - lastKeyPressTimeRef.current < 120) return;
+    lastKeyPressTimeRef.current = now;
+
     setIsCalculated(false);
 
     if (val >= "0" && val <= "9") {
@@ -799,6 +805,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   // AC상태에서 `=` 터치 시 이전 결과값 복원
   const handleEqualsClick = () => {
+    const now = Date.now();
+    if (now - lastKeyPressTimeRef.current < 120) return;
+    lastKeyPressTimeRef.current = now;
+
     if (display === "0" && equation === "" && lastResult !== "") {
       // 디밍 없이 즉시 복원 → 뒤 히스토리가 비쳐 겹쳐 보이는 현상 방지
       setDisplay(lastResult);
@@ -961,6 +971,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   // % 버튼 - 일반 계산기 백분율 동작 (포스 마커는 별도 렌더, 그 외 마술 기능 없음)
   const handlePercent = () => {
+    const now = Date.now();
+    if (now - lastKeyPressTimeRef.current < 120) return;
+    lastKeyPressTimeRef.current = now;
+
     setIsCalculated(false);
     const n = parseFloat(display);
     if (isNaN(n)) return;
@@ -972,6 +986,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   // ( ) 버튼 (삼성 레이아웃) - 직전 문맥에 따라 여는/닫는 괄호 자동 선택. eval이 괄호를 처리한다.
   const handleParen = () => {
+    const now = Date.now();
+    if (now - lastKeyPressTimeRef.current < 120) return;
+    lastKeyPressTimeRef.current = now;
+
     setIsCalculated(false);
     setEquation((prev) => {
       const opens = (prev.match(/\(/g) || []).length;
@@ -984,6 +1002,10 @@ export default function MagicCalculator({ locale, productId }: Props) {
 
   // 백스페이스(⌫, 삼성 툴바) - 마지막 글자 1개 삭제
   const handleBackspace = () => {
+    const now = Date.now();
+    if (now - lastKeyPressTimeRef.current < 120) return;
+    lastKeyPressTimeRef.current = now;
+
     setIsCalculated(false);
     setEquation((prev) => prev.slice(0, -1));
     setCurrentInputNumber((prev) => prev.slice(0, -1));
@@ -1414,7 +1436,8 @@ export default function MagicCalculator({ locale, productId }: Props) {
         >
           <div
             ref={displayRef}
-            className="w-full text-right font-light text-white select-none whitespace-nowrap overflow-x-auto scrollbar-none"
+            dir="ltr"
+            className="w-full text-right font-light text-white select-none whitespace-nowrap overflow-x-auto scrollbar-none px-4"
             style={{
               fontFamily: theme === "android" ? "Roboto, sans-serif" : "-apple-system, BlinkMacSystemFont, sans-serif",
               fontSize: `${getCalcFontSize(display.length)}rem`,
